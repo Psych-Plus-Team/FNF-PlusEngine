@@ -31,7 +31,7 @@ To learn about new Lua scripts, click [here](https://github.com/LeninAsto/FNF-Pl
 
 To learn more about mod compatibility in the engine, [click here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/readme-compatibility.txt).
 
-To learn about new Advances variables for Modcharts, clic [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/v0.4/docs/scripts/Document Origin Modchart.md)
+To learn about new Advances variables for Modcharts, clic [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/Document Origin Modchart.md)
 
 # Psych Team
 
