@@ -25,6 +25,7 @@ import states.TitleState;
 	public var camZooms:Bool = true;
 	public var hideHud:Bool = false;
 	public var judgementCounter:Bool = true;
+	public var comboInGame:Bool = false;
 	public var showStateInFPS:Bool = true;
 	public var newScoreTxt:Bool = false;
 	public var noteOffset:Int = 0;

@@ -93,7 +93,7 @@ class FPSCounter extends TextField
 			var stateName = "";
 			if (FlxG.state != null)
 				stateName = Type.getClassName(Type.getClass(FlxG.state));
-			text += '\nState: $stateName';
+			text += '\n$stateName';
 		}
 
 		// Interpolación de color según FPS

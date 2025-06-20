@@ -505,7 +505,7 @@ class PlayState extends MusicBeatState
 		add(judgementCounterText);
 
 		// Mostrar la versión del motor, nombre de la canción y dificultad en la esquina inferior izquierda
-		versionText = new FlxText(10, FlxG.height - 38, FlxG.width, 
+		versionText = new FlxText(10, FlxG.height - 30, FlxG.width, 
 			"Plus Engine v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")", 18);
 		// Configura la fuente, tamaño, color y borde del texto
 		versionText.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -605,7 +605,7 @@ class PlayState extends MusicBeatState
 
 		uiGroup.cameras = [camHUD];
 		noteGroup.cameras = [camHUD];
-		comboGroup.cameras = [camHUD];
+		comboGroup.cameras = [ClientPrefs.data.comboInGame ? camGame : camHUD];
 
 		startingSong = true;
 
@@ -2803,7 +2803,7 @@ class PlayState extends MusicBeatState
 		else
 		{
 			rating.scale.set(0.8, 0.8);
-            FlxTween.tween(rating.scale, {x: 4, y: 4}, 0.08, {
+            FlxTween.tween(rating.scale, {x: 4.3, y: 4.3}, 0.08, {
                 ease: FlxEase.circOut
             });
 		}
@@ -2831,7 +2831,7 @@ class PlayState extends MusicBeatState
 			numScore.visible = !ClientPrefs.data.hideHud;
 			numScore.antialiasing = antialias;
 
-			//if (combo >= 10 || combo == 0)
+			if (combo >= 10 || combo == 0)
 			if(showComboNum)
 				comboGroup.add(numScore);
 
