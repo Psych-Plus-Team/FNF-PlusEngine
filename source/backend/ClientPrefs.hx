@@ -27,7 +27,8 @@ import states.TitleState;
 	public var judgementCounter:Bool = true;
 	public var comboInGame:Bool = false;
 	public var showStateInFPS:Bool = true;
-	public var newScoreTxt:Bool = false;
+	public var showEndCountdown:Bool = false; // Activa/desactiva la cuenta regresiva
+    public var endCountdownSeconds:Int = 10;  // Segundos de cuenta regresiva (10-30)
 	public var noteOffset:Int = 0;
 	public var arrowRGB:Array<Array<FlxColor>> = [
 		[0xFFC24B99, 0xFFFFFFFF, 0xFF3C1F56],

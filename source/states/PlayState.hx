@@ -229,6 +229,11 @@ class PlayState extends MusicBeatState
 	var cameraBopFrequency:Float = 1;
     var cameraBopIntensity:Float = 1;
 	var cameraBopEnabled:Bool = false;
+	var endCountdownText:FlxText = null;
+    var lastEndCountdown:Int = -1;
+	var tps:Float = 0;
+    var maxTps:Float = 0;
+    var tpsCounter:Array<Float> = [];
 
 	public static var campaignScore:Int = 0;
 	public static var campaignMisses:Int = 0;
@@ -504,16 +509,28 @@ class PlayState extends MusicBeatState
 		//judgementCounterText.allowMarkup = true; // No work
 		add(judgementCounterText);
 
-		// Mostrar la versión del motor, nombre de la canción y dificultad en la esquina inferior izquierda
-		versionText = new FlxText(10, FlxG.height - 30, FlxG.width, 
-			"Plus Engine v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")", 18);
-		// Configura la fuente, tamaño, color y borde del texto
-		versionText.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		versionText.scrollFactor.set();
-		versionText.alpha = 0.7; // Hace el texto un poco transparente
-		versionText.borderSize = 1; // Tamaño del borde
-		versionText.cameras = [camOther]; // Asigna la cámara del HUD
-		add(versionText); // Agrega el texto a la escena
+        // Hora, fecha y versión en la esquina inferior izquierda
+        var now = Date.now();
+        var hourStr = StringTools.lpad(Std.string(now.getHours()), "0", 2);
+        var minStr = StringTools.lpad(Std.string(now.getMinutes()), "0", 2);
+        var timeStr = hourStr + ":" + minStr + "HRS";
+
+        var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        var dayName = days[now.getDay()];
+        var monthName = months[now.getMonth()];
+        var dateStr = dayName + " - " + monthName + " " + now.getDate() + ", " + now.getFullYear();
+
+        var versionStr = "Plus Engine v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")";
+
+        versionText = new FlxText(10, FlxG.height - 65, FlxG.width,
+            timeStr + "\n" + dateStr + "\n" + versionStr, 16);
+        versionText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+        versionText.scrollFactor.set();
+        versionText.alpha = 0.7;
+        versionText.borderSize = 1;
+        versionText.cameras = [camOther];
+        add(versionText);
 
 		Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
 		var showTime:Bool = (ClientPrefs.data.timeBarType != 'Disabled');
@@ -1195,12 +1212,8 @@ class PlayState extends MusicBeatState
 
 	public dynamic function updateScoreText()
 	{
-		var str:String = Language.getPhrase('rating_$ratingName', ratingName);
-		if(totalPlayed != 0)
-		{
-			var percent:Float = CoolUtil.floorDecimal(ratingPercent * 100, 2);
-			str += ' (${percent}%) - ' + Language.getPhrase(ratingFC);
-		}
+		var percent:Float = CoolUtil.floorDecimal(ratingPercent * 100, 2);
+		var str:String = percent + '% / ' + ratingName + ' [' + ratingFC + ']';
 	
 		var scoreToShow:Int = displayedScore; // Usar el score animado
 		var scoreStr:String = ClientPrefs.data.abbreviateScore ? abbreviateScore(scoreToShow) : Std.string(scoreToShow);
@@ -1830,26 +1843,42 @@ class PlayState extends MusicBeatState
 					Conductor.songPosition = Conductor.songPosition + 1000 * FlxMath.signOf(timeDiff);
 			}
 		}
+    if (versionText != null)
+    {
+        var now = Date.now();
+        var hourStr = StringTools.lpad(Std.string(now.getHours()), "0", 2);
+        var minStr = StringTools.lpad(Std.string(now.getMinutes()), "0", 2);
+        var timeStr = hourStr + ":" + minStr + "HRS";
+        var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        var dayName = days[now.getDay()];
+        var monthName = months[now.getMonth()];
+        var dateStr = dayName + " - " + monthName + " " + now.getDate() + ", " + now.getFullYear();
+        var versionStr = "Plus Engine v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")";
+        versionText.text = timeStr + "\n" + dateStr + "\n" + versionStr;
+    }
 
-        if (judgementCounterText != null)
-        {
-            if (ClientPrefs.judgementCounter)
-            {
-                judgementCounterText.visible = true;
-                judgementCounterText.text =
-                    Language.getPhrase('judgement_eps', 'EPS') + ':  ' + ratingsData[0].hits + '\n' +
-                    Language.getPhrase('judgement_sks', 'SKS') + ':  ' + ratingsData[1].hits + '\n' +
-                    Language.getPhrase('judgement_gds', 'GDS') + ':  ' + ratingsData[2].hits + '\n' +
-                    Language.getPhrase('judgement_bds', 'BDS') + ':  ' + ratingsData[3].hits + '\n' +
-                    Language.getPhrase('judgement_shs', 'SHS') + ':  ' + ratingsData[4].hits + '\n' +
-                    Language.getPhrase('judgement_mis', 'MIS') + ':  ' + songMisses;
-            }
-            else
-            {
-                judgementCounterText.visible = false;
-            }
-        }
-
+		if (judgementCounterText != null)
+		{
+			if (ClientPrefs.judgementCounter)
+			{
+				var comboActual:Int = combo;
+				var comboMaximo:Int = maxCombo;
+				judgementCounterText.visible = true;
+				judgementCounterText.text =
+					Language.getPhrase('judgement_eps', 'EPS') + ':  ' + ratingsData[0].hits + '\n' +
+					Language.getPhrase('judgement_sks', 'SKS') + ':  ' + ratingsData[1].hits + '\n' +
+					Language.getPhrase('judgement_gds', 'GDS') + ':  ' + ratingsData[2].hits + '\n' +
+					Language.getPhrase('judgement_bds', 'BDS') + ':  ' + ratingsData[3].hits + '\n' +
+					Language.getPhrase('judgement_shs', 'SHS') + ':  ' + ratingsData[4].hits + '\n' +
+					Language.getPhrase('judgement_mis', 'MIS') + ':  ' + songMisses + '\n' +
+					'Combo: ' + comboActual + ' / ' + comboMaximo;
+			}
+			else
+			{
+				judgementCounterText.visible = false;
+			}
+		}
 		if (startingSong)
 		{
 			if (startedCountdown && Conductor.songPosition >= Conductor.offset)
@@ -1857,20 +1886,60 @@ class PlayState extends MusicBeatState
 			else if(!startedCountdown)
 				Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
 		}
-		else if (!paused && updateTime)
-		{
-			var curTime:Float = Math.max(0, Conductor.songPosition - ClientPrefs.data.noteOffset);
-			songPercent = (curTime / songLength);
-
-			var songCalc:Float = (songLength - curTime);
-			if(ClientPrefs.data.timeBarType == 'Time Elapsed') songCalc = curTime;
-
-			var secondsTotal:Int = Math.floor(songCalc / 1000);
-			if(secondsTotal < 0) secondsTotal = 0;
-
-			if(ClientPrefs.data.timeBarType != 'Song Name')
-				timeTxt.text = FlxStringUtil.formatTime(secondsTotal, false);
-		}
+		
+				else if (!paused && updateTime)
+				{
+					var curTime:Float = Math.max(0, Conductor.songPosition - ClientPrefs.data.noteOffset);
+					songPercent = (curTime / songLength);
+		
+					var songCalc:Float = (songLength - curTime);
+					if(ClientPrefs.data.timeBarType == 'Time Elapsed') songCalc = curTime;
+		
+					var secondsTotal:Int = Math.floor(songCalc / 1000);
+					if(secondsTotal < 0) secondsTotal = 0;
+		
+					if(ClientPrefs.data.timeBarType != 'Song Name')
+						timeTxt.text = FlxStringUtil.formatTime(secondsTotal, false);
+		
+					// --- INICIO: Lógica de cuenta regresiva al final ---
+					if (ClientPrefs.data.showEndCountdown)
+					{
+						var countdownSeconds = ClientPrefs.data.endCountdownSeconds;
+						var timeLeft = Math.floor((songLength - curTime) / 1000);
+						if (timeLeft <= countdownSeconds && timeLeft > 0)
+						{
+							if (endCountdownText == null)
+							{
+								endCountdownText = new FlxText(0, 0, 0, "", 40);
+								endCountdownText.setFormat(Paths.font("vcr.ttf"), 40, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+								endCountdownText.cameras = [camOther];
+								endCountdownText.scrollFactor.set();
+								endCountdownText.alpha = 1;
+								endCountdownText.borderSize = 3;
+								endCountdownText.x = FlxG.width / 2 - endCountdownText.width / 2;
+								endCountdownText.y = FlxG.height / 2 - 150; // Un poco más arriba del centro
+								add(endCountdownText);
+							}
+							endCountdownText.visible = true;
+							endCountdownText.text = Std.string(timeLeft);
+		
+							// Animación tipo "bump" cada segundo
+							if (lastEndCountdown != timeLeft)
+							{
+								endCountdownText.scale.set(2, 2);
+								FlxTween.tween(endCountdownText.scale, {x: 1, y: 1}, 0.25, {ease: FlxEase.circOut});
+								lastEndCountdown = timeLeft;
+							}
+						}
+						else if (endCountdownText != null)
+						{
+							endCountdownText.visible = false;
+							lastEndCountdown = -1;
+						}
+					}
+					// --- FIN: Lógica de cuenta regresiva al final ---
+				}
+		
 
 		if (camZooming)
 		{
@@ -3324,6 +3393,12 @@ class PlayState extends MusicBeatState
 			closeSubState();
 			resetSubState();
 		}
+
+		if (endCountdownText != null) {
+            remove(endCountdownText);
+            endCountdownText.destroy();
+            endCountdownText = null;
+        }
 
 		#if LUA_ALLOWED
 		for (lua in luaArray)

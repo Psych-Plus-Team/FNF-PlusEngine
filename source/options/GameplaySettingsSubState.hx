@@ -133,6 +133,25 @@ class GameplaySettingsSubState extends BaseOptionsMenu
             BOOL);
         addOption(option);
 
+        var option:Option = new Option('Show End Countdown',
+            'If checked, shows a countdown in the last seconds of the song.',
+            'showEndCountdown',
+            BOOL);
+        addOption(option);
+
+        var option:Option = new Option('End Countdown Seconds',
+            'How many seconds before the song ends the countdown appears (10-30).',
+            'endCountdownSeconds',
+            INT);
+        option.displayFormat = '%vs';
+        option.scrollSpeed = 1;
+        option.minValue = 10;
+        option.maxValue = 30;
+        option.changeValue = 1;
+        option.decimals = 0;
+        option.showCondition = function() return ClientPrefs.data.showEndCountdown;
+        addOption(option);
+
 		super();
 	}
 
