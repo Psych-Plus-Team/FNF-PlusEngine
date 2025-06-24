@@ -1,23 +1,17 @@
 # 🎮 FNF-PlusEngine
 Welcome to FNF-PlusEngine! This is a modified version of Friday Night Funkin', based on Psych Engine, with added features and improvements for a more dynamic and customizable gameplay experience adding advanced modcharts variables so you can create your craziest modcharts, and more.
 
+
+
 ### Features
 - Video in HUD: Now you can play videos directly on camHUD or camGame. Perfect for custom cutscenes or visual effects. More info here.
-- New Lua Variables: Added custom variables like setFullscreen, tweenWindowSize, winTweenX, and winTweenY for advanced window control.
-- Mod compatibility in the engine.
-- Cool Font and New RatingTxt and ScoreTxt
-- Judgement Counter
-- Advanced Variables for craziest Modcharts
-- Fix select json in Charting Editor
-- New results State and really cool
+- New Lua Variables: Added custom variables like setFullscreen, winTweenSize, winTweenX, and winTweenY for advanced window control.
+- Cool Font.
+- Judgement Counter.
+- Advanced Variables for craziest Modcharts.
+- Fix select json in Charting Editor.
+- New results State and really cool.
 - and More...
-
-### 📦 Latest Release
-
-> v0.2 - Video in HUD
-- Added support for playing videos on camHUD or camGame.
-- Fix the Achievements an Easter Eggs of Psych.
-- New judgement bop
 
 ### 🤝 Contributions
 - **[Funkin Modchart](https://github.com/TheoDevelops/FunkinModchart) - Developed by TheoDev**
@@ -28,10 +22,7 @@ Welcome to FNF-PlusEngine! This is a modified version of Friday Night Funkin', b
 > This project is subject to bugs, fixes, improvements and changes.
 
 To learn about new Lua scripts, click [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/TemplatePlusScript.lua).
-
-To learn more about mod compatibility in the engine, [click here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/readme-compatibility.txt).
-
-To learn about new Advances variables for Modcharts, clic [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/DocumentOriginModchart.md)
+To learn about new Advances variables for Modcharts, clic [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/TemplateAdvancedModchartScript.md)
 
 # Psych Team
 
