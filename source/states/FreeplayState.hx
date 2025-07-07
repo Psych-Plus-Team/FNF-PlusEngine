@@ -12,8 +12,6 @@ import substates.ResetScoreSubState;
 
 import flixel.math.FlxMath;
 import flixel.util.FlxDestroyUtil;
-import flixel.text.FlxText;
-import openfl.media.Sound;
 
 import openfl.utils.Assets;
 
@@ -37,7 +35,7 @@ class FreeplayState extends MusicBeatState
 	var intendedScore:Int = 0;
 	var intendedRating:Float = 0;
 
-	private var grpSongs:FlxTypedGroup<FlxText>;
+	private var grpSongs:FlxTypedGroup<Alphabet>;
 	private var curPlaying:Bool = false;
 
 	private var iconArray:Array<HealthIcon> = [];
@@ -53,17 +51,6 @@ class FreeplayState extends MusicBeatState
 	var bottomBG:FlxSprite;
 
 	var player:MusicPlayer;
-
-	// Primero, declara nuevas variables en la clase FreeplayState
-	private var songInfoBG:FlxSprite;
-	private var songTitleText:FlxText;
-	private var songDurationText:FlxText;
-
-	// 1. Agrega esta variable a la clase FreeplayState
-	private var durationCache:Map<String, String> = new Map<String, String>();
-
-	// 1. Añade esta variable a la clase FreeplayState
-	private var logoBumpin:FlxSprite;
 
 	override function create()
 	{
@@ -121,55 +108,47 @@ class FreeplayState extends MusicBeatState
 		add(bg);
 		bg.screenCenter();
 
-		grpSongs = new FlxTypedGroup<FlxText>();
+		grpSongs = new FlxTypedGroup<Alphabet>();
 		add(grpSongs);
 
-		// Posición X base para el texto (más a la derecha)
-		var baseTextX:Float = 300; 
-		
 		for (i in 0...songs.length)
 		{
-			// Crear FlxText en lugar de Alphabet
-			var songText:FlxText = new FlxText(baseTextX, 320, 0, songs[i].songName, 40);
-			
-			// Usar la fuente kalam en lugar de defaultFont
-			songText.setFormat(Paths.font("kalam.ttf"), 40, FlxColor.WHITE, LEFT);
-			
-			// Guardar el índice como propiedad para mantener compatibilidad
-			songText.ID = i;
+			var songText:Alphabet = new Alphabet(90, 320, songs[i].songName, true);
+			songText.targetY = i;
 			grpSongs.add(songText);
-			
+
+			songText.scaleX = Math.min(1, 980 / songText.width);
+			songText.snapToPosition();
+
 			Mods.currentModDirectory = songs[i].folder;
 			var icon:HealthIcon = new HealthIcon(songs[i].songCharacter);
+			icon.sprTracker = songText;
+
 			
-			// Hacer el icono más pequeño
-			icon.scale.set(0.6, 0.6); // 70% del tamaño original
-			
-			// Posicionar el icono a la izquierda del texto
-			icon.x = baseTextX - (icon.width * icon.scale.x); // 10 píxeles de separación
-			icon.y = songText.y - ((icon.height * icon.scale.y) - songText.height) / 2; // Centrar verticalmente
-			
-			// Almacenar referencia al texto para seguimiento
-			icon.ID = i;
-			
-			songText.visible = songText.active = false;
+			// too laggy with a lot of songs, so i had to recode the logic for it
+			songText.visible = songText.active = songText.isMenuItem = false;
 			icon.visible = icon.active = false;
 
+			// using a FlxGroup is too much fuss!
 			iconArray.push(icon);
 			add(icon);
+
+			// songText.x += 40;
+			// DONT PUT X IN THE FIRST PARAMETER OF new ALPHABET() !!
+			// songText.screenCenter(X);
 		}
 		WeekData.setDirectoryFromWeek();
 
 		scoreText = new FlxText(FlxG.width * 0.7, 5, 0, "", 32);
-		scoreText.setFormat(Paths.defaultFont(), 32, FlxColor.WHITE, RIGHT);
+		scoreText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, RIGHT);
 
 		scoreBG = new FlxSprite(scoreText.x - 6, 0).makeGraphic(1, 66, 0xFF000000);
 		scoreBG.alpha = 0.6;
 		add(scoreBG);
 
-        diffText = new FlxText(scoreText.x, scoreText.y + 36, 0, "", 24);
-        diffText.setFormat(Paths.font("kalam.ttf"), 24, FlxColor.WHITE, CENTER); // Cambiar a usar kalam también
-        add(diffText);
+		diffText = new FlxText(scoreText.x, scoreText.y + 36, 0, "", 24);
+		diffText.font = scoreText.font;
+		add(diffText);
 
 		add(scoreText);
 
@@ -180,25 +159,10 @@ class FreeplayState extends MusicBeatState
 		add(missingTextBG);
 		
 		missingText = new FlxText(50, 0, FlxG.width - 100, '', 24);
-		missingText.setFormat(Paths.defaultFont(), 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		missingText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		missingText.scrollFactor.set();
 		missingText.visible = false;
 		add(missingText);
-
-		// Fondo para la información de la canción (lado izquierdo)
-		songInfoBG = new FlxSprite(0, 5).makeGraphic(400, 66, 0xFF000000);
-		songInfoBG.alpha = 0.6;
-		add(songInfoBG);
-
-		// Texto para el título de la canción
-		songTitleText = new FlxText(10, 5, 390, "", 32);
-		songTitleText.setFormat(Paths.font("kalam.ttf"), 32, FlxColor.WHITE, LEFT);
-		add(songTitleText);
-
-		// Texto para la duración de la canción
-		songDurationText = new FlxText(10, songTitleText.y + 36, 390, "", 24);
-		songDurationText.setFormat(Paths.font("kalam.ttf"), 24, FlxColor.WHITE, LEFT);
-		add(songDurationText);
 
 		if(curSelected >= songs.length) curSelected = 0;
 		bg.color = songs[curSelected].color;
@@ -215,78 +179,16 @@ class FreeplayState extends MusicBeatState
 		bottomString = leText;
 		var size:Int = 16;
 		bottomText = new FlxText(bottomBG.x, bottomBG.y + 4, FlxG.width, leText, size);
-		bottomText.setFormat(Paths.defaultFont(), size, FlxColor.WHITE, CENTER);
+		bottomText.setFormat(Paths.font("vcr.ttf"), size, FlxColor.WHITE, CENTER);
 		bottomText.scrollFactor.set();
 		add(bottomText);
 		
 		player = new MusicPlayer(this);
 		add(player);
-
-		logoBumpin = loadModLogo();
-	    add(logoBumpin);
 		
 		changeSelection();
 		updateTexts();
 		super.create();
-	}
-
-	// Carga el logoBumpin (por defecto o del mod)
-	function loadModLogo():FlxSprite {
-		var logo:FlxSprite = new FlxSprite();
-		var currentMod:String = songs[curSelected].folder;
-		
-		// Intentar cargar el logo del mod actual primero
-		var modPath:String = null;
-		if(currentMod != null && currentMod.length > 0) {
-			modPath = Paths.getPath('images/logoBumpin.png', IMAGE, 'mods/' + currentMod);
-		}
-		
-		if(modPath != null && openfl.utils.Assets.exists(modPath)) {
-			// Si existe el logo del mod, cargarlo
-			logo.frames = Paths.getSparrowAtlas('logoBumpin', 'mods/' + currentMod);
-		} else {
-			// Si no existe, cargar el logo por defecto
-			logo.frames = Paths.getSparrowAtlas('logoBumpin');
-		}
-		
-		logo.animation.addByPrefix('bump', 'logo bumpin', 24, false);
-		logo.animation.play('bump');
-		logo.updateHitbox();
-		logo.antialiasing = ClientPrefs.data.antialiasing;
-		
-		// Posicionar a la derecha
-		logo.scale.set(0.5, 0.5);
-		logo.x = FlxG.width - logo.width + 40;
-		logo.y = FlxG.height - logo.height - 40;
-		
-		return logo;
-	}
-
-	// 3. Añade esta función para actualizar el logo cuando cambia la selección
-	function updateLogoBumpin() {
-	    // Remover el logo anterior
-	    if(logoBumpin != null) {
-	        remove(logoBumpin);
-	        logoBumpin.destroy();
-	    }
-	    
-	    // Cargar el nuevo logo
-	    logoBumpin = loadModLogo();
-	    add(logoBumpin);
-	}
-
-	// 4. Modifica la función changeSelection para actualizar el logo
-	// Añade esto al final de la función changeSelection, justo después de updateSongDuration():
-
-	// 5. Implementa/modifica la función beatHit para animar el logo
-	override function beatHit() {
-	    super.beatHit();
-	    
-	    // Animar el logo en cada beat
-	    if(logoBumpin != null) {
-	        logoBumpin.animation.play('bump', true);
-            logoBumpin.animation.curAnim.restart();
-	    }
 	}
 
 	override function closeSubState()
@@ -625,90 +527,35 @@ class FreeplayState extends MusicBeatState
 			FlxTween.color(bg, 1, bg.color, intendedColor);
 		}
 
-		// Actualizar alpha de los elementos
-		for (i in 0...grpSongs.members.length)
+		for (num => item in grpSongs.members)
 		{
-			var item:FlxText = grpSongs.members[i];
-			var icon:HealthIcon = iconArray[i];
+			var icon:HealthIcon = iconArray[num];
 			item.alpha = 0.6;
 			icon.alpha = 0.6;
-			if (i == curSelected)
+			if (item.targetY == curSelected)
 			{
 				item.alpha = 1;
 				icon.alpha = 1;
 			}
 		}
 		
-		// Actualizar información de la canción seleccionada
-		songTitleText.text = songs[curSelected].songName;
-		updateSongDuration();
-		updateLogoBumpin();
-	}
-	
-	// 2. Reemplaza la función updateSongDuration con esta versión optimizada:
-	function updateSongDuration():Void
-	{
-		// Clave única para cada canción (mod + nombre canción)
-		var songKey:String = (songs[curSelected].folder.length > 0 ? songs[curSelected].folder + ":" : "") + songs[curSelected].songName;
+		Mods.currentModDirectory = songs[curSelected].folder;
+		PlayState.storyWeek = songs[curSelected].week;
+		Difficulty.loadFromWeek();
 		
-		// Si ya tenemos la duración en caché, usarla directamente
-		if (durationCache.exists(songKey)) {
-			songDurationText.text = durationCache.get(songKey);
-			return;
-		}
-		
-		// Si no está en caché, mostrar cargando
-		songDurationText.text = "Cargando duración...";
-		
-		// Para evitar problemas de memoria, usamos un timer para cargar la duración
-		// después de un pequeño retraso (evita carga continua al desplazarse rápido)
-		haxe.Timer.delay(function() {
-			// Verificar que seguimos en la misma canción
-			if (curSelected >= 0 && curSelected < songs.length && 
-				songKey == (songs[curSelected].folder.length > 0 ? songs[curSelected].folder + ":" : "") + songs[curSelected].songName) {
-				
-				loadSongDuration(songKey);
-			}
-		}, 200); // 200ms de retraso
-	}
+		var savedDiff:String = songs[curSelected].lastDifficulty;
+		var lastDiff:Int = Difficulty.list.indexOf(lastDifficultyName);
+		if(savedDiff != null && !Difficulty.list.contains(savedDiff) && Difficulty.list.contains(savedDiff))
+			curDifficulty = Math.round(Math.max(0, Difficulty.list.indexOf(savedDiff)));
+		else if(lastDiff > -1)
+			curDifficulty = lastDiff;
+		else if(Difficulty.list.contains(Difficulty.getDefault()))
+			curDifficulty = Math.round(Math.max(0, Difficulty.defaultList.indexOf(Difficulty.getDefault())));
+		else
+			curDifficulty = 0;
 
-	// 3. Agrega esta función para cargar la duración de forma optimizada
-	private function loadSongDuration(songKey:String):Void
-	{
-		var songLowercase:String = Paths.formatToSongPath(songs[curSelected].songName);
-		var currentMod:String = songs[curSelected].folder;
-		
-		try {
-			Mods.currentModDirectory = currentMod;
-			var inst:Sound = Paths.inst(songLowercase);
-			
-			if (inst != null) {
-				var durationSeconds:Int = Math.floor(inst.length / 1000);
-				var minutes:Int = Math.floor(durationSeconds / 60);
-				var seconds:Int = durationSeconds % 60;
-				
-				var formattedSeconds:String = seconds < 10 ? '0$seconds' : '$seconds';
-				var durationText:String = 'Duración: $minutes:$formattedSeconds';
-				
-				// Guardar en caché
-				durationCache.set(songKey, durationText);
-				songDurationText.text = durationText;
-				
-				// Liberar memoria explícitamente
-				if (!player.playingMusic) {
-					inst = null;
-					openfl.system.System.gc();
-				}
-			} else {
-				var noDisponible:String = "Duración: No disponible";
-				durationCache.set(songKey, noDisponible);
-				songDurationText.text = noDisponible;
-			}
-		} catch (e) {
-			var errorText:String = "Duración: No disponible";
-			durationCache.set(songKey, errorText);
-			songDurationText.text = errorText;
-		}
+		changeDiff();
+		_updateSongLastDifficulty();
 	}
 
 	inline private function _updateSongLastDifficulty()
@@ -737,35 +584,14 @@ class FreeplayState extends MusicBeatState
 
 		var min:Int = Math.round(Math.max(0, Math.min(songs.length, lerpSelected - _drawDistance)));
 		var max:Int = Math.round(Math.max(0, Math.min(songs.length, lerpSelected + _drawDistance)));
-		
-		// Posición base para el texto
-		var baseY:Float = 320;
-		
-		// Espaciado entre elementos
-		var lineSpacing:Float = 80; 
-		
 		for (i in min...max)
 		{
-			var item:FlxText = grpSongs.members[i];
+			var item:Alphabet = grpSongs.members[i];
 			item.visible = item.active = true;
-			
-			// Mantener posición X fija
-			item.x = 800; // Más a la derecha
-			
-			// Posición Y con interpolación para movimiento suave
-			var offset:Float = (i - lerpSelected) * lineSpacing;
-			item.y = baseY + offset;
+			item.x = ((item.targetY - lerpSelected) * item.distancePerItem.x) + item.startPosition.x;
+			item.y = ((item.targetY - lerpSelected) * 1.3 * item.distancePerItem.y) + item.startPosition.y;
 
-			// Actualizar posición del icono para alinear con el texto
 			var icon:HealthIcon = iconArray[i];
-			
-			// Ajustar posición X del icono
-			icon.x = item.x - (icon.width * icon.scale.x) - 25;
-			
-			// MODIFICACIÓN AQUÍ: Mejor cálculo de alineación vertical
-			// Alinear el centro del icono con el centro del texto
-			icon.y = item.y + (item.height / 2) - ((icon.height * icon.scale.y) / 2 + 35);
-			
 			icon.visible = icon.active = true;
 			_lastVisibles.push(i);
 		}
