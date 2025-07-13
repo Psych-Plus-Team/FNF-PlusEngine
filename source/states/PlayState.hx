@@ -222,6 +222,7 @@ class PlayState extends MusicBeatState
 	var scoreTxtTween:FlxTween;
     var timeTxtTween:FlxTween;
     var judgementCounterText:FlxText;
+	var ghostJText:FlxText;
 	var popupTimer:FlxTimer = null;
     var popupVisible:Bool = false;
 	var turnValue:Int = 10;
@@ -231,9 +232,17 @@ class PlayState extends MusicBeatState
 	var cameraBopEnabled:Bool = false;
 	var endCountdownText:FlxText = null;
     var lastEndCountdown:Int = -1;
-	var tps:Float = 0;
-    var maxTps:Float = 0;
-    var tpsCounter:Array<Float> = [];
+	var lastJudName:String = "None";
+	var speedText:FlxText;
+	var bpmText:FlxText;
+	var healthText:FlxText;
+	
+	var lastSpeed:Float = -1;
+	var lastBPM:Int = -1;
+	var lastHealth:Float = -1;
+	var speedAlphaTween:FlxTween = null;
+    var bpmAlphaTween:FlxTween = null;
+	var healthAlphaTween:FlxTween = null;
 
 	public static var campaignScore:Int = 0;
 	public static var campaignMisses:Int = 0;
@@ -509,6 +518,39 @@ class PlayState extends MusicBeatState
 		//judgementCounterText.allowMarkup = true; // No work
 		add(judgementCounterText);
 
+		ghostJText = new FlxText(18, FlxG.height - 100, 0, "None\nx0", 22);
+        ghostJText.setFormat(Paths.defaultFont(), 22, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+        ghostJText.alpha = 0.6;
+		ghostJText.visible = ClientPrefs.data.debugData;
+        ghostJText.scrollFactor.set();
+        ghostJText.cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+        add(ghostJText);
+
+		speedText = new FlxText(14, FlxG.height - 120, 0, "Speed: 1.0x", 16);
+		speedText.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		speedText.visible = ClientPrefs.data.debugData;
+		speedText.scrollFactor.set();
+		speedText.cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+		add(speedText);
+		
+		bpmText = new FlxText(14, FlxG.height - 140, 0, "BPM: 100", 16);
+		bpmText.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		bpmText.visible = ClientPrefs.data.debugData;
+		bpmText.scrollFactor.set();
+		bpmText.cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+		add(bpmText);
+		
+		healthText = new FlxText(14, FlxG.height - 160, 0, "Health: 50%", 16);
+		healthText.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		healthText.visible = ClientPrefs.data.debugData;
+		healthText.scrollFactor.set();
+		healthText.cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+		add(healthText);
+		
+		lastSpeed = songSpeed;
+		lastBPM = Std.int(Conductor.bpm);
+		lastHealth = health;
+
         // Hora, fecha y versión en la esquina inferior izquierda
         var now = Date.now();
         var hourStr = StringTools.lpad(Std.string(now.getHours()), "0", 2);
@@ -523,7 +565,7 @@ class PlayState extends MusicBeatState
 
         var versionStr = "Plus Engine v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")";
 
-        versionText = new FlxText(10, FlxG.height - 46, FlxG.width,
+        versionText = new FlxText(10, FlxG.height - 50, FlxG.width,
             timeStr + "\n" + dateStr + "\n" + versionStr, 16);
         versionText.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         versionText.scrollFactor.set();
@@ -1857,6 +1899,54 @@ class PlayState extends MusicBeatState
         var versionStr = "Plus Engine v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")";
         versionText.text = timeStr + "\n" + dateStr + "\n" + versionStr;
     }
+	if (ghostJText != null) {
+		ghostJText.text = capitalizeFirst(lastJudName) + "\nx" + combo;
+		ghostJText.visible = ClientPrefs.data.debugData;
+	}
+
+	var curSpeed = songSpeed;
+	var curBPM = Std.int(Conductor.bpm);
+	var curHealth = health;
+	var healthPercent = Math.floor((curHealth / 2) * 100);
+	
+	// Velocidad
+	if (curSpeed != lastSpeed) {
+		var diff = Math.round((curSpeed - lastSpeed) * 10) / 10;
+		var sign = diff > 0 ? "+" : "";
+		speedText.text = "Speed: " + Std.string(Math.round(curSpeed * 10) / 10) + "x";
+		var flashColor = (diff > 0) ? FlxColor.RED : FlxColor.LIME;
+		speedText.color = flashColor;
+		speedText.visible = ClientPrefs.data.debugData;
+		speedText.alpha = 0.6;
+		FlxTween.color(speedText, 0.4, flashColor, FlxColor.WHITE);
+		lastSpeed = curSpeed;
+	}
+	
+	// BPM
+	if (curBPM != lastBPM) {
+		var diff = curBPM - lastBPM;
+		var sign = diff > 0 ? "+" : "";
+		bpmText.text = "BPM: " + Std.string(curBPM);
+		var flashColor = (diff > 0) ? FlxColor.RED : FlxColor.LIME;
+		bpmText.color = flashColor;
+		bpmText.visible = ClientPrefs.data.debugData;
+		bpmText.alpha = 0.6;
+		FlxTween.color(bpmText, 0.4, flashColor, FlxColor.WHITE);
+		lastBPM = curBPM;
+	}
+	
+	// Salud
+	if (curHealth != lastHealth) {
+		var diff = Math.floor((curHealth - lastHealth) / 2 * 100);
+		var sign = diff > 0 ? "+" : "";
+		healthText.text = "Health: " + healthPercent + "%";
+		var flashColor = (diff > 0) ? FlxColor.LIME : FlxColor.RED;
+		healthText.color = flashColor;
+		healthText.visible = ClientPrefs.data.debugData;
+		healthText.alpha = 0.6;
+		FlxTween.color(healthText, 0.4, flashColor, FlxColor.WHITE);
+		lastHealth = curHealth;
+	}
 
 		if (judgementCounterText != null)
 		{
@@ -1866,13 +1956,14 @@ class PlayState extends MusicBeatState
 				var comboMaximo:Int = maxCombo;
 				judgementCounterText.visible = true;
 				judgementCounterText.text =
-					Language.getPhrase('judgement_eps', 'EPS') + ':  ' + ratingsData[0].hits + '\n' +
-					Language.getPhrase('judgement_sks', 'SKS') + ':  ' + ratingsData[1].hits + '\n' +
-					Language.getPhrase('judgement_gds', 'GDS') + ':  ' + ratingsData[2].hits + '\n' +
-					Language.getPhrase('judgement_bds', 'BDS') + ':  ' + ratingsData[3].hits + '\n' +
-					Language.getPhrase('judgement_shs', 'SHS') + ':  ' + ratingsData[4].hits + '\n' +
-					Language.getPhrase('judgement_mis', 'MIS') + ':  ' + songMisses + '\n' +
-					'Combo: ' + comboActual + ' / ' + comboMaximo;
+					Language.getPhrase('judgement_eps', 'Epics') + ' |:  ' + ratingsData[0].hits + '\n' +
+					Language.getPhrase('judgement_sks', 'Sicks') + ' :  ' + ratingsData[1].hits + '\n' +
+					Language.getPhrase('judgement_gds', 'Goods') + ' :  ' + ratingsData[2].hits + '\n' +
+					Language.getPhrase('judgement_bds', 'Bads') + '  :  ' + ratingsData[3].hits + '\n' +
+					Language.getPhrase('judgement_shs', 'Shits') + ' :  ' + ratingsData[4].hits + '\n' +
+					Language.getPhrase('judgement_mis', 'Misses') + ':  ' + songMisses + '\n' +
+					'Combo:      ' + comboActual + '\n' +
+					'High Combo: ' + comboMaximo;
 			}
 			else
 			{
@@ -2795,6 +2886,7 @@ class PlayState extends MusicBeatState
 	
 		//tryna do MS based judgment due to popular demand
 		var daRating:Rating = Conductor.judgeNote(ratingsData, noteDiff / playbackRate);
+		lastJudName = daRating.name;
 	
 		totalNotesHit += daRating.ratingMod;
 		note.ratingMod = daRating.ratingMod;
@@ -3902,4 +3994,9 @@ class PlayState extends MusicBeatState
 		#end
 		return false;
 	}
+
+	function capitalizeFirst(str:String):String {
+        if (str == null || str.length == 0) return str;
+        return str.substr(0, 1).toUpperCase() + str.substr(1).toLowerCase();
+    }
 }

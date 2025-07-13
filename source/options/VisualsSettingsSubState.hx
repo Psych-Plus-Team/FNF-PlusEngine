@@ -126,6 +126,14 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		);
 		addOption(option);
 
+		var option:Option = new Option(
+			'Debug Data',
+			"Show debug info like scroll speed, BPM, and health.\nUseful if you hide ratings or want to check BPM/speed changes.",
+			'debugData',
+			BOOL
+		);
+		addOption(option);
+
 		var option:Option = new Option('Health Bar Opacity',
 			'How much transparent should the health bar and icons be.',
 			'healthBarAlpha',
