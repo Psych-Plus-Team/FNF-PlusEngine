@@ -38,6 +38,11 @@ class JudCounter extends FlxTypedGroup<FlxText>
     // Variables para el efecto bump
     var bumpTweens:Map<FlxText, FlxTween> = new Map<FlxText, FlxTween>();
 
+    // ← CACHE DE TRADUCCIONES PARA OPTIMIZACIÓN
+    var cachedLabels:Array<String> = [];
+    var lastVisibilityState:Bool = false;
+    var lastValues:Array<Int> = [-1, -1, -1, -1, -1, -1, -1, -1]; // Cache para evitar actualizaciones innecesarias
+
     // Configuración
     public var baseX:Float = 10;
     public var baseY:Float = 0;
@@ -55,21 +60,37 @@ class JudCounter extends FlxTypedGroup<FlxText>
         if (baseY == 0)
             baseY = (FlxG.height / 2) - 100;
 
+        // ← INICIALIZAR CACHE DE TRADUCCIONES
+        cacheLabels();
         createTexts();
         updateVisibility();
     }
 
+    // ← NUEVA FUNCIÓN PARA CACHEAR TRADUCCIONES - AHORA OPTIMIZADA
+    function cacheLabels():Void {
+        var keys = [
+            'judgement_epics', 'judgement_sicks', 'judgement_goods', 'judgement_bads',
+            'judgement_shits', 'judgement_misses', 'judgement_combo', 'judgement_max_combo'
+        ];
+        var defaults = [
+            'Epics', 'Sicks', 'Goods', 'Bads', 'Shits', 'Misses', 'Combo', 'M. Combo'
+        ];
+        
+        // ← USAR LA NUEVA FUNCIÓN OPTIMIZADA DEL SISTEMA Language
+        cachedLabels = Language.cacheSpecificPhrases(keys, defaults);
+    }
+
     function createTexts()
     {
-        // Crear cada texto con su color específico y traducción
-        epicsText = createJudgmentText(Language.getPhrase('judgement_epics', 'Epics') + ':  0', EPICS_COLOR, 0);
-        sicksText = createJudgmentText(Language.getPhrase('judgement_sicks', 'Sicks') + ':  0', SICKS_COLOR, 1);
-        goodsText = createJudgmentText(Language.getPhrase('judgement_goods', 'Goods') + ':  0', GOODS_COLOR, 2);
-        badsText = createJudgmentText(Language.getPhrase('judgement_bads', 'Bads') + ':   0', BADS_COLOR, 3);
-        shitsText = createJudgmentText(Language.getPhrase('judgement_shits', 'Shits') + ':  0', SHITS_COLOR, 4);
-        missesText = createJudgmentText(Language.getPhrase('judgement_misses', 'Misses') + ': 0', MISSES_COLOR, 5);
-        comboText = createJudgmentText(Language.getPhrase('judgement_combo', 'Combo') + ':    0', COMBO_COLOR, 6);
-        maxComboText = createJudgmentText(Language.getPhrase('judgement_max_combo', 'M. Combo') + ': 0', MAX_COMBO_COLOR, 7);
+        // ← USAR CACHE EN LUGAR DE LLAMADAS REPETIDAS A Language.getPhrase
+        epicsText = createJudgmentText(cachedLabels[0] + ':  0', EPICS_COLOR, 0);
+        sicksText = createJudgmentText(cachedLabels[1] + ':  0', SICKS_COLOR, 1);
+        goodsText = createJudgmentText(cachedLabels[2] + ':  0', GOODS_COLOR, 2);
+        badsText = createJudgmentText(cachedLabels[3] + ':   0', BADS_COLOR, 3);
+        shitsText = createJudgmentText(cachedLabels[4] + ':  0', SHITS_COLOR, 4);
+        missesText = createJudgmentText(cachedLabels[5] + ': 0', MISSES_COLOR, 5);
+        comboText = createJudgmentText(cachedLabels[6] + ':    0', COMBO_COLOR, 6);
+        maxComboText = createJudgmentText(cachedLabels[7] + ': 0', MAX_COMBO_COLOR, 7);
 
         // Agregar al grupo
         add(epicsText);
@@ -94,30 +115,60 @@ class JudCounter extends FlxTypedGroup<FlxText>
 
     public function updateCounter(ratingsData:Array<Rating>, songMisses:Int, combo:Int, maxCombo:Int)
     {
-        if (!ClientPrefs.data.judgementCounter) {
+        var currentVisible = ClientPrefs.data.judgementCounter;
+        
+        // ← SOLO ACTUALIZAR VISIBILIDAD SI REALMENTE CAMBIÓ
+        if (currentVisible != lastVisibilityState) {
             updateVisibility();
-            return;
+            lastVisibilityState = currentVisible;
         }
+        
+        if (!currentVisible) return;
 
-        // Actualizar textos con traducción
-        epicsText.text = Language.getPhrase('judgement_epics', 'Epics') + ': ${ratingsData[0].hits}';
-        sicksText.text = Language.getPhrase('judgement_sicks', 'Sicks') + ': ${ratingsData[1].hits}';
-        goodsText.text = Language.getPhrase('judgement_goods', 'Goods') + ': ${ratingsData[2].hits}';
-        badsText.text = Language.getPhrase('judgement_bads', 'Bads') + ': ${ratingsData[3].hits}';
-        shitsText.text = Language.getPhrase('judgement_shits', 'Shits') + ': ${ratingsData[4].hits}';
-        missesText.text = Language.getPhrase('judgement_misses', 'Misses') + ': $songMisses';
-        comboText.text = Language.getPhrase('judgement_combo', 'Combo') + ': $combo';
-        maxComboText.text = Language.getPhrase('judgement_max_combo', 'M. Combo') + ': $maxCombo';
+        // ← CACHE DE VALORES PARA EVITAR ACTUALIZACIONES INNECESARIAS
+        var newValues = [
+            ratingsData[0].hits,
+            ratingsData[1].hits,
+            ratingsData[2].hits,
+            ratingsData[3].hits,
+            ratingsData[4].hits,
+            songMisses,
+            combo,
+            maxCombo
+        ];
 
-        updateVisibility();
+        // ← SOLO ACTUALIZAR TEXTOS QUE REALMENTE CAMBIARON
+        for (i in 0...newValues.length) {
+            if (newValues[i] != lastValues[i]) {
+                updateSingleText(i, newValues[i]);
+                lastValues[i] = newValues[i];
+            }
+        }
+    }
+
+    // ← NUEVA FUNCIÓN OPTIMIZADA PARA ACTUALIZAR TEXTOS INDIVIDUALES
+    function updateSingleText(index:Int, value:Int):Void {
+        switch (index) {
+            case 0: epicsText.text = cachedLabels[0] + ': $value';
+            case 1: sicksText.text = cachedLabels[1] + ': $value';
+            case 2: goodsText.text = cachedLabels[2] + ': $value';
+            case 3: badsText.text = cachedLabels[3] + ': $value';
+            case 4: shitsText.text = cachedLabels[4] + ': $value';
+            case 5: missesText.text = cachedLabels[5] + ': $value';
+            case 6: comboText.text = cachedLabels[6] + ': $value';
+            case 7: maxComboText.text = cachedLabels[7] + ': $value';
+        }
     }
 
     public function updateVisibility()
     {
         var shouldShow = ClientPrefs.data.judgementCounter;
-        forEach(function(text:FlxText) {
-            text.visible = shouldShow;
-        });
+        // ← OPTIMIZACIÓN: Solo usar forEach si es necesario
+        if (shouldShow != lastVisibilityState) {
+            forEach(function(text:FlxText) {
+                text.visible = shouldShow;
+            });
+        }
     }
 
     // Efecto bump cuando se acierta una nota
@@ -138,9 +189,11 @@ class JudCounter extends FlxTypedGroup<FlxText>
 
         if (targetText == null) return;
 
-        // Cancelar tween anterior si existe
-        if (bumpTweens.exists(targetText) && bumpTweens.get(targetText) != null) {
-            bumpTweens.get(targetText).cancel();
+        // ← OPTIMIZACIÓN: Cancelar tween anterior de forma más eficiente
+        var existingTween = bumpTweens.get(targetText);
+        if (existingTween != null) {
+            existingTween.cancel();
+            bumpTweens.remove(targetText);
         }
 
         // Efecto bump
@@ -160,9 +213,11 @@ class JudCounter extends FlxTypedGroup<FlxText>
     {
         if (!ClientPrefs.data.judgementCounter) return;
 
-        // Bump para combo actual - más sutil
-        if (bumpTweens.exists(comboText) && bumpTweens.get(comboText) != null) {
-            bumpTweens.get(comboText).cancel();
+        // ← OPTIMIZACIÓN: Mejorar cancelación de tweens
+        var existingTween = bumpTweens.get(comboText);
+        if (existingTween != null) {
+            existingTween.cancel();
+            bumpTweens.remove(comboText);
         }
 
         comboText.scale.set(1.5, 1.5);
@@ -180,8 +235,10 @@ class JudCounter extends FlxTypedGroup<FlxText>
     {
         if (!ClientPrefs.data.judgementCounter) return;
 
-        if (bumpTweens.exists(maxComboText) && bumpTweens.get(maxComboText) != null) {
-            bumpTweens.get(maxComboText).cancel();
+        var existingTween = bumpTweens.get(maxComboText);
+        if (existingTween != null) {
+            existingTween.cancel();
+            bumpTweens.remove(maxComboText);
         }
 
         maxComboText.scale.set(1.5, 1.5);
@@ -199,8 +256,10 @@ class JudCounter extends FlxTypedGroup<FlxText>
     {
         if (!ClientPrefs.data.judgementCounter) return;
 
-        if (bumpTweens.exists(missesText) && bumpTweens.get(missesText) != null) {
-            bumpTweens.get(missesText).cancel();
+        var existingTween = bumpTweens.get(missesText);
+        if (existingTween != null) {
+            existingTween.cancel();
+            bumpTweens.remove(missesText);
         }
 
         missesText.scale.set(1.5, 1.5);
@@ -219,6 +278,15 @@ class JudCounter extends FlxTypedGroup<FlxText>
         forEach(function(text:FlxText) {
             text.cameras = cameras;
         });
+    }
+
+    // ← NUEVA FUNCIÓN PARA ACTUALIZAR TRADUCCIONES CUANDO CAMBIE EL IDIOMA
+    public function refreshLanguage():Void {
+        cacheLabels();
+        // Forzar actualización completa
+        for (i in 0...lastValues.length) {
+            lastValues[i] = -1;
+        }
     }
 
     // Reposicionar el contador

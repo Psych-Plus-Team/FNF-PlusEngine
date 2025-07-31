@@ -250,6 +250,14 @@ class PlayState extends MusicBeatState
 	var cameraBopFrequency:Float = 1;
     var cameraBopIntensity:Float = 1;
 	var cameraBopEnabled:Bool = false;
+	
+	// ← VARIABLES DE OPTIMIZACIÓN
+	var timeUpdateTimer:Float = 0;
+	var TIME_UPDATE_INTERVAL:Float = 1.0; // Actualizar cada segundo
+	var debugUpdateTimer:Float = 0;
+	var DEBUG_UPDATE_INTERVAL:Float = 0.1; // Actualizar cada 100ms
+	var missSpritesPool:Array<FlxSprite> = [];
+	var MAX_MISS_SPRITES:Int = 3;
 	var endCountdownText:FlxText = null;
     var lastEndCountdown:Int = -1;
 	var lastJudName:String = "None";
@@ -1317,8 +1325,8 @@ class PlayState extends MusicBeatState
 		var percent:Float = CoolUtil.floorDecimal(ratingPercent * 100, 2);
 		var str:String = percent + '% / ' + ratingName + ' [' + ratingFC + ']';
 	
-		var scoreToShow:Int = displayedScore; // Usar el score animado
-		var scoreStr:String = ClientPrefs.data.abbreviateScore ? abbreviateScore(scoreToShow) : Std.string(scoreToShow);
+		// ← USAR DIRECTAMENTE songScore SIN ANIMACIÓN
+		var scoreStr:String = ClientPrefs.data.abbreviateScore ? abbreviateScore(songScore) : Std.string(songScore);
 	
 		var tempScore:String;
 		if(!instakillOnMiss)
@@ -1881,6 +1889,107 @@ class PlayState extends MusicBeatState
 		return (a << 24) | (r << 16) | (g << 8) | b;
 	}
 
+	// ← NUEVAS FUNCIONES DE OPTIMIZACIÓN
+	function updateVersionText():Void {
+		var now = Date.now();
+		var hourStr = StringTools.lpad(Std.string(now.getHours()), "0", 2);
+		var minStr = StringTools.lpad(Std.string(now.getMinutes()), "0", 2);
+		var timeStr = hourStr + ":" + minStr + Language.getPhrase("time_hrs", "HRS");
+		
+		var dayNames = [
+			Language.getPhrase("day_sunday", "Sunday"),
+			Language.getPhrase("day_monday", "Monday"), 
+			Language.getPhrase("day_tuesday", "Tuesday"),
+			Language.getPhrase("day_wednesday", "Wednesday"),
+			Language.getPhrase("day_thursday", "Thursday"),
+			Language.getPhrase("day_friday", "Friday"),
+			Language.getPhrase("day_saturday", "Saturday")
+		];
+		var monthNames = [
+			Language.getPhrase("month_january", "January"),
+			Language.getPhrase("month_february", "February"),
+			Language.getPhrase("month_march", "March"),
+			Language.getPhrase("month_april", "April"),
+			Language.getPhrase("month_may", "May"),
+			Language.getPhrase("month_june", "June"),
+			Language.getPhrase("month_july", "July"),
+			Language.getPhrase("month_august", "August"),
+			Language.getPhrase("month_september", "September"),
+			Language.getPhrase("month_october", "October"),
+			Language.getPhrase("month_november", "November"),
+			Language.getPhrase("month_december", "December")
+		];
+		
+		var dayName = dayNames[now.getDay()];
+		var monthName = monthNames[now.getMonth()];
+		var dateStr = dayName + " - " + monthName + " " + now.getDate() + ", " + now.getFullYear();
+		
+		var difficultyText = Language.getPhrase("difficulty_" + Difficulty.getString().toLowerCase(), Difficulty.getString());
+		var versionStr = Language.getPhrase("plus_engine_version", "Plus Engine v") + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + difficultyText + ")";
+		
+		versionText.text = timeStr + "\n" + dateStr + "\n" + versionStr;
+	}
+
+	function updateDebugTexts(curSpeed:Float, curBPM:Int, healthPercent:Int):Void {
+		// Velocidad
+		if (curSpeed != lastSpeed) {
+			var exclam = "";
+			var color = 0xFFFFFFFF;
+			var minSpeed = 2.0;
+			var maxSpeed = 4.0;
+			if (curSpeed >= minSpeed) {
+				var t = Math.min((curSpeed - minSpeed) / (maxSpeed - minSpeed), 1);
+				color = lerpColor(0xFFFFFFFF, 0xFFFF8080, t);
+				if (t > 0.66) exclam = "!!!";
+				else if (t > 0.33) exclam = "!!";
+				else exclam = "!";
+			}
+			speedText.text = Language.getPhrase("debug_speed", "Speed") + ": " + Std.string(Math.round(curSpeed * 10) / 10) + "x" + exclam;
+			speedText.color = color;
+			speedText.visible = ClientPrefs.data.debugData;
+			lastSpeed = curSpeed;
+		}
+		
+		// BPM
+		if (curBPM != lastBPM) {
+			var exclam = "";
+			var color = 0xFFFFFFFF;
+			var minBPM = 150.0;
+			var maxBPM = 300.0;
+			if (curBPM >= minBPM) {
+				var t = Math.min((curBPM - minBPM) / (maxBPM - minBPM), 1);
+				color = lerpColor(0xFFFFFFFF, 0xFFFF8080, t);
+				if (t > 0.66) exclam = "!!!";
+				else if (t > 0.33) exclam = "!!";
+				else exclam = "!";
+			}
+			bpmText.text = "BPM: " + Std.string(curBPM) + exclam;
+			bpmText.color = color;
+			bpmText.visible = ClientPrefs.data.debugData;
+			lastBPM = curBPM;
+		}
+		
+		// Salud
+		var curHealth = health;
+		if (curHealth != lastHealth) {
+			var exclam = "";
+			var color = 0xFFFFFFFF;
+			var minHealth = 0.0;
+			var maxHealth = 25.0;
+			if (healthPercent <= maxHealth) {
+				var t = Math.min((maxHealth - healthPercent) / (maxHealth - minHealth), 1);
+				color = lerpColor(0xFFFFFFFF, 0xFFFF8080, t);
+				if (t > 0.66) exclam = "!!!";
+				else if (t > 0.33) exclam = "!!";
+				else exclam = "!";
+			}
+			healthText.text = Language.getPhrase("debug_health", "Health") + ": " + Std.string(Math.round(healthPercent)) + "%" + exclam;
+			healthText.color = color;
+			healthText.visible = ClientPrefs.data.debugData;
+			lastHealth = curHealth;
+		}
+	}
+
 	public var paused:Bool = false;
 	public var canReset:Bool = true;
 	var startedCountdown:Bool = false;
@@ -1931,23 +2040,8 @@ class PlayState extends MusicBeatState
 				openCharacterEditor();
 		}
 
-	    if (displayedScore != songScore)
-        {
-        var diff = songScore - displayedScore;
-        // Cambia el 10 por un número mayor si quieres que vaya más rápido
-        var step = Math.ceil(Math.abs(diff) / 10);
-        if (diff > 0)
-            displayedScore += step;
-        else
-            displayedScore -= step;
-
-        // Evita pasarse
-        if ((diff > 0 && displayedScore > songScore) || (diff < 0 && displayedScore < songScore))
-            displayedScore = songScore;
-
-        updateScoreText();
-        }
-
+		// ← ELIMINADA LA ANIMACIÓN DEL SCORE - Ahora se actualiza directamente
+		
 		if (healthBar.bounds.max != null && health > healthBar.bounds.max)
 			health = healthBar.bounds.max;
 
@@ -1965,49 +2059,15 @@ class PlayState extends MusicBeatState
 					Conductor.songPosition = Conductor.songPosition + 1000 * FlxMath.signOf(timeDiff);
 			}
 		}
-    if (versionText != null)
-	{
-    var now = Date.now();
-    var hourStr = StringTools.lpad(Std.string(now.getHours()), "0", 2);
-    var minStr = StringTools.lpad(Std.string(now.getMinutes()), "0", 2);
-    var timeStr = hourStr + ":" + minStr + Language.getPhrase("time_hrs", "HRS");
-    
-    // ← USAR TRADUCCIONES PARA DÍAS Y MESES
-    var dayNames = [
-        Language.getPhrase("day_sunday", "Sunday"),
-        Language.getPhrase("day_monday", "Monday"), 
-        Language.getPhrase("day_tuesday", "Tuesday"),
-        Language.getPhrase("day_wednesday", "Wednesday"),
-        Language.getPhrase("day_thursday", "Thursday"),
-        Language.getPhrase("day_friday", "Friday"),
-        Language.getPhrase("day_saturday", "Saturday")
-    ];
-    var monthNames = [
-        Language.getPhrase("month_january", "January"),
-        Language.getPhrase("month_february", "February"),
-        Language.getPhrase("month_march", "March"),
-        Language.getPhrase("month_april", "April"),
-        Language.getPhrase("month_may", "May"),
-        Language.getPhrase("month_june", "June"),
-        Language.getPhrase("month_july", "July"),
-        Language.getPhrase("month_august", "August"),
-        Language.getPhrase("month_september", "September"),
-        Language.getPhrase("month_october", "October"),
-        Language.getPhrase("month_november", "November"),
-        Language.getPhrase("month_december", "December")
-    ];
-    
-    var dayName = dayNames[now.getDay()];
-    var monthName = monthNames[now.getMonth()];
-    var dateStr = dayName + " - " + monthName + " " + now.getDate() + ", " + now.getFullYear();
-    
-    // ← TRADUCIR TAMBIÉN EL TEXTO DE VERSIÓN Y DIFICULTAD
-    var difficultyText = Language.getPhrase("difficulty_" + Difficulty.getString().toLowerCase(), Difficulty.getString());
-    var versionStr = Language.getPhrase("plus_engine_version", "Plus Engine v") + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + difficultyText + ")";
-    
-    versionText.text = timeStr + "\n" + dateStr + "\n" + versionStr;
-}
-	if (ghostJText != null) {
+		
+		// ← OPTIMIZAR ACTUALIZACIÓN DE TIEMPO - Solo cada segundo
+		timeUpdateTimer += elapsed;
+		if (versionText != null && timeUpdateTimer >= TIME_UPDATE_INTERVAL) {
+			timeUpdateTimer = 0;
+			updateVersionText();
+		}
+		
+		if (ghostJText != null) {
 		ghostJText.text = capitalizeFirst(lastJudName) + "\nx" + combo;
 		ghostJText.visible = ClientPrefs.data.debugData;
 	}
@@ -2018,66 +2078,17 @@ class PlayState extends MusicBeatState
 		chartingText.visible = chartingMode;
 	}
 
-	var curSpeed = songSpeed;
-	var curBPM = Std.int(Conductor.bpm);
-	var curHealth = health;
-	var healthPercent = Math.floor((curHealth / 2) * 100);
-	
-	// Velocidad
-	if (curSpeed != lastSpeed) {
-		var exclam = "";
-		var color = 0xFFFFFFFF;
-		var minSpeed = 2.0;
-		var maxSpeed = 4.0;
-		if (curSpeed >= minSpeed) {
-			var t = Math.min((curSpeed - minSpeed) / (maxSpeed - minSpeed), 1);
-			color = lerpColor(0xFFFFFFFF, 0xFFFF8080, t);
-			if (t > 0.66) exclam = "!!!";
-			else if (t > 0.33) exclam = "!!";
-			else exclam = "!";
-		}
-		speedText.text = Language.getPhrase("debug_speed", "Speed") + ": " + Std.string(Math.round(curSpeed * 10) / 10) + "x" + exclam;
-		speedText.color = color;
-		speedText.visible = ClientPrefs.data.debugData;
-		lastSpeed = curSpeed;
-	}
-	
-	// BPM
-	if (curBPM != lastBPM) {
-		var exclam = "";
-		var color = 0xFFFFFFFF;
-		var minBPM = 150.0;
-		var maxBPM = 300.0;
-		if (curBPM >= minBPM) {
-			var t = Math.min((curBPM - minBPM) / (maxBPM - minBPM), 1);
-			color = lerpColor(0xFFFFFFFF, 0xFFFF8080, t);
-			if (t > 0.66) exclam = "!!!";
-			else if (t > 0.33) exclam = "!!";
-			else exclam = "!";
-		}
-		bpmText.text = "BPM: " + Std.string(curBPM) + exclam;
-		bpmText.color = color;
-		bpmText.visible = ClientPrefs.data.debugData;
-		lastBPM = curBPM;
-	}
-	
-	// Salud
-	if (curHealth != lastHealth) {
-		var exclam = "";
-		var color = 0xFFFFFFFF;
-		var minHealth = 0.0;
-		var maxHealth = 25.0;
-		if (healthPercent <= maxHealth) {
-			var t = Math.min((maxHealth - healthPercent) / (maxHealth - minHealth), 1);
-			color = lerpColor(0xFFFFFFFF, 0xFFFF8080, t);
-			if (t > 0.66) exclam = "!!!";
-			else if (t > 0.33) exclam = "!!";
-			else exclam = "!";
-		}
-		healthText.text = Language.getPhrase("debug_health", "Health") + ": " + Std.string(Math.round(healthPercent)) + "%" + exclam;
-		healthText.color = color;
-		healthText.visible = ClientPrefs.data.debugData;
-		lastHealth = curHealth;
+	// ← OPTIMIZAR ACTUALIZACIONES DE DEBUG - Solo cada 100ms
+	debugUpdateTimer += elapsed;
+	if (debugUpdateTimer >= DEBUG_UPDATE_INTERVAL) {
+		debugUpdateTimer = 0;
+		
+		var curSpeed = songSpeed;
+		var curBPM = Std.int(Conductor.bpm);
+		var curHealth = health;
+		var healthPercent = Math.floor((curHealth / 2) * 100);
+		
+		updateDebugTexts(curSpeed, curBPM, healthPercent);
 	}
 
 		if (judgementCounter != null)
@@ -3165,14 +3176,44 @@ class PlayState extends MusicBeatState
 
 	private function popUpMiss():Void
 	{
-		if (!ClientPrefs.data.comboStacking && comboGroup.members.length > 0)
+		// ← OPTIMIZACIÓN: Usar object pooling para sprites de miss
+		var missSprite:FlxSprite = null;
+		
+		// Buscar un sprite disponible en el pool
+		for (sprite in missSpritesPool) {
+			if (sprite != null && !sprite.visible) {
+				missSprite = sprite;
+				break;
+			}
+		}
+		
+		// Si no hay sprites disponibles, crear uno nuevo (máximo permitido)
+		if (missSprite == null && missSpritesPool.length < MAX_MISS_SPRITES) {
+			missSprite = new FlxSprite();
+			missSpritesPool.push(missSprite);
+			comboGroup.add(missSprite);
+		}
+		
+		// Si aún no tenemos sprite, reutilizar el más antiguo
+		if (missSprite == null && missSpritesPool.length > 0) {
+			missSprite = missSpritesPool[0];
+			FlxTween.cancelTweensOf(missSprite);
+		}
+		
+		if (missSprite == null) return; // Seguridad
+		
+		// Limpiar combos si no se permite stacking
+		if (!ClientPrefs.data.comboStacking && comboGroup.members.length > MAX_MISS_SPRITES)
 		{
 			for (spr in comboGroup)
 			{
-				if(spr == null) continue;
-
-				comboGroup.remove(spr);
-				spr.destroy();
+				if(spr == null || spr == missSprite) continue;
+				if (!missSpritesPool.contains(spr)) {
+					comboGroup.remove(spr);
+					spr.destroy();
+				} else {
+					spr.visible = false; // Solo ocultar sprites del pool
+				}
 			}
 		}
 
@@ -3186,16 +3227,10 @@ class PlayState extends MusicBeatState
 			antialias = !isPixelStage;
 		}
 
-		// Sprite de "miss" o "combo break"
-		var missSprite:FlxSprite = new FlxSprite();
-		
-		// Intenta cargar sprites de miss en orden de prioridad
-		var missImagePath = uiFolder + 'combo-break' + uiPostfix; // Prioridad 1: combo-break
-		if (Paths.fileExists('images/' + missImagePath + '.png', IMAGE)) {
-		} else {
-			missImagePath = uiFolder + 'miss' + uiPostfix; // Prioridad 2: miss
-			if (Paths.fileExists('images/' + missImagePath + '.png', IMAGE)) {
-			}
+		// Configurar el sprite reutilizado
+		var missImagePath = uiFolder + 'combo-break' + uiPostfix;
+		if (!Paths.fileExists('images/' + missImagePath + '.png', IMAGE)) {
+			missImagePath = uiFolder + 'miss' + uiPostfix;
 		}
 		
 		missSprite.loadGraphic(Paths.image(missImagePath));
@@ -3209,41 +3244,28 @@ class PlayState extends MusicBeatState
 		missSprite.x += ClientPrefs.data.comboOffset[0];
 		missSprite.y -= ClientPrefs.data.comboOffset[1];
 		missSprite.antialiasing = antialias;
-
-		comboGroup.add(missSprite);
+		missSprite.alpha = 1;
 
 		if (!PlayState.isPixelStage)
 		{
 			missSprite.setGraphicSize(Std.int(missSprite.width * 0.7));
+			missSprite.scale.set(0.2, 0.2);
+			FlxTween.tween(missSprite.scale, {x: 0.65, y: 0.65}, 0.08, {ease: FlxEase.circOut});
 		}
 		else
 		{
 			missSprite.setGraphicSize(Std.int(missSprite.width * daPixelZoom * 0.85));
+			missSprite.scale.set(1, 1);
+			FlxTween.tween(missSprite.scale, {x: 4.5, y: 4.5}, 0.08, {ease: FlxEase.circOut});
 		}
 
 		missSprite.updateHitbox();
 
-		// Animación de aparición
-		if (!PlayState.isPixelStage)
-		{
-		    missSprite.scale.set(0.2, 0.2);
-            FlxTween.tween(missSprite.scale, {x: 0.65, y: 0.65}, 0.08, {
-                ease: FlxEase.circOut
-            });
-		}
-		else
-		{
-			missSprite.scale.set(1, 1);
-            FlxTween.tween(missSprite.scale, {x: 4.5, y: 4.5}, 0.08, {
-                ease: FlxEase.circOut
-            });
-		}
-
-		// Hacer que desaparezca
+		// Hacer que desaparezca (reutilizar en lugar de destruir)
 		FlxTween.tween(missSprite, {alpha: 0}, 0.2 / playbackRate, {
 			onComplete: function(tween:FlxTween)
 			{
-				missSprite.destroy();
+				missSprite.visible = false; // En lugar de destroy()
 			},
 			startDelay: Conductor.crochet * 0.001 / playbackRate
 		});
@@ -4095,7 +4117,7 @@ class PlayState extends MusicBeatState
 	public var ratingPercent:Float;
 	public var ratingFC:String;
 	public function RecalculateRating(badHit:Bool = false, scoreBop:Bool = true) {
-		setOnScripts('score', displayedScore);
+		setOnScripts('score', songScore); // ← USAR songScore EN LUGAR DE displayedScore
 		setOnScripts('misses', songMisses);
 		setOnScripts('hits', songHits);
 		setOnScripts('combo', combo);

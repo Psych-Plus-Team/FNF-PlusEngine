@@ -8,6 +8,8 @@ class Language
     public static var defaultLangName:String = 'English (US)'; //en-US
     #if TRANSLATIONS_ALLOWED
     private static var phrases:Map<String, String> = [];
+    // ← NUEVO CACHE PARA KEYS FORMATEADAS
+    private static var keyCache:Map<String, String> = [];
     #end
 
     // ← NUEVO: Lista de idiomas hardcodeados disponibles
@@ -27,6 +29,7 @@ class Language
         #if TRANSLATIONS_ALLOWED
         var langFile:String = ClientPrefs.data.language;
         phrases.clear();
+        keyCache.clear(); // ← LIMPIAR CACHE DE KEYS AL RECARGAR
         var hasPhrases:Bool = false;
         
         // ← NUEVO: Intentar cargar desde archivos .hx hardcodeados primero
@@ -109,11 +112,58 @@ class Language
         return languages;
     }
 
+    // ← NUEVA FUNCIÓN OPTIMIZADA PARA MÚLTIPLES TRADUCCIONES
+    public static function getPhrases(keys:Array<String>, defaultPhrases:Array<String> = null):Array<String> {
+        var results:Array<String> = [];
+        
+        #if TRANSLATIONS_ALLOWED
+        for (i in 0...keys.length) {
+            var key = keys[i];
+            var defaultPhrase = (defaultPhrases != null && i < defaultPhrases.length) ? defaultPhrases[i] : null;
+            
+            var formattedKey:String = keyCache.get(key);
+            if (formattedKey == null) {
+                formattedKey = formatKey(key);
+                keyCache.set(key, formattedKey);
+            }
+            
+            var str:String = phrases.get(formattedKey);
+            if(str == null) str = defaultPhrase;
+            if(str == null) str = key;
+            
+            results.push(str);
+        }
+        #else
+        for (i in 0...keys.length) {
+            var defaultPhrase = (defaultPhrases != null && i < defaultPhrases.length) ? defaultPhrases[i] : keys[i];
+            results.push(defaultPhrase);
+        }
+        #end
+        
+        return results;
+    }
+
+    // ← NUEVA FUNCIÓN PARA CACHE ESPECÍFICO (usado por JudCounter)
+    public static function cacheSpecificPhrases(keys:Array<String>, defaults:Array<String>):Array<String> {
+        var cached:Array<String> = [];
+        for (i in 0...keys.length) {
+            var defaultPhrase = (i < defaults.length) ? defaults[i] : keys[i];
+            cached.push(getPhrase(keys[i], defaultPhrase));
+        }
+        return cached;
+    }
+
     inline public static function getPhrase(key:String, ?defaultPhrase:String, values:Array<Dynamic> = null):String
     {
         #if TRANSLATIONS_ALLOWED
-        //trace(formatKey(key));
-        var str:String = phrases.get(formatKey(key));
+        // ← OPTIMIZACIÓN: Cache de keys formateadas para evitar formatKey() repetitivo
+        var formattedKey:String = keyCache.get(key);
+        if (formattedKey == null) {
+            formattedKey = formatKey(key);
+            keyCache.set(key, formattedKey);
+        }
+        
+        var str:String = phrases.get(formattedKey);
         if(str == null) str = defaultPhrase;
         #else
         var str:String = defaultPhrase;
@@ -122,7 +172,8 @@ class Language
         if(str == null)
             str = key;
         
-        if(values != null)
+        // ← OPTIMIZACIÓN: Solo procesar valores si realmente existen
+        if(values != null && values.length > 0)
             for (num => value in values)
                 str = str.replace('{${num+1}}', value);
 
@@ -133,17 +184,21 @@ class Language
     inline public static function getFileTranslation(key:String)
     {
         #if TRANSLATIONS_ALLOWED
-        var str:String = phrases.get(key.trim().toLowerCase());
+        // ← OPTIMIZACIÓN: Cache directo para file translations (más comunes)
+        var lowerKey = key.trim().toLowerCase();
+        var str:String = phrases.get(lowerKey);
         if(str != null) key = str;
         #end
         return key;
     }
     
     #if TRANSLATIONS_ALLOWED
+    // ← OPTIMIZACIÓN: Regex como variable estática para evitar recrearlo
+    static final hideCharsRegex = ~/[~&\\\/;:<>#.,'"%?!]/g;
+    
     inline static private function formatKey(key:String)
     {
-        final hideChars = ~/[~&\\\/;:<>#.,'"%?!]/g;
-        return hideChars.replace(key.replace(' ', '_'), '').toLowerCase().trim();
+        return hideCharsRegex.replace(key.replace(' ', '_'), '').toLowerCase().trim();
     }
     #end
 
