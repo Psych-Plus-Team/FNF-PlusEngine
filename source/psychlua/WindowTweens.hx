@@ -1,11 +1,13 @@
 package psychlua;
 
 import openfl.Lib;
-import flixel.math.FlxMath;
+import openfl.system.Capabilities;
+import flixel.FlxG;
 import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
-import flixel.FlxG;
 import flixel.system.scaleModes.RatioScaleMode;
+import flixel.util.FlxColor;
+import states.PlayState;
 
 class WindowTweens {
     public static function winTweenX(tag:String, targetX:Int, duration:Float = 1, ease:String = "linear", ?onComplete:Void->Void) {
@@ -108,5 +110,32 @@ class WindowTweens {
             }
         });
         #end
+    }
+
+    public static function winResizeCenter(width:Int, height:Int, ?skip:Bool = false) {
+        var window = Lib.application.window;
+        var camHUD = PlayState.instance.camHUD;
+        var winYRatio = 1;
+        var winY = height * winYRatio;
+        var winX = width * winYRatio;
+
+        FlxTween.cancelTweensOf(window);
+        if (!skip) {
+            FlxTween.tween(window, {
+                width: winX,
+                height: winY,
+                y: Math.floor((Capabilities.screenResolutionY / 2) - (winY / 2)),
+                x: Math.floor((Capabilities.screenResolutionX / 2) - (winX / 2)) + (Capabilities.screenResolutionX * Math.floor(window.x / (Capabilities.screenResolutionX)))
+            }, 0.4, {
+                ease: FlxEase.quadInOut,
+                onComplete: function(_) camHUD.fade(FlxColor.BLACK, 0, true)
+            });
+        } else {
+            FlxG.resizeWindow(width, height);
+            window.y = Math.floor((Capabilities.screenResolutionY / 2) - (winY / 2));
+            window.x = Std.int(Math.floor((Capabilities.screenResolutionX / 2) - (winX / 2)) + (Capabilities.screenResolutionX * Math.floor(window.x / (Capabilities.screenResolutionX))));
+        }
+        FlxG.scaleMode = new RatioScaleMode(true);
+        window.resizable = width == 1280;
     }
 }

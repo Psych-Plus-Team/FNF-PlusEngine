@@ -162,6 +162,8 @@ class HScript extends Iris
 		set('FlxTween', flixel.tweens.FlxTween);
 		set('FlxEase', flixel.tweens.FlxEase);
 		set('FlxColor', CustomFlxColor);
+		set('Capabilities', openfl.system.Capabilities);
+		set('RatioScaleMode', flixel.system.scaleModes.RatioScaleMode);
 		set('Countdown', backend.BaseStage.Countdown);
 		set('PlayState', PlayState);
 		set('Paths', Paths);

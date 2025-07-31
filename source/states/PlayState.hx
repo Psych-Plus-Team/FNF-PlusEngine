@@ -133,7 +133,13 @@ class PlayState extends MusicBeatState
 
 	public var playbackRate(default, set):Float = 1;
 
-    public var originalStrumY:Array<Float> = [];
+	// Variables para guardar el estado original de la ventana
+	var originalWinWidth:Int;
+	var originalWinHeight:Int;
+	var originalWinX:Int;
+	var originalWinY:Int;
+
+	public var originalStrumY:Array<Float> = [];
 
 	public var boyfriendGroup:FlxSpriteGroup;
 	public var dadGroup:FlxSpriteGroup;
@@ -237,18 +243,18 @@ class PlayState extends MusicBeatState
 	public var songMisses:Int = 0;
 	public var scoreTxt:FlxText;
 	public var maxCombo:Int = 0;
-    public var totalNotes:Int = 0;
+	public var totalNotes:Int = 0;
 	var timeTxt:FlxText;
 	var scoreTxtTween:FlxTween;
-    var timeTxtTween:FlxTween;
-    var judgementCounter:JudCounter;
+	var timeTxtTween:FlxTween;
+	var judgementCounter:JudCounter;
 	var ghostJText:FlxText;
 	var popupTimer:FlxTimer = null;
-    var popupVisible:Bool = false;
+	var popupVisible:Bool = false;
 	var turnValue:Int = 10;
 	public var displayedScore:Int = 0;
 	var cameraBopFrequency:Float = 1;
-    var cameraBopIntensity:Float = 1;
+	var cameraBopIntensity:Float = 1;
 	var cameraBopEnabled:Bool = false;
 	
 	// ← VARIABLES DE OPTIMIZACIÓN
@@ -259,7 +265,7 @@ class PlayState extends MusicBeatState
 	var missSpritesPool:Array<FlxSprite> = [];
 	var MAX_MISS_SPRITES:Int = 3;
 	var endCountdownText:FlxText = null;
-    var lastEndCountdown:Int = -1;
+	var lastEndCountdown:Int = -1;
 	var lastJudName:String = "None";
 	var speedText:FlxText;
 	var bpmText:FlxText;
@@ -270,7 +276,7 @@ class PlayState extends MusicBeatState
 	var lastBPM:Int = -1;
 	var lastHealth:Float = -1;
 	var speedAlphaTween:FlxTween = null;
-    var bpmAlphaTween:FlxTween = null;
+	var bpmAlphaTween:FlxTween = null;
 	var healthAlphaTween:FlxTween = null;
 
 	public static var campaignScore:Int = 0;
@@ -328,6 +334,14 @@ class PlayState extends MusicBeatState
 	public static var nextReloadAll:Bool = false;
 	override public function create()
 	{
+		
+		// Guardar el estado original de la ventana al entrar a PlayState
+		var window = openfl.Lib.application.window;
+		originalWinWidth = window.width;
+		originalWinHeight = window.height;
+		originalWinX = window.x;
+		originalWinY = window.y;
+		
 		//trace('Playback Rate: ' + playbackRate);
 		_lastLoadedModDirectory = Mods.currentModDirectory;
 		Paths.clearUnusedMemory();
@@ -542,17 +556,17 @@ class PlayState extends MusicBeatState
 		add(noteGroup);
 
 		// Counter
-	    judgementCounter = new JudCounter(10, (FlxG.height / 2) - 100);
-        judgementCounter.setCameras([camHUD]);
-        add(judgementCounter);
+		judgementCounter = new JudCounter(10, (FlxG.height / 2) - 100);
+		judgementCounter.setCameras([camHUD]);
+		add(judgementCounter);
 
 		ghostJText = new FlxText(18, FlxG.height - 100, 0, "None\nx0", 22);
-        ghostJText.setFormat(Paths.defaultFont(), 22, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        ghostJText.alpha = 0.6;
+		ghostJText.setFormat(Paths.defaultFont(), 22, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		ghostJText.alpha = 0.6;
 		ghostJText.visible = ClientPrefs.data.debugData;
-        ghostJText.scrollFactor.set();
-        ghostJText.cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
-        add(ghostJText);
+		ghostJText.scrollFactor.set();
+		ghostJText.cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+		add(ghostJText);
 
 		// Información de charting - arriba de los otros textos
 		chartingText = new FlxText(14, FlxG.height - 240, 0, "Step: 0\nBeat: 0\nSection: 0", 16);
@@ -587,51 +601,51 @@ class PlayState extends MusicBeatState
 		lastBPM = Std.int(Conductor.bpm);
 		lastHealth = health;
 
-        // Hora, fecha y versión en la esquina inferior izquierda
-        var now = Date.now();
-        var hourStr = StringTools.lpad(Std.string(now.getHours()), "0", 2);
-        var minStr = StringTools.lpad(Std.string(now.getMinutes()), "0", 2);
-        var timeStr = hourStr + ":" + minStr + Language.getPhrase("time_hours", "HRS");
+		// Hora, fecha y versión en la esquina inferior izquierda
+		var now = Date.now();
+		var hourStr = StringTools.lpad(Std.string(now.getHours()), "0", 2);
+		var minStr = StringTools.lpad(Std.string(now.getMinutes()), "0", 2);
+		var timeStr = hourStr + ":" + minStr + Language.getPhrase("time_hours", "HRS");
 
-        // ← USAR TRADUCCIONES PARA DÍAS Y MESES
-        var dayNames = [
-            Language.getPhrase("day_sunday", "Sunday"),
-            Language.getPhrase("day_monday", "Monday"), 
-            Language.getPhrase("day_tuesday", "Tuesday"),
-            Language.getPhrase("day_wednesday", "Wednesday"),
-            Language.getPhrase("day_thursday", "Thursday"),
-            Language.getPhrase("day_friday", "Friday"),
-            Language.getPhrase("day_saturday", "Saturday")
-        ];
-        var monthNames = [
-            Language.getPhrase("month_january", "January"),
-            Language.getPhrase("month_february", "February"),
-            Language.getPhrase("month_march", "March"),
-            Language.getPhrase("month_april", "April"),
-            Language.getPhrase("month_may", "May"),
-            Language.getPhrase("month_june", "June"),
-            Language.getPhrase("month_july", "July"),
-            Language.getPhrase("month_august", "August"),
-            Language.getPhrase("month_september", "September"),
-            Language.getPhrase("month_october", "October"),
-            Language.getPhrase("month_november", "November"),
-            Language.getPhrase("month_december", "December")
-        ];
-        
-        var dayName = dayNames[now.getDay()];
-        var monthName = monthNames[now.getMonth()];
-        var dateStr = dayName + " - " + monthName + " " + now.getDate() + ", " + now.getFullYear();
+		// ← USAR TRADUCCIONES PARA DÍAS Y MESES
+		var dayNames = [
+			Language.getPhrase("day_sunday", "Sunday"),
+			Language.getPhrase("day_monday", "Monday"), 
+			Language.getPhrase("day_tuesday", "Tuesday"),
+			Language.getPhrase("day_wednesday", "Wednesday"),
+			Language.getPhrase("day_thursday", "Thursday"),
+			Language.getPhrase("day_friday", "Friday"),
+			Language.getPhrase("day_saturday", "Saturday")
+		];
+		var monthNames = [
+			Language.getPhrase("month_january", "January"),
+			Language.getPhrase("month_february", "February"),
+			Language.getPhrase("month_march", "March"),
+			Language.getPhrase("month_april", "April"),
+			Language.getPhrase("month_may", "May"),
+			Language.getPhrase("month_june", "June"),
+			Language.getPhrase("month_july", "July"),
+			Language.getPhrase("month_august", "August"),
+			Language.getPhrase("month_september", "September"),
+			Language.getPhrase("month_october", "October"),
+			Language.getPhrase("month_november", "November"),
+			Language.getPhrase("month_december", "December")
+		];
+		
+		var dayName = dayNames[now.getDay()];
+		var monthName = monthNames[now.getMonth()];
+		var dateStr = dayName + " - " + monthName + " " + now.getDate() + ", " + now.getFullYear();
 
-        var versionStr = "Plus Engine v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")";
+		var versionStr = "Plus Engine v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")";
 
-        versionText = new FlxText(10, FlxG.height - 50, FlxG.width,
-            timeStr + "\n" + dateStr + "\n" + versionStr, 16);
-        versionText.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        versionText.scrollFactor.set();
-        versionText.alpha = 0.7;
-        versionText.borderSize = 1;
-        versionText.cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
-        add(versionText);
+		versionText = new FlxText(10, FlxG.height - 50, FlxG.width,
+			timeStr + "\n" + dateStr + "\n" + versionStr, 16);
+		versionText.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionText.scrollFactor.set();
+		versionText.alpha = 0.7;
+		versionText.borderSize = 1;
+		versionText.cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+		add(versionText);
 
 		Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
 		var showTime:Bool = (ClientPrefs.data.timeBarType != 'Disabled');
@@ -660,9 +674,9 @@ class PlayState extends MusicBeatState
 			timeTxt.y += 3;
 		}
 
-        generateSong();
+		generateSong();
 
-        noteGroup.add(grpNoteSplashes);
+		noteGroup.add(grpNoteSplashes);
 		noteGroup.add(grpHoldSplashes);
 
 		camFollow = new FlxObject();
@@ -1338,12 +1352,12 @@ class PlayState extends MusicBeatState
 
 	public dynamic function fullComboFunction()
 	{
-        var epics:Int = ratingsData[0].hits;  
+		var epics:Int = ratingsData[0].hits;  
 		var sicks:Int = ratingsData[1].hits;
 		var goods:Int = ratingsData[2].hits;
 		var bads:Int = ratingsData[3].hits;
 		var shits:Int = ratingsData[4].hits;  
-        
+		
 		ratingFC = "";
 		if(songMisses == 0)
 		{
@@ -1378,16 +1392,16 @@ class PlayState extends MusicBeatState
 	}
 
 	public function doTimeBump():Void {
-        if(timeTxtTween != null)
-            timeTxtTween.cancel();
+		if(timeTxtTween != null)
+			timeTxtTween.cancel();
 
-            timeTxt.scale.set(1.5, 1.5);
-            timeTxtTween = FlxTween.tween(timeTxt.scale, {x: 1, y: 1}, 0.3, {
+			timeTxt.scale.set(1.5, 1.5);
+			timeTxtTween = FlxTween.tween(timeTxt.scale, {x: 1, y: 1}, 0.3, {
 				ease: FlxEase.expoOut, // <-- Easing suave
-                onComplete: function(twn:FlxTween) {
-                    timeTxtTween = null;
-                }
-        });
+				onComplete: function(twn:FlxTween) {
+					timeTxtTween = null;
+				}
+		});
    }
 
 	public function setSongTime(time:Float)
@@ -2092,9 +2106,9 @@ class PlayState extends MusicBeatState
 	}
 
 		if (judgementCounter != null)
-        {
-            judgementCounter.updateCounter(ratingsData, songMisses, combo, maxCombo);
-        }
+		{
+			judgementCounter.updateCounter(ratingsData, songMisses, combo, maxCombo);
+		}
 		if (startingSong)
 		{
 			if (startedCountdown && Conductor.songPosition >= Conductor.offset)
@@ -2861,29 +2875,29 @@ class PlayState extends MusicBeatState
 			playbackRate = 1;
 
 		if (!chartingMode && !cpuControlled && !isStoryMode) {
-                // INICIAR FREAKYMENU ANTES DE IR A RESULTSSTATE
-                FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7, true);
-                
-                MusicBeatState.switchState(new ResultsState({
-                    score: songScore,
-                    prevHighScore: Highscore.getScore(Song.loadedSongName, storyDifficulty),
-                    accuracy: ratingPercent,
-                    epics: ratingsData[0].hits,
-                    sicks: ratingsData[1].hits,
-                    goods: ratingsData[2].hits,
-                    bads: ratingsData[3].hits,
-                    shits: ratingsData[4].hits,
-                    misses: songMisses,
-                    maxCombo: maxCombo,
-                    totalNotes: totalNotes,
-                    songName: SONG.song,
-                    difficulty: Difficulty.getString(),
-                    isMod: Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0,
-                    modFolder: Mods.currentModDirectory,
-                    isPractice: practiceMode,
-                    ratingName: ratingName,
-                    ratingFC: ratingFC
-                }));
+				// INICIAR FREAKYMENU ANTES DE IR A RESULTSSTATE
+				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7, true);
+				
+				MusicBeatState.switchState(new ResultsState({
+					score: songScore,
+					prevHighScore: Highscore.getScore(Song.loadedSongName, storyDifficulty),
+					accuracy: ratingPercent,
+					epics: ratingsData[0].hits,
+					sicks: ratingsData[1].hits,
+					goods: ratingsData[2].hits,
+					bads: ratingsData[3].hits,
+					shits: ratingsData[4].hits,
+					misses: songMisses,
+					maxCombo: maxCombo,
+					totalNotes: totalNotes,
+					songName: SONG.song,
+					difficulty: Difficulty.getString(),
+					isMod: Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0,
+					modFolder: Mods.currentModDirectory,
+					isPractice: practiceMode,
+					ratingName: ratingName,
+					ratingFC: ratingFC
+				}));
 			transitioning = true;
 			return true;
 		}
@@ -3026,19 +3040,19 @@ class PlayState extends MusicBeatState
 			spawnNoteSplashOnNote(note);
 
 		if (judgementCounter != null) {
-            // Determinar el índice del rating basado en el nombre
-            var ratingIndex = -1;
-            for (i in 0...ratingsData.length) {
-                if (ratingsData[i] == daRating) {
-                    ratingIndex = i;
-                    break;
-                }
-            }
-            
-            if (ratingIndex >= 0) {
-                judgementCounter.doBump(ratingIndex);
-            }
-        }
+			// Determinar el índice del rating basado en el nombre
+			var ratingIndex = -1;
+			for (i in 0...ratingsData.length) {
+				if (ratingsData[i] == daRating) {
+					ratingIndex = i;
+					break;
+				}
+			}
+			
+			if (ratingIndex >= 0) {
+				judgementCounter.doBump(ratingIndex);
+			}
+		}
 	
 		if(!cpuControlled) {
 			songScore += score;
@@ -3050,13 +3064,13 @@ class PlayState extends MusicBeatState
 			}
 
 			if (judgementCounter != null) {
-                judgementCounter.doComboBump();
-                
-                // Si es un nuevo máximo combo
-                if (combo > maxCombo) {
-                    judgementCounter.doMaxComboBump();
-                }
-            }
+				judgementCounter.doComboBump();
+				
+				// Si es un nuevo máximo combo
+				if (combo > maxCombo) {
+					judgementCounter.doMaxComboBump();
+				}
+			}
 		}
 
 		var uiFolder:String = "";
@@ -3108,17 +3122,17 @@ class PlayState extends MusicBeatState
 
 		if (!PlayState.isPixelStage)
 		{
-		    rating.scale.set(0.3, 0.3);
-            FlxTween.tween(rating.scale, {x: 0.7, y: 0.7}, 0.08, {
-                ease: FlxEase.circOut
-            });
+			rating.scale.set(0.3, 0.3);
+			FlxTween.tween(rating.scale, {x: 0.7, y: 0.7}, 0.08, {
+				ease: FlxEase.circOut
+			});
 		}
 		else
 		{
 			rating.scale.set(1, 1);
-            FlxTween.tween(rating.scale, {x: 4.5, y: 4.5}, 0.08, {
-                ease: FlxEase.circOut
-            });
+			FlxTween.tween(rating.scale, {x: 4.5, y: 4.5}, 0.08, {
+				ease: FlxEase.circOut
+			});
 		}
 
 		var daLoop:Int = 0;
@@ -3172,9 +3186,9 @@ class PlayState extends MusicBeatState
 			},
 			startDelay: Conductor.crochet * 0.002 / playbackRate
 		});
-    }
+	}
 
-	private function popUpMiss():Void
+  /*private function popUpMiss():Void
 	{
 		// ← OPTIMIZACIÓN: Usar object pooling para sprites de miss
 		var missSprite:FlxSprite = null;
@@ -3269,7 +3283,7 @@ class PlayState extends MusicBeatState
 			},
 			startDelay: Conductor.crochet * 0.001 / playbackRate
 		});
-	}
+	}*/
 
 	public var strumsBlocked:Array<Bool> = [];
 	private function onKeyPress(event:KeyboardEvent):Void
@@ -3534,9 +3548,6 @@ class PlayState extends MusicBeatState
 		var lastCombo:Int = combo;
 		combo = 0;
 
-		// Mostrar sprite de miss en cada fallo (independiente del combo anterior)
-		popUpMiss();
-
 		health -= subtract * healthLoss;
 		songScore -= 10;
 		if(!endingSong) songMisses++;
@@ -3544,8 +3555,8 @@ class PlayState extends MusicBeatState
 		RecalculateRating(true);
 
 		if (judgementCounter != null) {
-            judgementCounter.doMissBump();
-        }
+			judgementCounter.doMissBump();
+		}
 
 		// play character anims
 		var char:Character = boyfriend;
@@ -3566,7 +3577,7 @@ class PlayState extends MusicBeatState
 			}
 		}
 		vocals.volume = 0;
-    }
+	}
 
 	function opponentNoteHit(note:Note):Void
 	{
@@ -3759,6 +3770,14 @@ class PlayState extends MusicBeatState
 	}
 
 	override function destroy() {
+		// Restaurar el estado original de la ventana al salir de PlayState
+		var window = openfl.Lib.application.window;
+		window.width = originalWinWidth;
+		window.height = originalWinHeight;
+		window.x = originalWinX;
+		window.y = originalWinY;
+		flixel.FlxG.scaleMode = new flixel.system.scaleModes.RatioScaleMode(true);
+		window.resizable = true;
 		if (psychlua.CustomSubstate.instance != null)
 		{
 			closeSubState();
@@ -3766,10 +3785,10 @@ class PlayState extends MusicBeatState
 		}
 
 		if (endCountdownText != null) {
-            remove(endCountdownText);
-            endCountdownText.destroy();
-            endCountdownText = null;
-        }
+			remove(endCountdownText);
+			endCountdownText.destroy();
+			endCountdownText = null;
+		}
 
 		#if LUA_ALLOWED
 		for (lua in luaArray)
@@ -3857,10 +3876,10 @@ class PlayState extends MusicBeatState
 		super.beatHit();
 
 		if (cameraBopEnabled && Std.int(curBeat) % Std.int(cameraBopFrequency) == 0)
-        {
-            FlxG.camera.zoom += 0.015 * cameraBopIntensity;
-            camHUD.zoom += 0.03 * cameraBopIntensity;
-        }
+		{
+			FlxG.camera.zoom += 0.015 * cameraBopIntensity;
+			camHUD.zoom += 0.03 * cameraBopIntensity;
+		}
 
 		lastBeatHit = curBeat;
 
@@ -4276,7 +4295,7 @@ class PlayState extends MusicBeatState
 	}
 
 	function capitalizeFirst(str:String):String {
-        if (str == null || str.length == 0) return str;
-        return str.substr(0, 1).toUpperCase() + str.substr(1).toLowerCase();
-    }
+		if (str == null || str.length == 0) return str;
+		return str.substr(0, 1).toUpperCase() + str.substr(1).toLowerCase();
+	}
 }

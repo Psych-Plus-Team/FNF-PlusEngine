@@ -1577,6 +1577,7 @@ class FunkinLua {
 
 		Lua_helper.add_callback(lua, "setWinFSC", function(enable:Bool) setFullscreen(enable));
 		Lua_helper.add_callback(lua, "hideWinBorder", function(enable:Bool) WindowTweens.setWindowBorderless(enable));
+		Lua_helper.add_callback(lua, "setWinRCenter", WindowTweens.winResizeCenter);
 
 		#if DISCORD_ALLOWED DiscordClient.addLuaCallbacks(lua); #end
 		#if ACHIEVEMENTS_ALLOWED Achievements.addLuaCallbacks(lua); #end
