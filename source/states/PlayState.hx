@@ -134,6 +134,7 @@ class PlayState extends MusicBeatState
 	public var playbackRate(default, set):Float = 1;
 
 	// Variables para guardar el estado original de la ventana
+	public var windowResizedByScript:Bool = false;
 	var originalWinWidth:Int;
 	var originalWinHeight:Int;
 	var originalWinX:Int;
@@ -3772,12 +3773,15 @@ class PlayState extends MusicBeatState
 	override function destroy() {
 		// Restaurar el estado original de la ventana al salir de PlayState
 		var window = openfl.Lib.application.window;
-		window.width = originalWinWidth;
-		window.height = originalWinHeight;
-		window.x = originalWinX;
-		window.y = originalWinY;
-		flixel.FlxG.scaleMode = new flixel.system.scaleModes.RatioScaleMode(true);
-		window.resizable = true;
+		if (windowResizedByScript) {
+			window.width = originalWinWidth;
+			window.height = originalWinHeight;
+			window.x = originalWinX;
+			window.y = originalWinY;
+			flixel.FlxG.scaleMode = new flixel.system.scaleModes.RatioScaleMode(true);
+			window.resizable = true;
+		}
+
 		if (psychlua.CustomSubstate.instance != null)
 		{
 			closeSubState();

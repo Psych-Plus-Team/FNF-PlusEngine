@@ -113,6 +113,7 @@ class WindowTweens {
     }
 
     public static function winResizeCenter(width:Int, height:Int, ?skip:Bool = false) {
+        PlayState.instance.windowResizedByScript = true;
         var window = Lib.application.window;
         var camHUD = PlayState.instance.camHUD;
         var winYRatio = 1;

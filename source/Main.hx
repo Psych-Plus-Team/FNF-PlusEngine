@@ -200,6 +200,9 @@ class Main extends Sprite
 			if (FlxG.game != null)
 			resetSpriteCache(FlxG.game);
 		});
+
+
+		Lib.current.stage.addEventListener(openfl.events.KeyboardEvent.KEY_DOWN, onGlobalKeyDown);
 	}
 
 	static function resetSpriteCache(sprite:Sprite):Void {
@@ -258,4 +261,30 @@ class Main extends Sprite
 		Sys.exit(1);
 	}
 	#end
+
+	function onGlobalKeyDown(e:openfl.events.KeyboardEvent):Void
+	{
+	    // Captura de pantalla con C
+	    if (e.keyCode == 67) // 67 = C
+    	{
+        	var bmp = new openfl.display.BitmapData(Std.int(Lib.current.stage.stageWidth), Std.int(Lib.current.stage.stageHeight));
+        	bmp.draw(Lib.current.stage);
+        	var folder = "./screenshots/";
+        	var fileName = folder + 'screenshot_' + Date.now().getTime() + '.png';
+        	#if sys
+        	if (!sys.FileSystem.exists(folder))
+            	sys.FileSystem.createDirectory(folder);
+        	var bytes = bmp.encode(bmp.rect, new openfl.display.PNGEncoderOptions());
+        	sys.io.File.saveBytes(fileName, bytes);
+        	#end
+        	trace('Screenshot saved as ' + fileName);
+    	}
+
+	    // Alternar fullscreen con F11
+	    if (e.keyCode == 122) // 122 = F11
+	    {
+	        var window = Lib.application.window;
+	        window.fullscreen = !window.fullscreen;
+	    }
+	}
 }
