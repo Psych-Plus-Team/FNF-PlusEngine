@@ -22,6 +22,8 @@ class MP4Handler extends FlxSprite
 	private var videoSprite:FlxVideoSprite;
 	private var isCurrentlyPlaying:Bool = false;
 	private var _volume:Float = 1.0;
+	private static var instanceCounter:Int = 0;
+	private var instanceId:Int;
 
 	// Propiedades emuladas
 	public var isPlaying(get, never):Bool;
@@ -33,16 +35,20 @@ class MP4Handler extends FlxSprite
 	{
 		super();
 		
+		instanceId = ++instanceCounter;
+		
 		// Hacer invisible este sprite base
 		makeGraphic(1, 1, 0x00FFFFFF);
 		alpha = 0;
 		visible = false;
 		
 		// NO añadir este sprite base al state
+		
 	}
 
 	public function playVideo(path:String, repeat:Bool = false, pauseMusic:Bool = false):Void
 	{
+		
 		if (FlxG.sound.music != null && pauseMusic)
 			FlxG.sound.music.pause();
 
@@ -64,10 +70,10 @@ class MP4Handler extends FlxSprite
 			// Video cargado exitosamente
 			videoSprite.bitmap.onEndReached.add(onVideoFinished);
 			
-			// Añadir al state para que se renderice
-			FlxG.state.add(videoSprite);
+			// NO añadir automáticamente al state - el script maneja la visualización
+			// Los scripts copian el bitmapData a su propio sprite
 			
-			// Centrar el video en pantalla
+			// Centrar el video en pantalla (por si se añade manualmente)
 			videoSprite.screenCenter();
 			
 			// Simular readyCallback
@@ -107,13 +113,16 @@ class MP4Handler extends FlxSprite
 			}
 			#end
 			
-			// Remover del state si está añadido
+			// Solo remover del state si está realmente añadido
+			// (el MP4Handler no añade automáticamente, pero podría añadirse manualmente)
 			if (FlxG.state.members.contains(videoSprite)) {
 				FlxG.state.remove(videoSprite);
+				trace('MP4Handler[${instanceId}]: Removed videoSprite from state');
 			}
 			
 			videoSprite.destroy();
 			videoSprite = null;
+			trace('MP4Handler[${instanceId}]: VideoSprite cleaned up');
 		}
 	}
 

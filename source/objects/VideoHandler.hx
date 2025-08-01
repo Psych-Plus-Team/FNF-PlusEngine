@@ -47,7 +47,6 @@ class VideoHandler extends FlxSprite
 		super();
 		
 		instanceId = ++instanceCounter;
-		trace('VideoHandler[${instanceId}]: Creating new instance');
 		
 		// Hacer invisible este sprite base, el video se renderiza en videoSprite
 		makeGraphic(1, 1, 0x00FFFFFF);
@@ -60,8 +59,7 @@ class VideoHandler extends FlxSprite
 		
 		// Setup del listener de update
 		updateListener = updateVideo;
-		
-		trace('VideoHandler[${instanceId}]: Instance created successfully');
+	
 	}
 
 	/**
@@ -73,7 +71,6 @@ class VideoHandler extends FlxSprite
 	 */
 	public function playVideo(Path:String, Loop:Dynamic = false, PauseMusic:Dynamic = false):Void
 	{
-		trace('VideoHandler[${instanceId}]: playVideo called with path: $Path, loop: $Loop, pauseMusic: $PauseMusic');
 		
 		var loopBool:Bool = false;
 		var pauseBool:Bool = false;
@@ -95,7 +92,6 @@ class VideoHandler extends FlxSprite
 			pauseBool = PauseMusic == "true" || PauseMusic == "1";
 		}
 
-		trace('VideoHandler: Converted parameters - loop: $loopBool, pauseMusic: $pauseBool');
 
 		pauseMusic = pauseBool;
 
@@ -115,23 +111,17 @@ class VideoHandler extends FlxSprite
 		if (FileSystem.exists(Sys.getCwd() + Path))
 			videoPath = Sys.getCwd() + Path;
 		
-		trace('VideoHandler: Final video path: $videoPath');
 		
 		// Crear el FlxVideoSprite directamente
 		if (videoSprite != null) {
-			trace('VideoHandler: Cleaning up existing video sprite');
 			cleanupVideoSprite();
 		}
 		
 		#if hxcodec
-		trace('VideoHandler: hxcodec available, creating FlxVideoSprite');
 		videoSprite = new FlxVideoSprite(0, 0);
-		trace('VideoHandler: FlxVideoSprite created, attempting to play');
 		var playResult = videoSprite.play(videoPath, loopBool);
-		trace('VideoHandler: Play result: $playResult');
 		
 		if (playResult == 0) {
-			trace('VideoHandler: Video loaded successfully');
 			// Video cargado exitosamente
 			
 			// Registrar tiempo de inicio
@@ -139,30 +129,24 @@ class VideoHandler extends FlxSprite
 			
 			// NO añadir el videoSprite al state directamente
 			// El script lo manejará a través del bitmapData
-			trace('VideoHandler: Video sprite ready for script use');
 			
 			// Centrar el video en pantalla (pero sin añadirlo al state)
 			videoSprite.screenCenter();
-			trace('VideoHandler: Video centered on screen');
 			
 			// Simular el callback de opening
 			if (openingCallback != null) {
-				trace('VideoHandler: Calling opening callback');
 				haxe.Timer.delay(openingCallback, 100);
 			}
 			
 			isCurrentlyPlaying = true;
-			trace('VideoHandler: Video is now playing');
 			
 			// Permitir destrucción después de un tiempo mínimo
 			haxe.Timer.delay(function() {
 				allowDestroy = true;
-				trace('VideoHandler: Destruction now allowed');
 			}, 2000);
 			
 			// NO añadir el callback onEndReached automáticamente
 			// Dejar que el script maneje el ciclo de vida del video
-			trace('VideoHandler: Video ready - script can now control playback');
 			
 			// Configurar volumen inicial
 			haxe.Timer.delay(updateVolumeInternal, 200);
@@ -179,24 +163,20 @@ class VideoHandler extends FlxSprite
 
 	private function onVLCEndReached():Void
 	{
-		trace('VideoHandler: onVLCEndReached called - isCurrentlyPlaying: $isCurrentlyPlaying');
 		
 		// Evitar llamadas múltiples
 		if (!isCurrentlyPlaying) {
-			trace('VideoHandler: onVLCEndReached ignored - video not currently playing');
 			return;
 		}
 		
 		// Verificar que haya pasado suficiente tiempo desde que comenzó el video
 		var currentTime = haxe.Timer.stamp();
 		if (currentTime - videoStartTime < 1.0) { // Al menos 1 segundo
-			trace('VideoHandler: onVLCEndReached ignored - too early (${currentTime - videoStartTime}s)');
 			return;
 		}
 		
 		// Verificar que se permita la destrucción
 		if (!allowDestroy) {
-			trace('VideoHandler: onVLCEndReached ignored - destruction not allowed yet');
 			return;
 		}
 		
@@ -224,27 +204,22 @@ class VideoHandler extends FlxSprite
 
 	private function cleanupVideoSprite():Void
 	{
-		trace('VideoHandler[${instanceId}]: cleanupVideoSprite() called - Stack trace:');
 		trace(haxe.CallStack.toString(haxe.CallStack.callStack()));
 		
 		// No permitir cleanup si no se ha autorizado
 		if (!allowDestroy) {
-			trace('VideoHandler[${instanceId}]: Cleanup blocked - destruction not allowed yet');
 			return;
 		}
 		
 		if (videoSprite != null) {
-			trace('VideoHandler[${instanceId}]: Cleaning up video sprite');
 			// Remover callbacks
 			#if hxcodec
 			if (videoSprite.bitmap != null && videoSprite.bitmap.onEndReached != null) {
 				videoSprite.bitmap.onEndReached.removeAll();
-				trace('VideoHandler: Removed onEndReached callbacks');
 			}
 			#end
 			
 			// NO intentar remover del state ya que no lo añadimos directamente
-			trace('VideoHandler: Video sprite was not added to state directly');
 			
 			videoSprite.destroy();
 			videoSprite = null;
@@ -320,10 +295,8 @@ class VideoHandler extends FlxSprite
 	// Métodos de control de reproducción
 	public function pause():Void 
 	{
-		trace('VideoHandler[${instanceId}]: pause() called - isCurrentlyPlaying: $isCurrentlyPlaying');
 		#if hxcodec
 		if (videoSprite != null) {
-			trace('VideoHandler[${instanceId}]: Pausing video sprite');
 			videoSprite.pause();
 		} else {
 			trace('VideoHandler[${instanceId}]: Cannot pause - videoSprite is null');
@@ -335,10 +308,8 @@ class VideoHandler extends FlxSprite
 
 	public function resume():Void 
 	{
-		trace('VideoHandler[${instanceId}]: resume() called - isCurrentlyPlaying: $isCurrentlyPlaying');
 		#if hxcodec
 		if (videoSprite != null) {
-			trace('VideoHandler[${instanceId}]: Resuming video sprite');
 			videoSprite.resume();
 		} else {
 			trace('VideoHandler[${instanceId}]: Cannot resume - videoSprite is null');
@@ -350,10 +321,8 @@ class VideoHandler extends FlxSprite
 
 	public function stop():Void 
 	{
-		trace('VideoHandler[${instanceId}]: stop() called - isCurrentlyPlaying: $isCurrentlyPlaying');
 		#if hxcodec
 		if (videoSprite != null) {
-			trace('VideoHandler[${instanceId}]: Stopping video sprite');
 			videoSprite.stop();
 			if (isCurrentlyPlaying) {
 				onVLCEndReached();
@@ -375,14 +344,12 @@ class VideoHandler extends FlxSprite
 		#else
 		playing = false;
 		#end
-		trace('VideoHandler: get_isPlaying() = $playing (isCurrentlyPlaying: $isCurrentlyPlaying, videoSprite != null: ${videoSprite != null})');
 		return playing;
 	}
 
 	private function get_isDisplaying():Bool 
 	{
 		var displaying = isPlaying;
-		trace('VideoHandler: get_isDisplaying() = $displaying');
 		return displaying;
 	}
 
@@ -436,7 +403,6 @@ class VideoHandler extends FlxSprite
 	public function isValid():Bool 
 	{
 		var valid = videoSprite != null && !allowDestroy;
-		trace('VideoHandler[${instanceId}]: isValid() = $valid (videoSprite != null: ${videoSprite != null}, allowDestroy: $allowDestroy)');
 		return valid;
 	}
 	
@@ -446,7 +412,6 @@ class VideoHandler extends FlxSprite
 		#if hxcodec
 		if (videoSprite != null && videoSprite.bitmap != null && isCurrentlyPlaying) {
 			videoSprite.bitmap.onEndReached.add(onVLCEndReached);
-			trace('VideoHandler: End callback manually configured');
 		}
 		#end
 	}
@@ -455,7 +420,6 @@ class VideoHandler extends FlxSprite
 	public function allowDestruction():Void 
 	{
 		allowDestroy = true;
-		trace('VideoHandler[${instanceId}]: Destruction manually allowed');
 	}
 
 	// Propiedad bitmapData para compatibilidad con scripts
@@ -478,11 +442,9 @@ class VideoHandler extends FlxSprite
 
 	override function destroy():Void 
 	{
-		trace('VideoHandler[${instanceId}]: destroy() called - allowDestroy: $allowDestroy');
 		
 		// Bloquear destrucción si no está permitida
 		if (!allowDestroy) {
-			trace('VideoHandler[${instanceId}]: Destroy blocked - destruction not allowed yet');
 			return;
 		}
 		

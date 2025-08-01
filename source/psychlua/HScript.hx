@@ -194,12 +194,11 @@ class HScript extends Iris
 		#end
 		// Functions & Variables
 		set('setVar', function(name:String, value:Dynamic) {
-			trace('HScript: setVar called - name: $name, value: $value, type: ${Type.getClassName(Type.getClass(value))}');
 			
-			// Si es un VideoHandler, guardarlo por separado
-			if (Type.getClassName(Type.getClass(value)) == "objects.VideoHandler") {
+			// Si es un VideoHandler o MP4Handler, guardarlo por separado
+			if (Type.getClassName(Type.getClass(value)) == "objects.VideoHandler" || 
+				Type.getClassName(Type.getClass(value)) == "objects.MP4Handler") {
 				MusicBeatState.getVideoHandlers().set(name, value);
-				trace('HScript: VideoHandler saved to videoHandlers map');
 			} else {
 				MusicBeatState.getVariables().set(name, value);
 			}
