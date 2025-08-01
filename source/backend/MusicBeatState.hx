@@ -22,8 +22,13 @@ class MusicBeatState extends FlxState
 	var _psychCameraInitialized:Bool = false;
 
 	public var variables:Map<String, Dynamic> = new Map<String, Dynamic>();
+	public var videoHandlers:Map<String, Dynamic> = new Map<String, Dynamic>(); // Separar videos de variables normales
+	
 	public static function getVariables()
 		return getState().variables;
+		
+	public static function getVideoHandlers()
+		return getState().videoHandlers;
 
 	override function create() {
 		var skip:Bool = FlxTransitionableState.skipNextTransOut;

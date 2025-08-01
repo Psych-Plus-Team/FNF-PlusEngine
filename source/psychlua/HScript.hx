@@ -152,7 +152,7 @@ class HScript extends Iris
 		set('File', File);
 		set('FileSystem', FileSystem);
 		#end
-		set('FlxG', flixel.FlxG);
+		set('FlxG', CustomFlxG);
 		set('FlxMath', flixel.math.FlxMath);
 		set('FlxSprite', flixel.FlxSprite);
 		set('FlxText', flixel.text.FlxText);
@@ -188,25 +188,51 @@ class HScript extends Iris
 		#if (hxcodec)
 		set('VideoSprite', objects.VideoSprite);
 		set('FlxVideoSprite', hxcodec.flixel.FlxVideoSprite);
+		// Compatibilidad con versiones anteriores
+		set('VideoHandler', objects.VideoHandler);
+		set('MP4Handler', objects.MP4Handler);
 		#end
 		// Functions & Variables
 		set('setVar', function(name:String, value:Dynamic) {
-			MusicBeatState.getVariables().set(name, value);
+			trace('HScript: setVar called - name: $name, value: $value, type: ${Type.getClassName(Type.getClass(value))}');
+			
+			// Si es un VideoHandler, guardarlo por separado
+			if (Type.getClassName(Type.getClass(value)) == "objects.VideoHandler") {
+				MusicBeatState.getVideoHandlers().set(name, value);
+				trace('HScript: VideoHandler saved to videoHandlers map');
+			} else {
+				MusicBeatState.getVariables().set(name, value);
+			}
 			return value;
 		});
 		set('getVar', function(name:String) {
 			var result:Dynamic = null;
-			if(MusicBeatState.getVariables().exists(name)) result = MusicBeatState.getVariables().get(name);
+			
+			// Primero buscar en videoHandlers
+			if(MusicBeatState.getVideoHandlers().exists(name)) {
+				result = MusicBeatState.getVideoHandlers().get(name);
+			} else if(MusicBeatState.getVariables().exists(name)) {
+				result = MusicBeatState.getVariables().get(name);
+				// No hacer trace para variables normales para evitar spam
+			}
 			return result;
 		});
 		set('removeVar', function(name:String)
 		{
+			var removed = false;
+			if(MusicBeatState.getVideoHandlers().exists(name))
+			{
+				MusicBeatState.getVideoHandlers().remove(name);
+				removed = true;
+				trace('HScript: Removed VideoHandler: $name');
+			}
 			if(MusicBeatState.getVariables().exists(name))
 			{
 				MusicBeatState.getVariables().remove(name);
-				return true;
+				removed = true;
+				trace('HScript: Removed variable: $name');
 			}
-			return false;
+			return removed;
 		});
 		set('debugPrint', function(text:String, ?color:FlxColor = null) {
 			if(color == null) color = FlxColor.WHITE;
@@ -332,7 +358,28 @@ class HScript extends Iris
 				if(libPackage.length > 0)
 					str = libPackage + '.';
 
-				set(libName, Type.resolveClass(str + libName));
+			// Compatibilidad con rutas antiguas de hxcodec
+			var compatibilityClass:Dynamic = null;
+			if(libPackage == 'vlc' && libName == 'VideoHandler') {
+				compatibilityClass = objects.VideoHandler;
+				PlayState.instance.addTextToDebug('VideoHandler is from Psych Engine 0.7.3, redirected to FlxVideoSprite', FlxColor.YELLOW);
+			}
+			else if(libPackage == 'vlc' && libName == 'MP4Handler') {
+				compatibilityClass = objects.MP4Handler;
+				PlayState.instance.addTextToDebug('MP4Handler is from Psych Engine 0.6.3, redirected to FlxVideoSprite', FlxColor.YELLOW);
+			}
+			else if(libPackage == 'hxcodec.vlc' && libName == 'VideoHandler') {
+				compatibilityClass = objects.VideoHandler;
+				PlayState.instance.addTextToDebug('VideoHandler is from Psych Engine 0.7.3, redirected to FlxVideoSprite', FlxColor.YELLOW);
+			}
+			else if(libPackage == 'hxcodec.vlc' && libName == 'MP4Handler') {
+				compatibilityClass = objects.MP4Handler;
+				PlayState.instance.addTextToDebug('MP4Handler is from Psych Engine 0.6.3, redirected to FlxVideoSprite', FlxColor.YELLOW);
+			}				if(compatibilityClass != null) {
+					set(libName, compatibilityClass);
+				} else {
+					set(libName, Type.resolveClass(str + libName));
+				}
 			}
 			catch (e:IrisError) {
 				Iris.error(Printer.errorToString(e, false), this.interp.posInfos());
@@ -402,9 +449,30 @@ class HScript extends Iris
 			else if (libName == null)
 				libName = '';
 
-			var c:Dynamic = Type.resolveClass(str + libName);
-			if (c == null)
-				c = Type.resolveEnum(str + libName);
+			var c:Dynamic = null;
+			
+			// Compatibilidad con rutas antiguas de hxcodec
+			if(libPackage == 'vlc' && libName == 'VideoHandler') {
+				c = objects.VideoHandler;
+				PlayState.instance.addTextToDebug('VideoHandler is from Psych Engine 0.7.3, redirected to FlxVideoSprite', FlxColor.YELLOW);
+			}
+			else if(libPackage == 'vlc' && libName == 'MP4Handler') {
+				c = objects.MP4Handler;
+				PlayState.instance.addTextToDebug('MP4Handler is from Psych Engine 0.6.3, redirected to FlxVideoSprite', FlxColor.YELLOW);
+			}
+			else if(libPackage == 'hxcodec.vlc' && libName == 'VideoHandler') {
+				c = objects.VideoHandler;
+				PlayState.instance.addTextToDebug('VideoHandler is from Psych Engine 0.7.3, redirected to FlxVideoSprite', FlxColor.YELLOW);
+			}
+			else if(libPackage == 'hxcodec.vlc' && libName == 'MP4Handler') {
+				c = objects.MP4Handler;
+				PlayState.instance.addTextToDebug('MP4Handler is from Psych Engine 0.6.3, redirected to FlxVideoSprite', FlxColor.YELLOW);
+			}
+			else {
+				c = Type.resolveClass(str + libName);
+				if (c == null)
+					c = Type.resolveEnum(str + libName);
+			}
 
 			if (funk.hscript == null)
 				initHaxeModule(funk);
@@ -491,6 +559,55 @@ class HScript extends Iris
 		}
 
 		return varsToBring = values;
+	}
+}
+
+class CustomFlxG {
+	// Propiedades principales de FlxG
+	public static var state(get, never):Dynamic;
+	public static var game(get, never):Dynamic;
+	public static var sound(get, never):Dynamic;
+	public static var stage(get, never):Dynamic;
+	public static var cameras(get, never):Dynamic;
+	public static var keys(get, never):Dynamic;
+	public static var mouse(get, never):Dynamic;
+	public static var gamepads(get, never):Dynamic;
+	public static var width(get, never):Int;
+	public static var height(get, never):Int;
+	public static var autoPause(get, set):Bool;
+	public static var signals(get, never):Dynamic;
+	
+	// Getters para propiedades
+	static function get_state():Dynamic return FlxG.state;
+	static function get_game():Dynamic return FlxG.game;
+	static function get_sound():Dynamic return FlxG.sound;
+	static function get_stage():Dynamic return FlxG.stage;
+	static function get_cameras():Dynamic return FlxG.cameras;
+	static function get_keys():Dynamic return FlxG.keys;
+	static function get_mouse():Dynamic return FlxG.mouse;
+	static function get_gamepads():Dynamic return FlxG.gamepads;
+	static function get_width():Int return FlxG.width;
+	static function get_height():Int return FlxG.height;
+	static function get_autoPause():Bool return FlxG.autoPause;
+	static function set_autoPause(value:Bool):Bool return FlxG.autoPause = value;
+	static function get_signals():Dynamic return FlxG.signals;
+	
+	// Funciones de compatibilidad para mods antiguos
+	public static function addChildBelowMouse(object:Dynamic, ?IndexModifier:Int = 0):Void {
+		backend.FlxGUtils.addChildBelowMouse(object, IndexModifier);
+	}
+	
+	public static function removeChild(object:Dynamic):Void {
+		backend.FlxGUtils.removeChild(object);
+	}
+	
+	// Delegación de métodos principales de FlxG
+	public static function switchState(nextState:flixel.FlxState):Void {
+		FlxG.switchState(nextState);
+	}
+	
+	public static function resetState():Void {
+		FlxG.resetState();
 	}
 }
 
