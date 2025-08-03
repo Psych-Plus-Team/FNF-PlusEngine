@@ -188,6 +188,7 @@ class HScript extends Iris
 		#if (hxcodec)
 		set('VideoSprite', objects.VideoSprite);
 		set('FlxVideoSprite', hxcodec.flixel.FlxVideoSprite);
+		set('FlxVideo', hxcodec.flixel.FlxVideo);
 		// Compatibilidad con versiones anteriores
 		set('VideoHandler', objects.VideoHandler);
 		set('MP4Handler', objects.MP4Handler);
