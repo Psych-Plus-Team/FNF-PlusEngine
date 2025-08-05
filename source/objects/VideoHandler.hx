@@ -7,13 +7,13 @@ import openfl.events.Event;
 import openfl.display.BitmapData;
 import sys.FileSystem;
 
-#if hxcodec
-import hxcodec.flixel.FlxVideoSprite;
+#if hxvlc
+import hxvlc.flixel.FlxVideoSprite;
 #end
 
 /**
- * Wrapper de compatibilidad para VideoHandler de hxcodec 2.6.0
- * Emula la API original usando FlxVideoSprite internamente
+ * Wrapper de compatibilidad para VideoHandler con hxvlc
+ * Emula la API original de hxcodec usando FlxVideoSprite de hxvlc internamente
  */
 class VideoHandler extends FlxSprite
 {
@@ -117,45 +117,65 @@ class VideoHandler extends FlxSprite
 			cleanupVideoSprite();
 		}
 		
-		#if hxcodec
+		#if hxvlc
 		videoSprite = new FlxVideoSprite(0, 0);
-		var playResult = videoSprite.play(videoPath, loopBool);
 		
-		if (playResult == 0) {
+		// hxvlc usa load() y luego play()
+		if (videoSprite.load(videoPath)) {
 			// Video cargado exitosamente
 			
 			// Registrar tiempo de inicio
 			videoStartTime = haxe.Timer.stamp();
 			
-			// NO añadir el videoSprite al state directamente
-			// El script lo manejará a través del bitmapData
+			// Configurar callback de fin
+			videoSprite.bitmap.onEndReached.add(onVLCEndReached);
 			
 			// Centrar el video en pantalla (pero sin añadirlo al state)
 			videoSprite.screenCenter();
 			
-			// Simular el callback de opening
-			if (openingCallback != null) {
-				haxe.Timer.delay(openingCallback, 100);
+			// Para hxvlc, el loop se maneja diferente
+			// Si queremos loop, recreamos el callback para reiniciar
+			if (loopBool) {
+				// Remover el callback anterior y añadir uno que reinicie
+				videoSprite.bitmap.onEndReached.removeAll();
+				videoSprite.bitmap.onEndReached.add(function() {
+					if (isCurrentlyPlaying) {
+						videoSprite.stop();
+						haxe.Timer.delay(function() {
+							if (videoSprite != null && isCurrentlyPlaying) {
+								videoSprite.play();
+							}
+						}, 50);
+					}
+				});
 			}
 			
-			isCurrentlyPlaying = true;
-			
-			// Permitir destrucción después de un tiempo mínimo
-			haxe.Timer.delay(function() {
-				allowDestroy = true;
-			}, 2000);
-			
-			// NO añadir el callback onEndReached automáticamente
-			// Dejar que el script maneje el ciclo de vida del video
-			
-			// Configurar volumen inicial
-			haxe.Timer.delay(updateVolumeInternal, 200);
+			// Iniciar reproducción
+			if (videoSprite.play()) {
+				// Simular el callback de opening
+				if (openingCallback != null) {
+					haxe.Timer.delay(openingCallback, 100);
+				}
+				
+				isCurrentlyPlaying = true;
+				
+				// Permitir destrucción después de un tiempo mínimo
+				haxe.Timer.delay(function() {
+					allowDestroy = true;
+				}, 2000);
+				
+				// Configurar volumen inicial
+				haxe.Timer.delay(updateVolumeInternal, 200);
+			} else {
+				trace('VideoHandler: Error starting playback: $videoPath');
+				cleanupVideoSprite();
+			}
 		} else {
-			trace('VideoHandler: Error loading video: $videoPath, result code: $playResult');
+			trace('VideoHandler: Error loading video: $videoPath');
 			videoSprite = null;
 		}
 		#else
-		trace('VideoHandler: hxcodec not available');
+		trace('VideoHandler: hxvlc not available');
 		#end
 	}
 
@@ -213,7 +233,7 @@ class VideoHandler extends FlxSprite
 		
 		if (videoSprite != null) {
 			// Remover callbacks
-			#if hxcodec
+			#if hxvlc
 			if (videoSprite.bitmap != null && videoSprite.bitmap.onEndReached != null) {
 				videoSprite.bitmap.onEndReached.removeAll();
 			}
@@ -257,12 +277,12 @@ class VideoHandler extends FlxSprite
 
 	private function updateVolumeInternal():Void
 	{
-		#if hxcodec
+		#if hxvlc
 		if (videoSprite != null && videoSprite.bitmap != null) {
 			var finalVolume = #if FLX_SOUND_SYSTEM 
-				Std.int(((FlxG.sound.muted || !canUseSound) ? 0 : 1) * (FlxG.sound.volume * _volume * 100))
+				Std.int(((FlxG.sound.muted || !canUseSound) ? 0 : 1) * (FlxG.sound.volume * _volume * 125))
 			#else 
-				Std.int(FlxG.sound.volume * _volume * 100)
+				Std.int(_volume * 125)
 			#end;
 			
 			videoSprite.bitmap.volume = finalVolume;
@@ -295,33 +315,33 @@ class VideoHandler extends FlxSprite
 	// Métodos de control de reproducción
 	public function pause():Void 
 	{
-		#if hxcodec
+		#if hxvlc
 		if (videoSprite != null) {
 			videoSprite.pause();
 		} else {
 			trace('VideoHandler[${instanceId}]: Cannot pause - videoSprite is null');
 		}
 		#else
-		trace('VideoHandler[${instanceId}]: Cannot pause - hxcodec not available');
+		trace('VideoHandler[${instanceId}]: Cannot pause - hxvlc not available');
 		#end
 	}
 
 	public function resume():Void 
 	{
-		#if hxcodec
+		#if hxvlc
 		if (videoSprite != null) {
 			videoSprite.resume();
 		} else {
 			trace('VideoHandler[${instanceId}]: Cannot resume - videoSprite is null');
 		}
 		#else
-		trace('VideoHandler[${instanceId}]: Cannot resume - hxcodec not available');
+		trace('VideoHandler[${instanceId}]: Cannot resume - hxvlc not available');
 		#end
 	}
 
 	public function stop():Void 
 	{
-		#if hxcodec
+		#if hxvlc
 		if (videoSprite != null) {
 			videoSprite.stop();
 			if (isCurrentlyPlaying) {
@@ -331,7 +351,7 @@ class VideoHandler extends FlxSprite
 			trace('VideoHandler[${instanceId}]: Cannot stop - videoSprite is null');
 		}
 		#else
-		trace('VideoHandler[${instanceId}]: Cannot stop - hxcodec not available');
+		trace('VideoHandler[${instanceId}]: Cannot stop - hxvlc not available');
 		#end
 	}
 
@@ -339,7 +359,7 @@ class VideoHandler extends FlxSprite
 	private function get_isPlaying():Bool 
 	{
 		var playing = false;
-		#if hxcodec
+		#if hxvlc
 		playing = isCurrentlyPlaying && videoSprite != null;
 		#else
 		playing = false;
@@ -355,18 +375,18 @@ class VideoHandler extends FlxSprite
 
 	private function get_videoWidth():Int 
 	{
-		#if hxcodec
+		#if hxvlc
 		if (videoSprite != null && videoSprite.bitmap != null)
-			return Std.int(videoSprite.bitmap.width);
+			return Std.int(videoSprite.bitmap.bitmapData.width);
 		#end
 		return 0;
 	}
 
 	private function get_videoHeight():Int 
 	{
-		#if hxcodec
+		#if hxvlc
 		if (videoSprite != null && videoSprite.bitmap != null)
-			return Std.int(videoSprite.bitmap.height);
+			return Std.int(videoSprite.bitmap.bitmapData.height);
 		#end
 		return 0;
 	}
@@ -391,7 +411,7 @@ class VideoHandler extends FlxSprite
 
 	public function finishVideo():Void 
 	{
-		#if hxcodec
+		#if hxvlc
 		if (videoSprite != null) {
 			videoSprite.stop();
 			onVLCEndReached();
@@ -409,7 +429,7 @@ class VideoHandler extends FlxSprite
 	// Método para configurar el callback de fin manualmente
 	public function setupEndCallback():Void 
 	{
-		#if hxcodec
+		#if hxvlc
 		if (videoSprite != null && videoSprite.bitmap != null && isCurrentlyPlaying) {
 			videoSprite.bitmap.onEndReached.add(onVLCEndReached);
 		}
@@ -426,7 +446,7 @@ class VideoHandler extends FlxSprite
 	public var bitmapData(get, never):openfl.display.BitmapData;
 	private function get_bitmapData():openfl.display.BitmapData 
 	{
-		#if hxcodec
+		#if hxvlc
 		if (videoSprite != null && videoSprite.bitmap != null)
 			return videoSprite.bitmap.bitmapData;
 		#end

@@ -120,7 +120,6 @@ class JudCounter extends FlxTypedGroup<FlxText>
         // ← SOLO ACTUALIZAR VISIBILIDAD SI REALMENTE CAMBIÓ
         if (currentVisible != lastVisibilityState) {
             updateVisibility();
-            lastVisibilityState = currentVisible;
         }
         
         if (!currentVisible) return;
@@ -163,12 +162,10 @@ class JudCounter extends FlxTypedGroup<FlxText>
     public function updateVisibility()
     {
         var shouldShow = ClientPrefs.data.judgementCounter;
-        // ← OPTIMIZACIÓN: Solo usar forEach si es necesario
-        if (shouldShow != lastVisibilityState) {
-            forEach(function(text:FlxText) {
-                text.visible = shouldShow;
-            });
-        }
+        forEach(function(text:FlxText) {
+            text.visible = shouldShow;
+        });
+        lastVisibilityState = shouldShow;
     }
 
     // Efecto bump cuando se acierta una nota

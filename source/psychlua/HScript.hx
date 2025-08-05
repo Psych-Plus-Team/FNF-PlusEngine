@@ -9,8 +9,8 @@ import psychlua.CustomSubstate;
 import psychlua.FunkinLua;
 #end
 
-#if hxcodec
-import hxcodec.flixel.FlxVideoSprite;
+#if hxvlc
+import hxvlc.flixel.FlxVideoSprite;
 #end
 
 #if HSCRIPT_ALLOWED
@@ -185,10 +185,10 @@ class HScript extends Iris
 		#if flxanimate
 		set('FlxAnimate', FlxAnimate);
 		#end
-		#if (hxcodec)
+		#if (hxvlc)
 		set('VideoSprite', objects.VideoSprite);
-		set('FlxVideoSprite', hxcodec.flixel.FlxVideoSprite);
-		set('FlxVideo', hxcodec.flixel.FlxVideo);
+		set('FlxVideoSprite', hxvlc.flixel.FlxVideoSprite);
+		set('FlxVideo', hxvlc.flixel.FlxVideo);
 		// Compatibilidad con versiones anteriores
 		set('VideoHandler', objects.VideoHandler);
 		set('MP4Handler', objects.MP4Handler);

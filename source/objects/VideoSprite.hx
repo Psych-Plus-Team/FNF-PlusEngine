@@ -5,8 +5,8 @@ import psychlua.LuaUtils;
 import flixel.FlxCamera;
 import psychlua.LuaUtils;
 
-#if hxcodec
-import hxcodec.flixel.FlxVideoSprite;
+#if hxvlc
+import hxvlc.flixel.FlxVideoSprite;
 #end
 
 class VideoSprite extends FlxSpriteGroup {
@@ -22,7 +22,6 @@ class VideoSprite extends FlxSpriteGroup {
 	public var canSkip(default, set):Bool = false;
 
 	private var videoName:String;
-	private var _volume:Float = 1.0;
 
 	public var waiting:Bool = false;
 
@@ -54,15 +53,15 @@ class VideoSprite extends FlxSpriteGroup {
 		add(videoSprite);
 		if(canSkip) this.canSkip = true;
 
-		// callbacks - configurar ANTES de reproducir el video
+		// callbacks
 		if(!shouldLoop) videoSprite.bitmap.onEndReached.add(finishVideo);
 
-		videoSprite.bitmap.onTextureSetup.add(function()
+		videoSprite.bitmap.onFormatSetup.add(function()
 		{
 			/*
-			#if hxcodec
-			var wd:Int = videoSprite.bitmap.width;
-			var hg:Int = videoSprite.bitmap.height;
+			#if hxvlc
+			var wd:Int = videoSprite.bitmap.formatWidth;
+			var hg:Int = videoSprite.bitmap.formatHeight;
 			trace('Video Resolution: ${wd}x${hg}');
 			videoSprite.scale.set(FlxG.width / wd, FlxG.height / hg);
 			#end
@@ -70,16 +69,10 @@ class VideoSprite extends FlxSpriteGroup {
 			videoSprite.setGraphicSize(FlxG.width);
 			videoSprite.updateHitbox();
 			videoSprite.screenCenter();
-			
-			// Configurar volumen del video
-			updateVideoVolume();
 		});
 
-		// start video - mover al final para evitar conflictos
-		videoSprite.play(videoName, shouldLoop);
-		
-		// Configurar volumen inicial después de un pequeño delay
-		haxe.Timer.delay(updateVideoVolume, 200);
+		// start video and adjust resolution to screen size
+		videoSprite.load(videoName, shouldLoop ? ['input-repeat=65545'] : null);
 	}
 
 	var alreadyDestroyed:Bool = false;
@@ -143,10 +136,6 @@ class VideoSprite extends FlxSpriteGroup {
 				return;
 			}
 		}
-		
-		// Actualizar volumen continuamente por si cambia el volumen global
-		updateVideoVolume();
-		
 		super.update(elapsed);
 	}
 
@@ -182,37 +171,8 @@ class VideoSprite extends FlxSpriteGroup {
 		skipSprite.alpha = FlxMath.remapToRange(skipSprite.amount, 0.025, 1, 0, 1);
 	}
 
-	public function play() videoSprite?.resume();
+	public function play() videoSprite?.play();
 	public function resume() videoSprite?.resume();
 	public function pause() videoSprite?.pause();
-	
-	// Método para precargar el video sin reproducirlo inmediatamente
-	public function preload():Void {
-		if (videoSprite != null && videoSprite.bitmap != null) {
-			// El video ya está configurado, solo aplicar ajustes finales
-			videoSprite.setGraphicSize(FlxG.width);
-			videoSprite.updateHitbox();
-			videoSprite.screenCenter();
-		}
-	}
-	
-	function onGamePaused()
-    {
-        pause();
-    }
-
-    function onGameResumed()
-    {
-        resume();
-    }
-	
-	function updateVideoVolume()
-	{
-		if (videoSprite != null && videoSprite.bitmap != null)
-		{
-			// Mantener volumen siempre en 100 (máximo) para cutscenes
-			videoSprite.bitmap.volume = 100;
-		}
-	}
 	#end
 }

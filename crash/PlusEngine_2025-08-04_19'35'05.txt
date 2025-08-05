@@ -1,0 +1,19 @@
+flxanimate/frames/FlxAnimateFrames.hx (line 157)
+flxanimate/PsychFlxAnimate.hx (line 66)
+backend/Paths.hx (line 563)
+states/stages/objects/ABotSpeaker.hx (line 70)
+states/stages/PhillyStreets.hx (line 134)
+backend/BaseStage.hx (line 61)
+states/stages/PhillyStreets.hx (line 25)
+states/PlayState.hx (line 469)
+flixel/FlxGame.hx (line 639)
+flixel/FlxGame.hx (line 726)
+flixel/FlxGame.hx (line 679)
+flixel/FlxGame.hx (line 552)
+openfl/events/EventDispatcher.hx (line 426)
+openfl/display/DisplayObject.hx (line 1398)
+
+Uncaught Error: Null Object Reference
+Please report this error to the GitHub page: https://github.com/LeninAsto/FNF-PlusEngine
+
+> Crash Handler written by: sqirra-rng
