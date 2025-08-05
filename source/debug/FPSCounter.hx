@@ -21,6 +21,11 @@ class FPSCounter extends TextField
 		The current memory usage (WARNING: this is NOT your total program memory usage, rather it shows the garbage collector memory)
 	**/
 	public var memoryMegas(get, never):Float;
+	
+	/**
+		Peak memory usage tracking
+	**/
+	public var memoryPeak(default, null):Float = 0;
 
 	@:noCompletion private var times:Array<Float>;
 
@@ -35,13 +40,21 @@ class FPSCounter extends TextField
 		selectable = false;
 		mouseEnabled = false;
 
-		// Usa la fuente VCR del juego
-		var vcrFont = Paths.defaultFont();
-		defaultTextFormat = new TextFormat(vcrFont, 14, color);
+		// Intentar usar la fuente Aller del juego
+		var allerFont = Paths.font("aller.ttf");
+		var textFormat = new TextFormat(allerFont, 14, color);
+		
+		// Configurar el formato de texto por defecto
+		defaultTextFormat = textFormat;
+		
+		// Intentar embebder la fuente para HTML
+		embedFonts = true;
+		
+		// Texto inicial
+		text = "FPS: 0";
 
 		autoSize = LEFT;
 		multiline = true;
-		text = "FPS: ";
 
 		times = [];
 	}
@@ -86,15 +99,44 @@ class FPSCounter extends TextField
 	}
 
 	public dynamic function updateText():Void {
-		text = 'FPS: ${currentFPS}'
-		+ '\nMemory: ${flixel.util.FlxStringUtil.formatBytes(memoryMegas)}';
-
+		// Actualizar memoria pico
+		var currentMemory = memoryMegas;
+		if (currentMemory > memoryPeak) {
+			memoryPeak = currentMemory;
+		}
+		
+		// Formatear memoria actual y pico
+		var currentMemoryStr = flixel.util.FlxStringUtil.formatBytes(currentMemory);
+		var peakMemoryStr = flixel.util.FlxStringUtil.formatBytes(memoryPeak);
+		
+		// Usar texto normal con formato personalizado en lugar de HTML
+		text = '';
+		
+		// Crear TextFormats con diferentes tamaños
+		var fpsNumberFormat = new TextFormat(Paths.font("aller.ttf"), 24, textColor); // Solo para el número
+		var normalFormat = new TextFormat(Paths.font("aller.ttf"), 14, textColor);    // Para todo lo demás
+		
+		// Construir el texto separando el número del texto "FPS"
+		var fpsNumber = '$currentFPS';
+		var fpsLabel = ' FPS';
+		var memoryText = '\n${currentMemoryStr} / ${peakMemoryStr}';
+		
+		var stateText = '';
 		if (ClientPrefs.data.showStateInFPS) {
 			var stateName = "";
 			if (FlxG.state != null)
 				stateName = Type.getClassName(Type.getClass(FlxG.state));
-			text += '\n$stateName';
+			stateText = '\n$stateName';
 		}
+		
+		// Construir texto completo
+		text = fpsNumber + fpsLabel + memoryText + stateText;
+		
+		// Aplicar formato al número del FPS (solo los primeros caracteres)
+		setTextFormat(fpsNumberFormat, 0, fpsNumber.length);
+		
+		// Aplicar formato normal al resto (desde " FPS" en adelante)
+		setTextFormat(normalFormat, fpsNumber.length, text.length);
 
 		// Interpolación de color según FPS
 		var targetFPS = ClientPrefs.data.framerate;
