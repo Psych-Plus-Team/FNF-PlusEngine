@@ -402,5 +402,6 @@ class EsLA
         "images/storymenu/week5" => "images/es-LA/storymenu/week5",
         "images/storymenu/week6" => "images/es-LA/storymenu/week6",
         "images/storymenu/week7" => "images/es-LA/storymenu/week7",
+        "images/storymenu/weekend" => "images/es-LA/storymenu/weekend"
     ];
 }

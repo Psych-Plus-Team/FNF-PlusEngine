@@ -75,6 +75,17 @@ class TitleState extends MusicBeatState
 			ClientPrefs.loadPrefs();
 			Language.reloadPhrases();
 		}
+		
+		#if CHECK_FOR_UPDATES
+		if (ClientPrefs.data.checkForUpdates) {
+			// Verificación de actualizaciones en TitleState
+			try {
+				var updateVersion = CoolUtil.checkForUpdates();
+			} catch (e:Dynamic) {
+				trace('Error checking for updates: ' + e);
+			}
+		}
+		#end
 
 		curWacky = FlxG.random.getObject(getIntroTextShit());
 

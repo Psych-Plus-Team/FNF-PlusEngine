@@ -70,7 +70,6 @@
 	<define name="CRASH_HANDLER" if="desktop release" />
 
 	<!-- Assets -->
-	<assets path="assets/modchart"  />
 	<assets path="assets/fonts" />
 	<assets path="assets/shared"        exclude="*.ogg" if="web"/>
 	<assets path="assets/shared"        exclude="*.mp3" unless="web"/>
@@ -196,7 +195,7 @@
 	<haxedef name="FM_ENGINE" value="PSYCH"/>
     <haxedef name="FM_ENGINE_VERSION" value="1.0"/>
 	<haxelib name="funkin-modchart" />
-    <haxeflag name="--macro" value="modchart.core.macros.Macro.includeFiles()"/>
+    <haxeflag name="--macro" value="modchart.backend.macros.Macro.includeFiles()"/>
 
 	<!-- _________________________________ Custom _______________________________ -->
 

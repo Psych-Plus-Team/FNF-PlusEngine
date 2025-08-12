@@ -60,6 +60,7 @@ class LoadingState extends MusicBeatState
 	var target:FlxState = null;
 	var stopMusic:Bool = false;
 	var dontUpdate:Bool = false;
+	var loadingStartTime:Float = 0;
 
 	var barGroup:FlxSpriteGroup;
 	var bar:FlxSprite;
@@ -90,6 +91,7 @@ class LoadingState extends MusicBeatState
 	override function create()
 	{
 		persistentUpdate = true;
+		loadingStartTime = haxe.Timer.stamp();
 		barGroup = new FlxSpriteGroup();
 		add(barGroup);
 
@@ -196,6 +198,20 @@ class LoadingState extends MusicBeatState
 	{
 		super.update(elapsed);
 		if (dontUpdate) return;
+
+		// Safety check: if loading takes too long, force completion
+		var currentTime = haxe.Timer.stamp();
+		if (currentTime - loadingStartTime > maxLoadingTime)
+		{
+			trace('WARNING: Loading screen timeout reached after ${maxLoadingTime}s, forcing transition');
+			trace('Current status: loaded=$loaded, loadMax=$loadMax, initialThreadCompleted=$initialThreadCompleted');
+			if (!transitioning)
+			{
+				transitioning = true;
+				onLoad();
+				return;
+			}
+		}
 
 		if (!transitioning)
 		{
@@ -330,15 +346,37 @@ class LoadingState extends MusicBeatState
 
 	static function _loaded()
 	{
+		trace('_loaded() called - Cleaning up loading state');
 		loaded = 0;
 		loadMax = 0;
 		initialThreadCompleted = true;
 		isIntrusive = false;
 
 		FlxTransitionableState.skipNextTransIn = true;
-		if (threadPool != null) threadPool.shutdown(); // kill all workers safely
+		if (threadPool != null) {
+			trace('Shutting down thread pool');
+			try {
+				threadPool.shutdown();
+			} catch (e:Dynamic) {
+				trace('Error shutting down thread pool: $e');
+			}
+		}
 		threadPool = null;
+		
+		if (mutex != null) {
+			trace('Cleaning up mutex');
+			try {
+				// Try to release mutex if it's locked
+				mutex.release();
+			} catch (e:Dynamic) {
+				// Mutex might not be locked, which is fine
+			}
+		}
 		mutex = null;
+		
+		// Clear any remaining data
+		requestedBitmaps.clear();
+		originalBitmapKeys.clear();
 	}
 
 	public static function checkLoaded():Bool
@@ -350,8 +388,16 @@ class LoadingState extends MusicBeatState
 		}
 		requestedBitmaps.clear();
 		originalBitmapKeys.clear();
-		// trace('we checked if loaded');
-		return (loaded >= loadMax && initialThreadCompleted);
+		// trace('we checked if loaded: $loaded/$loadMax, initialThreadCompleted: $initialThreadCompleted');
+		
+		// Safety check: if we've been loading for too long, force completion
+		if (loadMax > 0 && loaded >= loadMax && initialThreadCompleted) 
+		{
+			trace('Loading completed successfully: $loaded/$loadMax');
+			return true;
+		}
+		
+		return false;
 	}
 
 	public static function loadNextDirectory()
@@ -367,6 +413,8 @@ class LoadingState extends MusicBeatState
 	}
 
 	static var isIntrusive:Bool = false;
+	static var loadStartTime:Float = 0;
+	static var maxLoadingTime:Float = 30; // 30 seconds timeout
 	static function getNextState(target:FlxState, stopMusic = false, intrusive:Bool = true):FlxState
 	{
 		#if !SHOW_LOADING_SCREEN
@@ -374,6 +422,7 @@ class LoadingState extends MusicBeatState
 		#end
 
 		LoadingState.isIntrusive = intrusive;
+		loadStartTime = haxe.Timer.stamp();
 		_startPool();
 		loadNextDirectory();
 
@@ -383,6 +432,7 @@ class LoadingState extends MusicBeatState
 		if (stopMusic && FlxG.sound.music != null)
 			FlxG.sound.music.stop();
 
+		var timeoutCounter:Int = 0;
 		while(true)
 		{
 			if(checkLoaded())
@@ -390,7 +440,20 @@ class LoadingState extends MusicBeatState
 				_loaded();
 				break;
 			}
-			else Sys.sleep(0.001);
+			else 
+			{
+				Sys.sleep(0.001);
+				timeoutCounter++;
+				
+				// Safety timeout: if loading takes more than 30 seconds, force completion
+				if (timeoutCounter > 30000) // 30 seconds at 0.001s intervals
+				{
+					trace('WARNING: Loading timeout reached, forcing completion');
+					trace('Current status: loaded=$loaded, loadMax=$loadMax, initialThreadCompleted=$initialThreadCompleted');
+					_loaded();
+					break;
+				}
+			}
 		}
 		return target;
 	}
@@ -691,19 +754,33 @@ class LoadingState extends MusicBeatState
 			#end
 
 			try {
-				if (func() != null) {
+				var result = func();
+				if (result != null) {
 					#if debug
 					var diff = Sys.time() - threadStart;
 					trace('finished preloading $traceData in ${diff}s');
 					#end
-				} else trace('ERROR! fail on preloading $traceData ');
+				} else {
+					trace('ERROR! fail on preloading $traceData - returned null');
+				}
 			}
 			catch(e:Dynamic) {
 				trace('ERROR! fail on preloading $traceData: $e');
 			}
-			// mutex.acquire();
-			loaded++;
-			// mutex.release();
+			
+			// Safely increment loaded counter
+			try {
+				if (mutex != null) {
+					mutex.acquire();
+					loaded++;
+					mutex.release();
+				} else {
+					loaded++; // Fallback if mutex is null
+				}
+			} catch (e:Dynamic) {
+				trace('ERROR! Failed to update loaded counter: $e');
+				loaded++; // Fallback increment
+			}
 		});
 	}
 
@@ -768,33 +845,48 @@ class LoadingState extends MusicBeatState
 	// thread safe sound loader
 	static function preloadSound(key:String, ?path:String, ?modsAllowed:Bool = true, ?beepOnNull:Bool = true):Null<Sound>
 	{
-		var file:String = Paths.getPath(Language.getFileTranslation(key) + '.${Paths.SOUND_EXT}', SOUND, path, modsAllowed);
+		try {
+			var file:String = Paths.getPath(Language.getFileTranslation(key) + '.${Paths.SOUND_EXT}', SOUND, path, modsAllowed);
 
-		//trace('precaching sound: $file');
-		if(!Paths.currentTrackedSounds.exists(file))
-		{
-			if (#if sys FileSystem.exists(file) || #end OpenFlAssets.exists(file, SOUND))
+			//trace('precaching sound: $file');
+			if(!Paths.currentTrackedSounds.exists(file))
 			{
-				var sound:Sound = #if sys Sound.fromFile(file) #else OpenFlAssets.getSound(file, false) #end;
+				if (#if sys FileSystem.exists(file) || #end OpenFlAssets.exists(file, SOUND))
+				{
+					var sound:Sound = #if sys Sound.fromFile(file) #else OpenFlAssets.getSound(file, false) #end;
+					if (mutex != null) {
+						mutex.acquire();
+						Paths.currentTrackedSounds.set(file, sound);
+						mutex.release();
+					} else {
+						Paths.currentTrackedSounds.set(file, sound);
+					}
+				}
+				else if (beepOnNull)
+				{
+					trace('SOUND NOT FOUND: $key, PATH: $path');
+					FlxG.log.error('SOUND NOT FOUND: $key, PATH: $path');
+					return FlxAssets.getSound('flixel/sounds/beep');
+				}
+			}
+			
+			if (mutex != null) {
 				mutex.acquire();
-				Paths.currentTrackedSounds.set(file, sound);
+				Paths.localTrackedAssets.push(file);
 				mutex.release();
+			} else {
+				Paths.localTrackedAssets.push(file);
 			}
-			else if (beepOnNull)
-			{
-				trace('SOUND NOT FOUND: $key, PATH: $path');
-				FlxG.log.error('SOUND NOT FOUND: $key, PATH: $path');
-				return FlxAssets.getSound('flixel/sounds/beep');
-			}
-		}
-		mutex.acquire();
-		Paths.localTrackedAssets.push(file);
-		mutex.release();
 
-		return Paths.currentTrackedSounds.get(file);
+			return Paths.currentTrackedSounds.get(file);
+		}
+		catch(e:Dynamic) {
+			trace('ERROR in preloadSound for $key: $e');
+			return null;
+		}
 	}
 
-	// thread safe sound loader
+	// thread safe bitmap loader
 	static function preloadGraphic(key:String):Null<BitmapData>
 	{
 		try {
@@ -813,10 +905,15 @@ class LoadingState extends MusicBeatState
 					var bitmap:BitmapData = OpenFlAssets.getBitmapData(file, false);
 					#end
 
-					mutex.acquire();
-					requestedBitmaps.set(file, bitmap);
-					originalBitmapKeys.set(file, requestKey);
-					mutex.release();
+					if (mutex != null) {
+						mutex.acquire();
+						requestedBitmaps.set(file, bitmap);
+						originalBitmapKeys.set(file, requestKey);
+						mutex.release();
+					} else {
+						requestedBitmaps.set(file, bitmap);
+						originalBitmapKeys.set(file, requestKey);
+					}
 					return bitmap;
 				}
 				else trace('no such image $key exists');
@@ -826,10 +923,9 @@ class LoadingState extends MusicBeatState
 		}
 		catch(e:haxe.Exception)
 		{
-			trace('ERROR! fail on preloading image $key');
+			trace('ERROR! fail on preloading image $key: ${e.details()}');
+			return null;
 		}
-
-		return null;
 	}
 	
 	#if cpp

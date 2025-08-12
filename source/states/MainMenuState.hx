@@ -17,7 +17,7 @@ enum MainMenuColumn {
 class MainMenuState extends MusicBeatState
 {
 	public static var psychEngineVersion:String = '1.0.4'; // This is also used for Discord RPC
-    public static var plusEngineVersion:String = '0.7.1'; // Nothing interesting =)
+    public static var plusEngineVersion:String = '0.7.2'; // Nothing interesting =)
 	public static var curSelected:Int = 0;
 	public static var curColumn:MainMenuColumn = CENTER;
 	var allowMouse:Bool = true; //Turn this off to block mouse movement in menus
@@ -43,6 +43,7 @@ class MainMenuState extends MusicBeatState
 	var onlineLevelsText:FlxText;
 
 	static var showOutdatedWarning:Bool = true;
+	static var updateWarningShown:Bool = false; // Para mostrar el aviso solo una vez por sesión
 	override function create()
 	{
 		super.create();
@@ -130,21 +131,13 @@ class MainMenuState extends MusicBeatState
 		#end
 		
 		#if CHECK_FOR_UPDATES
-		if (showOutdatedWarning && ClientPrefs.data.checkForUpdates) {
-			// Verificación inmediata sin delays
-			try {
-				var updateVersion = CoolUtil.checkForUpdates();
-						
-				// Verificar inmediatamente después de la llamada
-				if (CoolUtil.hasUpdate && CoolUtil.latestVersion != plusEngineVersion) {
-					substates.OutdatedSubState.updateVersion = CoolUtil.latestVersion;
-					persistentUpdate = false;
-					showOutdatedWarning = false;
-					openSubState(new substates.OutdatedSubState());
-				}
-			} catch (e:Dynamic) {
-				trace('Error checking for updates: ' + e);
-				// No hacer nada si falla la verificación
+		if (showOutdatedWarning && ClientPrefs.data.checkForUpdates && !updateWarningShown) {
+			// Solo mostrar aviso si ya se detectó una actualización disponible y no se ha mostrado antes
+			if (CoolUtil.hasUpdate && CoolUtil.latestVersion != plusEngineVersion) {
+				substates.OutdatedSubState.updateVersion = CoolUtil.latestVersion;
+				persistentUpdate = false;
+				updateWarningShown = true; // Marcar como mostrado para evitar repeticiones
+				openSubState(new substates.OutdatedSubState());
 			}
 		}
 		#end
