@@ -6,7 +6,12 @@ class PtBR
     public static var languageCode:String = "pt-BR";
     
     public static var translations:Map<String, String> = [
-        "outdated_warning" => "Ei mano. Parece que você está usando uma versão desatualizada do Plus Engine ({1}).\n-----------------------------------------------\nPressione ENTER para atualizar para a versão mais recente {2}\nPressione ESCAPE se você já está na versão correta do engine.\nVocê pode desativar este aviso desmarcando a opção (Procurar por Atualizações) no Menu de Opções\n----------------------------------------------\nObrigado por usar o Engine!",
+        "update_available_title" => "Atualização disponível!",
+        "version_comparison" => "Versão atual: {1} => Nova versão: {2}",
+        "loading_changelog" => "Carregando registro de mudanças...",
+        "update_controls" => "Pressione ENTER para atualizar para a versão mais recente\nPressione ESCAPE se você estiver na versão correta do motor\nVocê pode desativar este aviso no Menu de Opções",
+        "changelog_title" => "Novidades:\n{1}",
+        "changelog_error" => "Erro ao carregar registro de mudanças: {1}",
 
         // Gameplay
         "score_text" => "Pontos: {1} | Erros: {2} | Avaliação: {3}",

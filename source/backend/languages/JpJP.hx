@@ -6,7 +6,12 @@ class JpJP
     public static var languageCode:String = "ja-JP";
     
     public static var translations:Map<String, String> = [
-        "outdated_warning" => "ねえ兄弟。あなたは古いバージョンのPlus Engine（{1}）を使用しているようです。\n-----------------------------------------------\n最新バージョン{2}に更新するにはENTERを押してください\n正しいエンジンバージョンをお持ちの場合はESCAPEを押してください。\nオプションメニューで（アップデートを確認）オプションのチェックを外すことで、この警告を無効にできます\n----------------------------------------------\nエンジンをご利用いただきありがとうございます！",
+        "update_available_title" => "アップデート利用可能！",
+        "version_comparison" => "現在のバージョン: {1} => 新しいバージョン: {2}",
+        "loading_changelog" => "変更履歴を読み込み中...",
+        "update_controls" => "最新バージョンに更新するにはENTERを押してください\n正しいエンジンバージョンにいる場合はESCAPEを押してください\nこの警告はオプションメニューで無効にできます",
+        "changelog_title" => "新機能:\n{1}",
+        "changelog_error" => "変更履歴の読み込みエラー: {1}",
 
         // Gameplay
         "score_text" => "スコア: {1} | ミス: {2} | 評価: {3}",

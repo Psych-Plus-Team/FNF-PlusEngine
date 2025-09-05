@@ -6,7 +6,12 @@ class EsLA
     public static var languageCode:String = "es-LA";
     
     public static var translations:Map<String, String> = [
-        "outdated_warning" => "Oye hermano. Parece que estás usando una versión desactualizada de Plus Engine ({1}).\n-----------------------------------------------\nPresiona ENTER para actualizar a la última versión {2}\nPresiona ESCAPE si ya tienes la versión correcta del engine.\nPuedes desactivar esta advertencia desmarcando la opción (Buscar actualizaciones) en el menú de opciones\n----------------------------------------------\n¡Gracias por usar Engine!",
+        "update_available_title" => "¡Actualización disponible!",
+        "version_comparison" => "Versión actual: {1} => Nueva versión: {2}",
+        "loading_changelog" => "Cargando registro de cambios...",
+        "update_controls" => "Presione ENTER para actualizar a la última versión\nPresione ESCAPE si está en la versión correcta del motor\nPuede desactivar esta advertencia en el menú de opciones",
+        "changelog_title" => "Novedades:\n{1}",
+        "changelog_error" => "Error al cargar el registro de cambios: {1}",
 
         // Gameplay
         "score_text" => "Puntuación: {1} | Perdidas: {2} | Clasificación: {3}",
