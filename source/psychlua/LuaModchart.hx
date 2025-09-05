@@ -133,39 +133,6 @@ class LuaModchart
     
     // Función auxiliar para convertir nombres de easing a funciones
     private static function getEaseFunction(easeName:String) {
-        return switch(easeName.toLowerCase()) {
-            case "linear": FlxEase.linear;
-            case "quadIn": FlxEase.quadIn;
-            case "quadOut": FlxEase.quadOut;
-            case "quadInOut": FlxEase.quadInOut;
-            case "cubeIn": FlxEase.cubeIn;
-            case "cubeOut": FlxEase.cubeOut;
-            case "cubeInOut": FlxEase.cubeInOut;
-            case "quartIn": FlxEase.quartIn;
-            case "quartOut": FlxEase.quartOut;
-            case "quartInOut": FlxEase.quartInOut;
-            case "quintIn": FlxEase.quintIn;
-            case "quintOut": FlxEase.quintOut;
-            case "quintInOut": FlxEase.quintInOut;
-            case "sineIn": FlxEase.sineIn;
-            case "sineOut": FlxEase.sineOut;
-            case "sineInOut": FlxEase.sineInOut;
-            case "bounceIn": FlxEase.bounceIn;
-            case "bounceOut": FlxEase.bounceOut;
-            case "bounceInOut": FlxEase.bounceInOut;
-            case "circIn": FlxEase.circIn;
-            case "circOut": FlxEase.circOut;
-            case "circInOut": FlxEase.circInOut;
-            case "expoIn": FlxEase.expoIn;
-            case "expoOut": FlxEase.expoOut;
-            case "expoInOut": FlxEase.expoInOut;
-            case "backIn": FlxEase.backIn;
-            case "backOut": FlxEase.backOut;
-            case "backInOut": FlxEase.backInOut;
-            case "elasticIn": FlxEase.elasticIn;
-            case "elasticOut": FlxEase.elasticOut;
-            case "elasticInOut": FlxEase.elasticInOut;
-            default: FlxEase.linear;
-        }
+        return LuaUtils.getTweenEaseByString(easeName);
     }
 }
