@@ -245,5 +245,13 @@ class ZhHK
 
         // Game UI (mismo path que zh-CN por simplicidad)
         "images/menu_tracks" => "images/zh-HK/Menu_Tracks",
+
+        "editorplaystate_section" => "部分: {1}",
+        "editorplaystate_tip" => "按ESC返回到图表编辑器",
+        "editorplaystate_time" => "时间: {1} / {2}",
+        "editorplaystate_section_current" => "部分: {1}",
+        "editorplaystate_beat" => "节拍: {1}",
+        "editorplaystate_step" => "步骤: {1}",
+        "editorplaystate_score" => "命中: {1} | 失误: {2}"
     ];
 }

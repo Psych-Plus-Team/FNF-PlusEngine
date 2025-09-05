@@ -235,5 +235,13 @@ class JpJP
         "judgement_misses" => "ミス   ",
         "judgement_combo" => "コンボ ",
         "judgement_max_combo" => "最大コンボ",
+
+        "editorplaystate_section" => "セクション: {1}",
+        "editorplaystate_tip" => "ESCを押してチャートエディタに戻る",
+        "editorplaystate_time" => "時間: {1} / {2}",
+        "editorplaystate_section_current" => "セクション: {1}",
+        "editorplaystate_beat" => "ビート: {1}",
+        "editorplaystate_step" => "ステップ: {1}",
+        "editorplaystate_score" => "ヒット: {1} | ミス: {2}"
     ];
 }

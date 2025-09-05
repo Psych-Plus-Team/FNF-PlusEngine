@@ -407,6 +407,14 @@ class EnUS
         "images/storymenu/week5" => "images/storymenu/week5",
         "images/storymenu/week6" => "images/storymenu/week6",
         "images/storymenu/week7" => "images/storymenu/week7",
+
+        "editorplaystate_section" => "Section: {1}",
+        "editorplaystate_tip" => "Press ESC to Go Back to Chart Editor",
+        "editorplaystate_time" => "Time: {1} / {2}",
+        "editorplaystate_section_current" => "Section: {1}",
+        "editorplaystate_beat" => "Beat: {1}",
+        "editorplaystate_step" => "Step: {1}",
+        "editorplaystate_score" => "Hits: {1} | Misses: {2}"
     ];
 }
 

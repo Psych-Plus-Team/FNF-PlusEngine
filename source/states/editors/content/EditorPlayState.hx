@@ -127,13 +127,13 @@ class EditorPlayState extends MusicBeatSubstate
 		scoreTxt.visible = !ClientPrefs.data.hideHud;
 		add(scoreTxt);
 		
-		dataTxt = new FlxText(10, 580, FlxG.width - 20, "Section: 0", 20);
+		dataTxt = new FlxText(10, 580, FlxG.width - 20, Language.getPhrase("editorplaystate_section", "Section: 0"), 20);
 		dataTxt.setFormat(Paths.defaultFont(), 20, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		dataTxt.scrollFactor.set();
 		dataTxt.borderSize = 1.25;
 		add(dataTxt);
 
-		var tipText:FlxText = new FlxText(10, FlxG.height - 24, 0, 'Press ESC to Go Back to Chart Editor', 16);
+		var tipText:FlxText = new FlxText(10, FlxG.height - 24, 0, Language.getPhrase("editorplaystate_tip", "Press ESC to Go Back to Chart Editor"), 16);
 		tipText.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		tipText.borderSize = 2;
 		tipText.scrollFactor.set();
@@ -233,10 +233,10 @@ class EditorPlayState extends MusicBeatSubstate
 		
 		var time:Float = CoolUtil.floorDecimal((Conductor.songPosition - ClientPrefs.data.noteOffset) / 1000, 1);
 		var songLen:Float = CoolUtil.floorDecimal(songLength / 1000, 1);
-		dataTxt.text = 'Time: $time / $songLen' +
-						'\n\nSection: $curSection' +
-						'\nBeat: $curBeat' +
-						'\nStep: $curStep';
+		dataTxt.text = Language.getPhrase("editorplaystate_time", "Time: {1} / {2}", [time, songLen]) +
+						'\n\n' + Language.getPhrase("editorplaystate_section_current", "Section: {1}", [curSection]) +
+						'\n' + Language.getPhrase("editorplaystate_beat", "Beat: {1}", [curBeat]) +
+						'\n' + Language.getPhrase("editorplaystate_step", "Step: {1}", [curStep]);
 		super.update(elapsed);
 	}
 
@@ -901,5 +901,5 @@ class EditorPlayState extends MusicBeatSubstate
 	}
 
 	function updateScore()
-		scoreTxt.text = 'Hits: $songHits | Misses: $songMisses';
+		scoreTxt.text = Language.getPhrase("editorplaystate_score", "Hits: {1} | Misses: {2}", [songHits, songMisses]);
 }

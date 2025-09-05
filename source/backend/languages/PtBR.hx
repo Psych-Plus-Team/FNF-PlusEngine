@@ -393,6 +393,14 @@ class PtBR
 
         // Freeplay
         "images/menu_tracks" => "images/pt-BR/Menu_Tracks",
+
+        "editorplaystate_section" => "Seção: {1}",
+        "editorplaystate_tip" => "Pressione ESC para voltar ao Editor de Gráficos",
+        "editorplaystate_time" => "Tempo: {1} / {2}",
+        "editorplaystate_section_current" => "Seção: {1}",
+        "editorplaystate_beat" => "Beat: {1}",
+        "editorplaystate_step" => "Step: {1}",
+        "editorplaystate_score" => "Notas: {1} | Perdidas: {2}"
     ];
 }
 

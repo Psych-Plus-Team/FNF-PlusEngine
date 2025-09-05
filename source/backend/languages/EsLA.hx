@@ -409,6 +409,13 @@ class EsLA
         "images/storymenu/week5" => "images/es-LA/storymenu/week5",
         "images/storymenu/week6" => "images/es-LA/storymenu/week6",
         "images/storymenu/week7" => "images/es-LA/storymenu/week7",
-        "images/storymenu/weekend" => "images/es-LA/storymenu/weekend"
+        "images/storymenu/weekend" => "images/es-LA/storymenu/weekend",
+
+        "editorplaystate_section" => "Seccion: 0",
+        "editorplaystate_tip" => "Presiona ESC para volver al Editor de Gráficos",
+        "editorplaystate_time" => "Tiempo: {1} / {2}",
+        "editorplaystate_beat" => "Beat: {1}",
+        "editorplaystate_step" => "Step: {1}",
+        "editorplaystate_score" => "Notas: {1} | Perdidas: {2}"
     ];
 }

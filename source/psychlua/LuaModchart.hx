@@ -9,16 +9,6 @@ class LuaModchart
     public static function implement(funk:FunkinLua) {
         var lua:State = funk.lua;
         
-        // Función para inicializar el Manager
-        Lua_helper.add_callback(lua, "initModchart", function() {
-            #if LUA_ALLOWED
-            var playState = states.PlayState.instance;
-            if (Manager.instance == null && playState != null) {
-                playState.add(new Manager());
-            }
-            #end
-        });
-        
         // Agregar modificador
         Lua_helper.add_callback(lua, "addModifier", function(name:String, ?field:Int = -1) {
             var playState = states.PlayState.instance;
@@ -89,17 +79,6 @@ class LuaModchart
             if (Manager.instance != null)
                 Manager.instance.setAdd(name, beat, value, player, field);
         });
-        
-        /*
-        - Callback en un beat específico - (arreglando)
-        Lua_helper.add_callback(lua, "callback", function(beat:Float, callbackName:String, ?field:Int = -1) {
-            if (Manager.instance != null) {
-                Manager.instance.callback(beat, function(event:Event) {
-                    funk.call(callbackName, [beat]);
-                }, field);
-            }
-        });
-        */
         
         // Agregar nuevo playfield
         Lua_helper.add_callback(lua, "addPlayfield", function() {
