@@ -197,7 +197,7 @@
 
 	<haxedef name="FM_ENGINE" value="PSYCH"/>
     <haxedef name="FM_ENGINE_VERSION" value="1.0"/>
-	<haxelib name="funkin-modchart" />
+	<haxelib name="funkin-modchart" version="git"/>
     <haxeflag name="--macro" value="modchart.backend.macros.Macro.includeFiles()"/>
 
 	<!-- _________________________________ Custom _______________________________ -->
