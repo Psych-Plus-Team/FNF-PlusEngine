@@ -201,7 +201,7 @@ class HScript extends Iris
 				Type.getClassName(Type.getClass(value)) == "objects.MP4Handler") {
 				MusicBeatState.getVideoHandlers().set(name, value);
 			} else {
-				MusicBeatState.getVariables().set(name, value);
+			MusicBeatState.getVariables().set(name, value);
 			}
 			return value;
 		});
@@ -378,8 +378,8 @@ class HScript extends Iris
 			}				if(compatibilityClass != null) {
 					set(libName, compatibilityClass);
 				} else {
-					set(libName, Type.resolveClass(str + libName));
-				}
+				set(libName, Type.resolveClass(str + libName));
+			}
 			}
 			catch (e:IrisError) {
 				Iris.error(Printer.errorToString(e, false), this.interp.posInfos());
@@ -387,6 +387,47 @@ class HScript extends Iris
 		});
 		#if LUA_ALLOWED
 		set('parentLua', parentLua);
+
+		set("addTouchPad", (DPadMode:String, ActionMode:String) -> {
+			PlayState.instance.makeLuaTouchPad(DPadMode, ActionMode);
+			PlayState.instance.addLuaTouchPad();
+		  });
+  
+		set("removeTouchPad", () -> {
+			PlayState.instance.removeLuaTouchPad();
+		});
+  
+		set("addTouchPadCamera", () -> {
+			if(PlayState.instance.luaTouchPad == null){
+				FunkinLua.luaTrace('addTouchPadCamera: TPAD does not exist.');
+				return;
+			}
+			PlayState.instance.addLuaTouchPadCamera();
+		});
+  
+		set("touchPadJustPressed", function(button:Dynamic):Bool {
+			if(PlayState.instance.luaTouchPad == null){
+			  //FunkinLua.luaTrace('touchPadJustPressed: TPAD does not exist.');
+			  return false;
+			}
+		  return PlayState.instance.luaTouchPadJustPressed(button);
+		});
+  
+		set("touchPadPressed", function(button:Dynamic):Bool {
+			if(PlayState.instance.luaTouchPad == null){
+				//FunkinLua.luaTrace('touchPadPressed: TPAD does not exist.');
+				return false;
+			}
+			return PlayState.instance.luaTouchPadPressed(button);
+		});
+  
+		set("touchPadJustReleased", function(button:Dynamic):Bool {
+			if(PlayState.instance.luaTouchPad == null){
+				//FunkinLua.luaTrace('touchPadJustReleased: TPAD does not exist.');
+				return false;
+			}
+			return PlayState.instance.luaTouchPadJustReleased(button);
+		});
 		#else
 		set('parentLua', null);
 		#end
@@ -470,8 +511,8 @@ class HScript extends Iris
 			}
 			else {
 				c = Type.resolveClass(str + libName);
-				if (c == null)
-					c = Type.resolveEnum(str + libName);
+			if (c == null)
+				c = Type.resolveEnum(str + libName);
 			}
 
 			if (funk.hscript == null)

@@ -19,8 +19,7 @@ Engine based on Psych Engine 1.0.4, with modcharts like NotITG and compatible wi
 - More things will continue to be added in the future...
 
 ### 🤝 Contributions
-- **[Funkin Modchart](https://github.com/TheoDevelops/FunkinModchart) - Developed by TheoDev**
-- Contributions are welcome! If you have ideas, improvements, or fixes, feel free to fork the repo and open a pull request.
+Contributions are welcome! If you have ideas, improvements, or fixes, feel free to fork the repo and open a pull request.
 
 **Thanks for checking out FNF-PlusEngine! If you enjoy the project, leave a ⭐ and share it with other FNF fans.**
 
@@ -28,6 +27,19 @@ Engine based on Psych Engine 1.0.4, with modcharts like NotITG and compatible wi
 
 To learn about new Lua scripts, click [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/TemplatePlusScript.lua).
 To learn about variables Lua for Modcharts, clic [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/DocLuaModchart.md)
+
+## Mobile Credits:
+* Homura - Head Porter of Psych Engine Mobile.
+* Karim - Second Porter of Psych Engine Mobile.
+* Moxie - Helper of Psych Engine Mobile.
+
+### Build Mobile:
+You need have:
+
+- Android Build Tools (Android Studio)
+- Android SDK 4.4.4
+- NDK r21e
+- Java JDK 17
 
 # Psych Team
 

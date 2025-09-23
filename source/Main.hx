@@ -1,16 +1,8 @@
 package;
 
-#if android
-import android.content.Context;
-#end
-
 import debug.FPSCounter;
-
-import flixel.graphics.FlxGraphic;
+import backend.Highscore;
 import flixel.FlxGame;
-import flixel.FlxState;
-import haxe.io.Path;
-import openfl.Assets;
 import openfl.Lib;
 import openfl.display.Sprite;
 import openfl.display.Bitmap;
@@ -19,29 +11,21 @@ import openfl.events.Event;
 import openfl.display.StageScaleMode;
 import lime.app.Application;
 import states.TitleState;
-
 #if HSCRIPT_ALLOWED
 import crowplexus.iris.Iris;
 import psychlua.HScript.HScriptInfos;
 #end
+import mobile.backend.MobileScaleMode;
+import openfl.events.KeyboardEvent;
+import lime.system.System as LimeSystem;
 
 #if (linux || mac)
 import lime.graphics.Image;
 #end
-
-#if desktop
-import backend.ALSoftConfig; // Just to make sure DCE doesn't remove this, since it's not directly referenced anywhere else.
+#if COPYSTATE_ALLOWED
+import states.CopyState;
 #end
-
-//crash handler stuff
-#if CRASH_HANDLER
-import openfl.events.UncaughtErrorEvent;
-import haxe.CallStack;
-import haxe.io.Path;
-#end
-
 import backend.Highscore;
-import objects.Watermark;
 
 // NATIVE API STUFF, YOU CAN IGNORE THIS AND SCROLL //
 #if (linux && !debug)
@@ -63,6 +47,7 @@ class Main extends Sprite
 
 	public static var fpsVar:FPSCounter;
 
+	public static final platform:String = #if mobile "Phones" #else "PCs" #end;
 	public static var watermarkSprite:Sprite = null;
 	public static var watermark:Bitmap = null;
 
@@ -71,24 +56,29 @@ class Main extends Sprite
 	public static function main():Void
 	{
 		Lib.current.addChild(new Main());
+		#if cpp
+		cpp.NativeGc.enable(true);
+		#elseif hl
+		hl.Gc.enable(true);
+		#end
 	}
 
 	public function new()
 	{
 		super();
+		#if mobile
+		#if android
+		StorageUtil.requestPermissions();
+		#end
+		Sys.setCwd(StorageUtil.getStorageDirectory());
+		#end
+		backend.CrashHandler.init();
 
 		#if (cpp && windows)
 		backend.Native.fixScaling();
 		#end
 
-		// Credits to MAJigsaw77 (he's the og author for this code)
-		#if android
-		Sys.setCwd(Path.addTrailingSlash(Context.getExternalFilesDir()));
-		#elseif ios
-		Sys.setCwd(lime.system.System.applicationStorageDirectory);
-		#end
 		#if VIDEOS_ALLOWED
-		// hxcodec doesn't require initialization like hxvlc did
 		hxvlc.util.Handle.init(#if (hxvlc >= "1.8.0")  ['--no-lua'] #end);
 		#end
 
@@ -161,17 +151,24 @@ class Main extends Sprite
 		Controls.instance = new Controls();
 		ClientPrefs.loadDefaultKeys();
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
-		addChild(new FlxGame(game.width, game.height, game.initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
+		#if mobile
+		FlxG.signals.postGameStart.addOnce(() -> {
+			FlxG.scaleMode = new MobileScaleMode();
+		});
+		#end
+		addChild(new FlxGame(game.width, game.height, #if COPYSTATE_ALLOWED !CopyState.checkExistingFiles() ? CopyState : #end game.initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 
-		#if !mobile
 		fpsVar = new FPSCounter(10, 3, 0xFFFFFF);
 		addChild(fpsVar);
 		Lib.current.stage.align = "tl";
 		Lib.current.stage.scaleMode = StageScaleMode.NO_SCALE;
 		if(fpsVar != null) {
 			fpsVar.visible = ClientPrefs.data.showFPS;
+			// Posicionamiento inicial con márgenes constantes
+			var marginX = 10;
+			var marginY = 3;
+			fpsVar.positionFPS(marginX, marginY, 1.0);
 		}
-		#end
 
 		#if (linux || mac) // fix the app icon not showing up on the Linux Panel / Mac Dock
 		var icon = Image.fromFile("icon.png");
@@ -184,19 +181,39 @@ class Main extends Sprite
 		#end
 
 		FlxG.fixedTimestep = false;
-		FlxG.game.focusLostFramerate = 60;
+		FlxG.game.focusLostFramerate = #if mobile 30 #else 60 #end;
+		#if web
+		FlxG.keys.preventDefaultKeys.push(TAB);
+		#else
 		FlxG.keys.preventDefaultKeys = [TAB];
-		
-		#if CRASH_HANDLER
-		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onCrash);
 		#end
 
 		#if DISCORD_ALLOWED
 		DiscordClient.prepare();
 		#end
+		
+		#if desktop FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, toggleFullScreen); #end
+
+		#if mobile
+		#if android FlxG.android.preventDefaultKeys = [BACK]; #end
+		LimeSystem.allowScreenTimeout = ClientPrefs.data.screensaver;
+		#end
+
+		Application.current.window.vsync = ClientPrefs.data.vsync;
 
 		// shader coords fix
 		FlxG.signals.gameResized.add(function (w, h) {
+			// Solo reposicionamiento del FPS, sin escalado
+			if(fpsVar != null) {
+				var marginX = 10;
+				var marginY = 3;
+				// Sin escalado, solo reposicionamiento
+				fpsVar.positionFPS(marginX, marginY, 1.0);
+			}
+			
+			// Solo reposicionamiento de la marca de agua, sin escalado
+			positionWatermark();
+			
 		     if (FlxG.cameras != null) {
 			   for (cam in FlxG.cameras.list) {
 				if (cam != null && cam.filters != null)
@@ -209,8 +226,6 @@ class Main extends Sprite
 		});
 
 		setupGame();
-
-		Lib.current.stage.addEventListener(openfl.events.KeyboardEvent.KEY_DOWN, onGlobalKeyDown);
 	}
 
 	static function resetSpriteCache(sprite:Sprite):Void {
@@ -220,63 +235,27 @@ class Main extends Sprite
 		}
 	}
 
-	// Code was entirely made by sqirra-rng for their fnf engine named "Izzy Engine", big props to them!!!
-	// very cool person for real they don't get enough credit for their work
-	#if CRASH_HANDLER
-	function onCrash(e:UncaughtErrorEvent):Void
-	{
-		var errMsg:String = "";
-		var path:String;
-		var callStack:Array<StackItem> = CallStack.exceptionStack(true);
-		var dateNow:String = Date.now().toString();
-
-		dateNow = dateNow.replace(" ", "_");
-		dateNow = dateNow.replace(":", "'");
-
-		path = "./crash/" + "PlusEngine_" + dateNow + ".txt";
-
-		for (stackItem in callStack)
-		{
-			switch (stackItem)
-			{
-				case FilePos(s, file, line, column):
-					errMsg += file + " (line " + line + ")\n";
-				default:
-					Sys.println(stackItem);
-			}
-		}
-
-		errMsg += "\nUncaught Error: " + e.error;
-		// remove if you're modding and want the crash log message to contain the link
-		// please remember to actually modify the link for the github page to report the issues to.
-		#if officialBuild
-		errMsg += "\nPlease report this error to the GitHub page: https://github.com/LeninAsto/FNF-PlusEngine";
-		#end
-		errMsg += "\n\n> Crash Handler written by: sqirra-rng";
-
-		if (!FileSystem.exists("./crash/"))
-			FileSystem.createDirectory("./crash/");
-
-		File.saveContent(path, errMsg + "\n");
-
-		Sys.println(errMsg);
-		Sys.println("Crash dump saved in " + Path.normalize(path));
-
-		Application.current.window.alert(errMsg, "Error!");
-		#if DISCORD_ALLOWED
-		DiscordClient.shutdown();
-		#end
-		Sys.exit(1);
+	function toggleFullScreen(event:KeyboardEvent) {
+		if (Controls.instance.justReleased('fullscreen'))
+			FlxG.fullscreen = !FlxG.fullscreen;
 	}
-	#end
 
-	function onGlobalKeyDown(e:openfl.events.KeyboardEvent):Void
-	{
-	    // Alternar fullscreen con F11
-	    if (e.keyCode == 122) // 122 = F11
-	    {
-	        var window = Lib.application.window;
-	        window.fullscreen = !window.fullscreen;}
+	function positionWatermark():Void {
+		if (watermarkSprite != null) {
+			// Para el primer tipo de marca de agua (watermarkSprite)
+			var marginX = 10;
+			var marginY = 10;
+			var stageW = openfl.Lib.current.stage.stageWidth;
+			var scale = 0.85;
+			watermarkSprite.x = stageW - watermark.width * scale - marginX;
+			watermarkSprite.y = marginY;
+		}
+		if (watermark != null && watermark.parent == this) {
+			// Para el segundo tipo de marca de agua (watermark directo)
+			var scale = 0.85;
+			watermark.x = Lib.current.stage.stageWidth - watermark.width * Math.abs(watermark.scaleX) + 110;
+			watermark.y = Lib.current.stage.stageHeight - watermark.height * scale - 30;
+		}
 	}
 
 	private function setupGame():Void
@@ -292,15 +271,12 @@ class Main extends Sprite
 			watermark.smoothing = true;
 			watermarkSprite = new openfl.display.Sprite();
 			watermarkSprite.addChild(watermark);
+			// Tamaño fijo sin escalado dinámico
 			var scale:Float = 0.85;
 			watermark.scaleX = scale;
 			watermark.scaleY = scale;
-			var marginX = 10;
-			var marginY = 10;
-			var stageW = openfl.Lib.current.stage.stageWidth;
-			var stageH = openfl.Lib.current.stage.stageHeight;
-			watermarkSprite.x = stageW - watermark.width * scale - marginX;
-			watermarkSprite.y = marginY;
+			// Posicionamiento inicial
+			positionWatermark();
 			watermarkSprite.alpha = 0.5;
 			watermarkSprite.visible = true;
 			openfl.Lib.current.stage.addChild(watermarkSprite);
@@ -315,16 +291,13 @@ class Main extends Sprite
 		        removeChild(watermark);
 			var bmpData = openfl.display.BitmapData.fromFile(imagePath);
 			watermark = new openfl.display.Bitmap(bmpData);
+			// Tamaño fijo sin escalado dinámico
 			var scale = 0.85;
 			watermark.scaleX = -scale; // Flip horizontal
 			watermark.scaleY = scale;
 			watermark.alpha = 0.5;
 			addChild(watermark);
-			// Función para posicionar correctamente
-			function positionWatermark() {
-				watermark.x = Lib.current.stage.stageWidth - watermark.width * Math.abs(watermark.scaleX) + 110;
-				watermark.y = Lib.current.stage.stageHeight - watermark.height * scale - 30;
-			}
+			// Posicionamiento inicial
 			positionWatermark();
 			Lib.current.stage.addEventListener(openfl.events.Event.RESIZE, function(_) positionWatermark());
 		}

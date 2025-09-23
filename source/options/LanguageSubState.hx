@@ -9,16 +9,48 @@ class LanguageSubState extends MusicBeatSubstate
 	var languages:Array<String> = [];
 	var displayLanguages:Map<String, String> = [];
 	var curSelected:Int = 0;
+	
+	// Usando el mismo sistema de descText que BaseOptionsMenu
+	private var descBox:FlxSprite;
+	private var descText:FlxText;
+	
+	public var title:String;
+	public var rpcTitle:String;
+	
 	public function new()
 	{
+		title = Language.getPhrase('language_menu', 'Language');
+		rpcTitle = 'Language Menu';
+		
 		super();
 
+		#if DISCORD_ALLOWED
+		DiscordClient.changePresence(rpcTitle, null);
+		#end
+		
 		var bg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.color = 0xFFea71fd;
-		bg.antialiasing = ClientPrefs.data.antialiasing;
 		bg.screenCenter();
+		bg.antialiasing = ClientPrefs.data.antialiasing;
 		add(bg);
+
 		add(grpLanguages);
+
+		// Crear el sistema de descripción como en BaseOptionsMenu
+		descBox = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
+		descBox.alpha = 0.6;
+		add(descBox);
+
+		var titleText:Alphabet = new Alphabet(75, 45, title, true);
+		titleText.setScale(0.6);
+		titleText.alpha = 0.4;
+		add(titleText);
+
+		descText = new FlxText(50, 600, 1180, "", 32);
+		descText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		descText.scrollFactor.set();
+		descText.borderSize = 2.4;
+		add(descText);
 
 		// ← NUEVO: Cargar idiomas hardcodeados primero
 		var hardcodedLanguages = Language.getAvailableLanguages();
@@ -100,6 +132,9 @@ class LanguageSubState extends MusicBeatSubstate
 			grpLanguages.add(text);
 		}
 		changeSelected();
+		updateExampleText();
+
+		addTouchPad('LEFT_FULL', 'A_B');
 	}
 
 	var changedLanguage:Bool = false;
@@ -147,7 +182,54 @@ class LanguageSubState extends MusicBeatSubstate
 			lang.alpha = 0.6;
 			if(num == curSelected) lang.alpha = 1;
 		}
+		updateExampleText();
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
+	}
+
+	function updateExampleText()
+	{
+		if (descText == null) return; // Verificación de seguridad
+		
+		if (languages.length > 0 && curSelected >= 0 && curSelected < languages.length)
+		{
+			var currentLang = languages[curSelected];
+			var exampleString = getExampleTextForLanguage(currentLang);
+			descText.text = exampleString;
+			
+			// Centrar el texto como en BaseOptionsMenu
+			descText.screenCenter(Y);
+			descText.y += 270;
+			
+			// Actualizar el fondo
+			descBox.setPosition(descText.x - 10, descText.y - 10);
+			descBox.setGraphicSize(Std.int(descText.width + 20), Std.int(descText.height + 25));
+			descBox.updateHitbox();
+		}
+	}
+
+	function getExampleTextForLanguage(langCode:String):String
+	{
+		// Definir textos de ejemplo hardcodeados para cada idioma
+		var exampleTexts:Map<String, String> = [
+			'en-US' => 'This is an example text in English United States language',
+			'es-LA' => 'Este es un ejemplo de texto en el idioma Español Latinoamérica',
+			'es-ES' => 'Este es un ejemplo de texto en el idioma Español de España',
+			'fr-FR' => 'Ceci est un exemple de texte en langue Française France',
+			'pt-BR' => 'Este é um exemplo de texto no idioma Português Brasil',
+			'it-IT' => 'Questo è un esempio di testo nella lingua Italiana Italia',
+			'de-DE' => 'Dies ist ein Beispieltext in deutscher Sprache Deutschland',
+			'ja-JP' => 'これは日本語での例文テキストです',
+			'nl-NL' => 'Dit is een voorbeeldtekst in de Nederlandse taal Nederland',
+			'zh-CN' => '这是中文（简体）语言的示例文本',
+			'zh-HK' => '這是中文（香港）語言的示例文本'
+		];
+		
+		// Buscar por código de idioma exacto primero
+		if (exampleTexts.exists(langCode))
+			return exampleTexts.get(langCode);
+		
+		// Fallback a texto en inglés
+		return 'This is an example text in the selected language';
 	}
 	#end
 }

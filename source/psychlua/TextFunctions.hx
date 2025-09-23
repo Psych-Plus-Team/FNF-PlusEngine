@@ -10,7 +10,7 @@ class TextFunctions
 
 			LuaUtils.destroyObject(tag);
 			var leText:FlxText = new FlxText(x, y, width, text, 16);
-			leText.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			leText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			if(PlayState.instance != null) leText.cameras = [PlayState.instance.camHUD];
 			leText.scrollFactor.set();
 			leText.borderSize = 2;

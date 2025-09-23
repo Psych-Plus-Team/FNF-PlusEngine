@@ -1,9 +1,6 @@
 package objects;
 
 import flixel.addons.display.FlxPieDial;
-import psychlua.LuaUtils;
-import flixel.FlxCamera;
-import psychlua.LuaUtils;
 
 #if hxvlc
 import hxvlc.flixel.FlxVideoSprite;
@@ -25,17 +22,12 @@ class VideoSprite extends FlxSpriteGroup {
 
 	public var waiting:Bool = false;
 
-	public function new(videoName:String, isWaiting:Bool, canSkip:Bool = false, shouldLoop:Dynamic = false, camera:String = "other") {
+	public function new(videoName:String, isWaiting:Bool, canSkip:Bool = false, shouldLoop:Dynamic = false) {
 		super();
 
 		this.videoName = videoName;
 		scrollFactor.set();
-
-		// Configuración optimizada de cámara
-		var cam:FlxCamera = (camera == null || camera.trim() == "") ? 
-			FlxG.cameras.list[FlxG.cameras.list.length - 1] : 
-			LuaUtils.cameraFromString(camera);
-		cameras = [cam];
+		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 
 		waiting = isWaiting;
 		if(!waiting)

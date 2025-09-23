@@ -3,6 +3,9 @@ package backend;
 import openfl.utils.Assets;
 import lime.utils.Assets as LimeAssets;
 
+#if cpp
+@:cppFileCode('#include <thread>')
+#end
 class CoolUtil
 {
 	public static var hasUpdate:Bool = false;
@@ -33,9 +36,9 @@ class CoolUtil
 					hasUpdate = false;
 				}
 				
-				http.onData = null;
-				http.onError = null;
-				http = null;
+					http.onData = null;
+					http.onError = null;
+					http = null;
 			}
 			http.onError = function (error) {
 				trace('error checking for updates: $error');
@@ -95,6 +98,20 @@ class CoolUtil
 
 		return Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 	}
+
+	#if linux
+	public static function sortAlphabetically(list:Array<String>):Array<String> {
+		if (list == null) return [];
+
+		list.sort((a, b) -> {
+			var upperA = a.toUpperCase();
+			var upperB = b.toUpperCase();
+			
+			return upperA < upperB ? -1 : upperA > upperB ? 1 : 0;
+		});
+		return list;
+	}
+	#end
 
 	inline public static function dominantColor(sprite:flixel.FlxSprite):Int
 	{
@@ -194,4 +211,23 @@ class CoolUtil
 				text.borderStyle = NONE;
 		}
 	}
+
+	public static function showPopUp(message:String, title:String):Void
+	{
+		/*#if android
+		AndroidTools.showAlertDialog(title, message, {name: "OK", func: null}, null);
+		#else*/
+		FlxG.stage.window.alert(message, title);
+		//#end
+	}
+
+	#if cpp
+    @:functionCode('
+        return std::thread::hardware_concurrency();
+    ')
+	#end
+    public static function getCPUThreadsCount():Int
+    {
+        return 1;
+    }
 }

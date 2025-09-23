@@ -129,6 +129,7 @@ class ZhCN
         "description_shaders" => "如果未选中，禁用着色器。\n它用于一些视觉效果，对较弱的PC来说CPU密集。",
         "description_gpu_caching" => "如果选中，允许GPU用于缓存纹理，减少RAM使用。\n如果你的显卡很差，不要打开这个。",
         "description_framerate" => "很好理解的，不是吗？",
+        "description_fps_rework" => "如果启用，当当前FPS低于帧率限制时，\n游戏将防止“卡顿”或“平滑”。",
 
         // Visuals Settings
         "description_note_skins" => "选择你喜欢的音符皮肤。",
@@ -143,6 +144,7 @@ class ZhCN
         "description_debug_data" => "显示谱面信息如滚动速度、BPM、生命值；还有步骤、节拍等。\n如果你在谱面模式下，后者将可用。",
         "description_health_bar_opacity" => "生命条和图标应该有多透明。",
         "description_fps_counter" => "如果未选中，隐藏FPS计数器。",
+        "description_vsync" => "如果选中，启用垂直同步，修复屏幕撕裂，\n但FPS将被限制为显示器的刷新率。\n（需要重启游戏以应用）",
         "description_pause_music" => "你喜欢暂停屏幕播放什么歌曲？",
         "description_check_for_updates" => "在发布版本中，打开此选项在启动游戏时检查更新。",
         "description_discord_rich_presence" => '取消选中以防止意外泄露，它将在Discord的"正在游戏"框中隐藏应用程序',
@@ -156,6 +158,7 @@ class ZhCN
         "description_opponent_notes" => "如果未选中，对手音符被隐藏。",
         "description_ghost_tapping" => "如果选中，当没有可击中的音符时\n按键不会失误。",
         "description_auto_pause" => "如果选中，当屏幕失去焦点时游戏自动暂停。",
+        "description_pop_up_score" => "如果选中，击中音符时会显示你获得的分数。",
         "description_disable_reset_button" => "如果选中，按重置不会做任何事。",
         "description_hitsound_volume" => '有趣的音符在你击中时发出"滴答"声。',
         "description_rating_offset" => '改变击中"超棒！"需要多晚/多早\n更高的值意味着你需要击中得更晚。',
@@ -259,7 +262,10 @@ class ZhCN
         "editorplaystate_section_current" => "部分: {1}",
         "editorplaystate_beat" => "节拍: {1}",
         "editorplaystate_step" => "步骤: {1}",
-        "editorplaystate_score" => "命中: {1} | 失误: {2}"
+        "editorplaystate_score" => "命中: {1} | 失误: {2}",
+        
+        // Language example text
+        "language_example_text" => "这是中文（简体）语言的示例文本"
     ];
 }
 

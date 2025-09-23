@@ -128,9 +128,11 @@ class EsLA
         "options_visuals" => "Visuales",
         "options_graphics" => "Gráficos",
         "options_language" => "Idioma",
+        "options_mobile" => "Opciones móviles",
         "graphics_menu" => "Ajustes de gráficos",
         "visuals_menu" => "Ajustes visuales",
         "gameplay_menu" => "Ajustes de jugabilidad",
+        "language_menu" => "Ajustes de idioma",
 
         // Note Colors Menu
         "note_colors_tip" => "Presione RESET para restablecer la parte de nota seleccionada.",
@@ -197,6 +199,8 @@ class EsLA
         "description_gpu_caching" => "Si está marcado, permite que la GPU se use para almacenar en caché texturas, reduce el uso de RAM.\nNo actives esto si tienes una Tarjeta Gráfica de la puta mare.",
         "setting_framerate" => "Fotogramas x Segundo",
         "description_framerate" => "Muy explicativo, ¿no?",
+        "setting_fps_rework" => "Rework de FPS",
+        "description_fps_rework" => "Si está marcado, esto evita que el juego se vuelva \"lento\" y \"suave\" cuando los FPS actuales son más bajos que el límite de FPS.",
 
         // Visuals Settings
         "setting_note_skins" => "Estilo de Notas:",
@@ -235,6 +239,8 @@ class EsLA
         "description_health_bar_opacity" => "¿Qué tan transparentes deben ser la barra y los iconos?",
         "setting_fps_counter" => "Contador de FPS",
         "description_fps_counter" => "Si no está marcado, oculta el contador FPS",
+        "setting_vsync" => "VSync",
+        "description_vsync" => "Si está marcado, Habilita VSync corrigiendo cualquier desgarro de pantalla a costa de limitar los FPS a la tasa de refresco de la pantalla.\n(Debe reiniciar el juego para que tenga efecto)",
         "setting_pause_music" => "Canción de Pausa:",
         "setting_pause_music-none" => "Ninguno",
         "description_pause_music" => "¿Qué canción prefieres para la pantalla de pausa?",
@@ -260,8 +266,12 @@ class EsLA
         "description_ghost_tapping" => "Si está marcado, no fallará al presionar teclas mientras no haya notas que se puedan tocar.",
         "setting_auto_pause" => "Pausa Automática",
         "description_auto_pause" => "Si está marcado, el juego se detiene automáticamente si la pantalla no está enfocada.",
+        "setting_pop_up_score" => "Sprite de Combo y Rating",
+        "description_pop_up_score" => "Si está marcado, al golpear notas aparecerán sprites de Combo y Rating.",
         "setting_disable_reset_button" => "Desactivar botón de reinicio",
         "description_disable_reset_button" => "Si está marcado, presionar reiniciar no hará nada",
+        "setting_game_over_vibration" => "Vibración al perder",
+        "description_game_over_vibration" => "Si está marcado, su dispositivo vibrará al perder.",
         "setting_hitsound_volume" => "Sonido al tocar notas",
         "description_hitsound_volume" => "Las notas divertidas hacen \"¡tick!\" cuando las tocas",
         "setting_rating_offset" => "Retraso de calificación",
@@ -416,6 +426,9 @@ class EsLA
         "editorplaystate_time" => "Tiempo: {1} / {2}",
         "editorplaystate_beat" => "Beat: {1}",
         "editorplaystate_step" => "Step: {1}",
-        "editorplaystate_score" => "Notas: {1} | Perdidas: {2}"
+        "editorplaystate_score" => "Notas: {1} | Perdidas: {2}",
+        
+        // Language example text
+        "language_example_text" => "Este es un ejemplo de texto en el idioma Español Latinoamérica"
     ];
 }

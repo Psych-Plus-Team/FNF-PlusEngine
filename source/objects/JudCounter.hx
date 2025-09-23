@@ -106,7 +106,7 @@ class JudCounter extends FlxTypedGroup<FlxText>
     function createJudgmentText(text:String, color:FlxColor, index:Int):FlxText
     {
         var judText = new FlxText(baseX, baseY + (spacing * index), 0, text, fontSize);
-        judText.setFormat(Paths.defaultFont(), fontSize, color, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+        judText.setFormat(Paths.font("vcr.ttf"), fontSize, color, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         judText.scrollFactor.set();
         judText.alpha = 1;
         judText.borderSize = 2;

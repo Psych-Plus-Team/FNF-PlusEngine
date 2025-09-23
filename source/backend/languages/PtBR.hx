@@ -132,9 +132,11 @@ class PtBR
         "options_visuals" => "Visuais",
         "options_graphics" => "Gráficos",
         "options_language" => "Idioma",
+        "options_mobile" => "Mobile",
         "graphics_menu" => "Configurações de Gráficos",
         "visuals_menu" => "Opções Visuais",
         "gameplay_menu" => "Configurações de Gameplay",
+        "language_menu" => "Configurações de Idioma",
 
         // Note Colors Menu
         "note_colors_tip" => "Aperte RESET para resetar a parte selecionada da Nota.",
@@ -201,6 +203,8 @@ class PtBR
         "description_gpu_caching" => "Se marcado, permite que a GPU seja usada para armazenar texturas, reduzindo uso da memória RAM.\nNão ligue isso se sua Placa de Vídeo é ruim.",
         "setting_framerate" => "Taxa de Atualização",
         "description_framerate" => "Também chamado de \"Framerate\", preciso explicar?",
+        "setting_fps_rework" => "Revisão de FPS",
+        "description_fps_rework" => "Se ativado, impede o jogo de \"travar\" e \"ficar mais fluido\" quando seus FPS atuais estão abaixo do limite de taxa de atualização.",
 
         // Visuals Settings
         "setting_note_skins" => "Estilo de Notas",
@@ -239,6 +243,8 @@ class PtBR
         "description_health_bar_opacity" => "O quão transparente a Barra de Vida e os ícones devem ser.",
         "setting_fps_counter" => "Contador de FPS",
         "description_fps_counter" => "Se desmarcado, esconde o contador no canto superior esquerdo da tela.",
+        "setting_vsync" => "VSync",
+        "description_vsync" => "Se ativado, ativa o VSync em corrigindo o screen tearing ao custo de limitar os FPS ao refresh rate do seu monitor.\n(Você precisa reiniciar o jogo para aplicar)",
         "setting_pause_music" => "Música de Pausa:",
         "setting_pause_music-none" => "Nenhuma",
         "description_pause_music" => "Que música prefere para a tela de pausa?",
@@ -266,6 +272,8 @@ class PtBR
         "description_auto_pause" => "Se marcado, a janela é automaticamente pausada se não estiver em foco.",
         "setting_disable_reset_button" => "Desativar Botão de Reset",
         "description_disable_reset_button" => "Se marcado, apertar Reset não irá matar o jogador.",
+        "setting_pop_up_score" => "Pontuação Pop-up",
+        "description_pop_up_score" => "Se marcado, mostra a pontuação que você ganha ao acertar uma nota.",
         "setting_hitsound_volume" => "Volume do Som de Acerto",
         "description_hitsound_volume" => "As notas fazem um som de \"Tick!\" quando você as apertam",
         "setting_rating_offset" => "Offset de Acerto",
@@ -400,7 +408,10 @@ class PtBR
         "editorplaystate_section_current" => "Seção: {1}",
         "editorplaystate_beat" => "Beat: {1}",
         "editorplaystate_step" => "Step: {1}",
-        "editorplaystate_score" => "Notas: {1} | Perdidas: {2}"
+        "editorplaystate_score" => "Notas: {1} | Perdidas: {2}",
+        
+        // Language example text
+        "language_example_text" => "Este é um exemplo de texto no idioma Português Brasil"
     ];
 }
 

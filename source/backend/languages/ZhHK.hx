@@ -130,6 +130,7 @@ class ZhHK
         "description_shaders" => "如果未選中，禁用著色器。\n它用於一些視覺效果，對較弱的PC來說CPU密集。",
         "description_gpu_caching" => "如果選中，允許GPU用於緩存紋理，減少RAM使用。\n如果你的顯卡很差，不要打開這個。",
         "description_framerate" => "很好理解的，不是嗎？",
+        "description_fps_rework" => "如果啟用，當當前FPS低於幀率限制時，\n遊戲將防止“卡頓”或“平滑”。",
 
         // Visuals Settings
         "description_note_skins" => "選擇你喜歡的音符皮膚。",
@@ -144,6 +145,7 @@ class ZhHK
         "description_debug_data" => "顯示譜面資訊如滾動速度、BPM、生命值；還有步驟、節拍等。\n如果你在譜面模式下，後者將可用。",
         "description_health_bar_opacity" => "生命條和圖示應該有多透明。",
         "description_fps_counter" => "如果未選中，隱藏FPS計數器。",
+        "description_vsync" => "如果選中，啟用垂直同步，修復屏幕撕裂，\n但FPS將被限制為顯示器的刷新率。\n（需要重啟遊戲以應用）",
         "description_pause_music" => "你喜歡暫停螢幕播放什麼歌曲？",
         "description_check_for_updates" => "在發布版本中，打開此選項在啟動遊戲時檢查更新。",
         "description_discord_rich_presence" => "取消選中以防止意外洩露，它將在Discord的\"正在遊戲\"框中隱藏應用程式",
@@ -156,6 +158,7 @@ class ZhHK
         "description_middlescroll" => "如果選中，你的音符居中。",
         "description_opponent_notes" => "如果未選中，對手音符被隱藏。",
         "description_ghost_tapping" => "如果選中，當沒有可擊中的音符時\n按鍵不會失誤。",
+        "description_pop_up_score" => "如果選中，擊中音符時會顯示你獲得的分數。",
         "description_auto_pause" => "如果選中，當螢幕失去焦點時遊戲自動暫停。",
         "description_disable_reset_button" => "如果選中，按重置不會做任何事。",
         "description_hitsound_volume" => "有趣的音符在你擊中時發出\"滴答\"聲。",
@@ -252,6 +255,9 @@ class ZhHK
         "editorplaystate_section_current" => "部分: {1}",
         "editorplaystate_beat" => "节拍: {1}",
         "editorplaystate_step" => "步骤: {1}",
-        "editorplaystate_score" => "命中: {1} | 失误: {2}"
+        "editorplaystate_score" => "命中: {1} | 失误: {2}",
+        
+        // Language example text
+        "language_example_text" => "這是中文（香港）語言的示例文本"
     ];
 }

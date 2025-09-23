@@ -51,11 +51,11 @@ class MusicPlayer extends FlxGroup
 		add(playbackBG);
 
 		songTxt = new FlxText(FlxG.width * 0.7, 5, 0, "", 32);
-		songTxt.setFormat(Paths.defaultFont(), 32, FlxColor.WHITE, RIGHT);
+		songTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, RIGHT);
 		add(songTxt);
 
 		timeTxt = new FlxText(xPos, songTxt.y + 60, 0, "", 32);
-		timeTxt.setFormat(Paths.defaultFont(), 32, FlxColor.WHITE, RIGHT);
+		timeTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, RIGHT);
 		add(timeTxt);
 
 		for (i in 0...2)
@@ -75,7 +75,7 @@ class MusicPlayer extends FlxGroup
 		add(progressBar);
 
 		playbackTxt = new FlxText(FlxG.width * 0.6, 20, 0, "", 32);
-		playbackTxt.setFormat(Paths.defaultFont(), 32, FlxColor.WHITE);
+		playbackTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE);
 		add(playbackTxt);
 
 		switchPlayMusic();
@@ -180,7 +180,7 @@ class MusicPlayer extends FlxGroup
 			}
 		}
 	
-		if (controls.RESET)
+		if (instance.touchPad.buttonC.justPressed || controls.RESET)
 		{
 			playbackRate = 1;
 			setPlaybackRate();
@@ -259,7 +259,11 @@ class MusicPlayer extends FlxGroup
 
 		if (playingMusic)
 		{
-			instance.bottomText.text = Language.getPhrase('musicplayer_tip', 'Press SPACE to Pause / Press ESCAPE to Exit / Press R to Reset the Song');
+			final space:String = (instance.controls.mobileC) ? "X" : "SPACE";
+			final escape:String = (instance.controls.mobileC) ? "B" : "ESCAPE";
+			final reset:String = (instance.controls.mobileC) ? "C" : "R";
+
+			instance.bottomText.text = Language.getPhrase('musicplayer_tip', 'Press {1} to Pause / Press {2} to Exit / Press {3} to Reset the Song', [space, escape, reset]);
 			positionSong();
 			
 			progressBar.setRange(0, FlxG.sound.music.length);

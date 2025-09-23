@@ -130,6 +130,7 @@ class JpJP
         "description_shaders" => "チェックを外すと、シェーダーを無効にします。\n一部の視覚効果に使用され、弱いPCではCPU集約的です。",
         "description_gpu_caching" => "チェックすると、GPUを使用してテクスチャをキャッシュし、RAM使用量を減らします。\nグラフィックカードが悪い場合は有効にしないでください。",
         "description_framerate" => "説明の必要はないでしょう？",
+        "description_fps_rework" => "有効にすると、現在のFPSがフレームレート制限を下回った場合に\nゲームが「スタッター」したり「スムーズ」になったりするのを防ぎます。",
 
         // Visuals Settings
         "description_note_skins" => "お好みのノートスキンを選択してください。",
@@ -144,6 +145,7 @@ class JpJP
         "description_debug_data" => "スクロール速度、BPM、体力などのチャート情報、ステップ、ビートなどを表示。\n後者はチャートモードの場合に利用可能です。",
         "description_health_bar_opacity" => "体力バーとアイコンの透明度はどの程度にしますか。",
         "description_fps_counter" => "チェックを外すと、FPSカウンターを隠します。",
+        "description_vsync" => "チェックを入れると、VSyncが有効になり、画面のティアリングが修正されますが、\nモニターのリフレッシュレートにFPSが制限されます。\n（適用するにはゲームを再起動する必要があります）",
         "description_pause_music" => "ポーズ画面でどの曲を好みますか？",
         "description_check_for_updates" => "リリース版では、ゲーム開始時にアップデートを確認するためにこれを有効にしてください。",
         "description_discord_rich_presence" => "偶発的なリークを防ぐためにチェックを外すと、Discordの「プレイ中」ボックスからアプリケーションを隠します",
@@ -157,6 +159,7 @@ class JpJP
         "description_opponent_notes" => "チェックを外すと、相手のノートが隠されます。",
         "description_ghost_tapping" => "チェックすると、ヒット可能なノートがない間に\nキーを押してもミスになりません。",
         "description_auto_pause" => "チェックすると、画面がフォーカスを失った場合にゲームが自動的にポーズされます。",
+        "description_pop_up_score" => "チェックすると、ノートをヒットしたときに獲得したスコアが表示されます。",
         "description_disable_reset_button" => "チェックすると、リセットを押しても何もしません。",
         "description_hitsound_volume" => "ノートをヒットすると面白い「ティック！」音がします。",
         "description_rating_offset" => "「最高！」をヒットするタイミングの遅い/早いを変更\n高い値はより遅くヒットする必要があることを意味します。",
@@ -242,6 +245,9 @@ class JpJP
         "editorplaystate_section_current" => "セクション: {1}",
         "editorplaystate_beat" => "ビート: {1}",
         "editorplaystate_step" => "ステップ: {1}",
-        "editorplaystate_score" => "ヒット: {1} | ミス: {2}"
+        "editorplaystate_score" => "ヒット: {1} | ミス: {2}",
+        
+        // Language example text
+        "language_example_text" => "これは日本語での例文テキストです"
     ];
 }

@@ -67,7 +67,7 @@ class Bar extends FlxSpriteGroup
 
 		super.update(elapsed);
 	}
-
+	
 	public function updateBarSmooth()
     {
     if(leftBar == null || rightBar == null) return;

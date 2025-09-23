@@ -16,8 +16,9 @@ enum MainMenuColumn {
 
 class MainMenuState extends MusicBeatState
 {
+	public static var fnfVersion:String = '0.2.8'; // Actualizar esto con cada versión de FNF
 	public static var psychEngineVersion:String = '1.0.4'; // This is also used for Discord RPC
-    public static var plusEngineVersion:String = '0.8'; // Nothing interesting =)
+    public static var plusEngineVersion:String = '0.9'; // Nothing interesting =)
 	public static var curSelected:Int = 0;
 	public static var curColumn:MainMenuColumn = CENTER;
 	var allowMouse:Bool = true; //Turn this off to block mouse movement in menus
@@ -39,8 +40,6 @@ class MainMenuState extends MusicBeatState
 
 	var magenta:FlxSprite;
 	var camFollow:FlxObject;
-
-	var onlineLevelsText:FlxText;
 
 	static var showOutdatedWarning:Bool = true;
 	static var updateWarningShown:Bool = false; // Para mostrar el aviso solo una vez por sesión
@@ -102,22 +101,17 @@ class MainMenuState extends MusicBeatState
 
 		var psychVer:FlxText = new FlxText(12, FlxG.height - 44, 0, "Psych Engine v" + psychEngineVersion, 12);
 		psychVer.scrollFactor.set();
-		psychVer.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		psychVer.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(psychVer);
         var plusVer:FlxText = new FlxText(12, FlxG.height - 64, 0, "Plus Engine v" + plusEngineVersion, 12);
         plusVer.scrollFactor.set();
-        plusVer.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+        plusVer.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
         add(plusVer);
-		var fnfVer:FlxText = new FlxText(12, FlxG.height - 24, 0, "Friday Night Funkin' v" + Application.current.meta.get('version'), 12);
+		var fnfVer:FlxText = new FlxText(12, FlxG.height - 24, 0, "Friday Night Funkin' v" + fnfVersion, 12);
 		fnfVer.scrollFactor.set();
-		fnfVer.setFormat(Paths.defaultFont(), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		fnfVer.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(fnfVer);
 		changeItem();
-
-        onlineLevelsText = new FlxText(12, 12, 0, '', 20);
-        onlineLevelsText.setFormat(null, 20, 0xFFFFFFFF, "left");
-        onlineLevelsText.scrollFactor.set();
-        add(onlineLevelsText);
 
 		#if ACHIEVEMENTS_ALLOWED
 		// Unlocks "Freaky on a Friday Night" achievement if it's a Friday and between 18:00 PM and 23:59 PM
@@ -129,20 +123,22 @@ class MainMenuState extends MusicBeatState
 		Achievements.reloadList();
 		#end
 		#end
-		
+
 		#if CHECK_FOR_UPDATES
 		if (showOutdatedWarning && ClientPrefs.data.checkForUpdates && !updateWarningShown) {
 			// Solo mostrar aviso si ya se detectó una actualización disponible y no se ha mostrado antes
 			if (CoolUtil.hasUpdate && CoolUtil.latestVersion != plusEngineVersion) {
 				substates.OutdatedSubState.updateVersion = CoolUtil.latestVersion;
-				persistentUpdate = false;
+			persistentUpdate = false;
 				updateWarningShown = true; // Marcar como mostrado para evitar repeticiones
-				openSubState(new substates.OutdatedSubState());
+			openSubState(new substates.OutdatedSubState());
 			}
 		}
 		#end
 
 		FlxG.camera.follow(camFollow, null, 0.15);
+
+		addTouchPad('NONE', 'E');
 	}
 
 	function createMenuItem(name:String, x:Float, y:Float):FlxSprite
@@ -282,7 +278,7 @@ class MainMenuState extends MusicBeatState
 				MusicBeatState.switchState(new TitleState());
 			}
 
-			if (controls.ACCEPT || (FlxG.mouse.justPressed && allowMouse))
+			if (controls.ACCEPT || (FlxG.mouse.overlaps(menuItems, FlxG.camera) && FlxG.mouse.justPressed && allowMouse))
 			{
 				FlxG.sound.play(Paths.sound('confirmMenu'));
 				selectedSomethin = true;
@@ -357,14 +353,12 @@ class MainMenuState extends MusicBeatState
 					FlxTween.tween(memb, {alpha: 0}, 0.4, {ease: FlxEase.quadOut});
 				}
 			}
-			#if desktop
-			if (controls.justPressed('debug_1'))
+			else if (controls.justPressed('debug_1') || touchPad.buttonE.justPressed)
 			{
 				selectedSomethin = true;
 				FlxG.mouse.visible = false;
 				MusicBeatState.switchState(new MasterEditorMenu());
 			}
-			#end
 		}
 
 		super.update(elapsed);

@@ -1,5 +1,5 @@
 name: Bug report
-description: Report bugs with the engine here
+description: Report bugs with the port here
 labels: [bug]
 body:
   - type: textarea
@@ -12,7 +12,7 @@ body:
   - type: textarea
     id: terminal
     attributes:
-      label: "Command Prompt/Terminal logs (if existing)"
+      label: "Crash Log or logcat logs (if existing)"
       render: bash
     validations:
       required: false
@@ -24,6 +24,8 @@ body:
       options:
         - Lua
         - Source
+        - Lua and Source
+        - I am not modding
     validations:
       required: true
 
@@ -32,12 +34,30 @@ body:
     attributes:
       label: "What is your build target?"
       options:
-        - "Windows"
-        - "Linux"
-        - "Mac"
-        - "HTML5"
-        - "Flash/Air-based target"
-        - "Neko, HashLink, or other build system"
+        - "Desktop (Linux, Windows or Mac)"
+        - "Android"
+        - "iOS"
+        - "HashLink"
+        - "Flash/AIR"
+        - "Other/Unknown/I don't know"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: psychver
+    attributes:
+      label: "Which psych engine version you're on?"
+      options:
+        - "DevBuild"
+        - "1.0.4"
+        - "1.0.3"
+        - "1.0.2h"
+        - "1.0.2"
+        - "1.0.1"
+        - "1.0"
+        - "1.0 (Prerelease)"
+        - "0.7.x"
+        - "0.6.x or older"
     validations:
       required: true
 

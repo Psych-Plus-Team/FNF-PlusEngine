@@ -13,6 +13,10 @@ import backend.MusicBeatState;
 import backend.Paths; // ← Agregar import
 import DateTools;
 
+#if mobile
+import mobile.backend.TouchUtil;
+#end
+
 class ResultsState extends MusicBeatState
 {
     // Variables para las capas de fondo
@@ -234,10 +238,19 @@ class ResultsState extends MusicBeatState
         engineText.setFormat(Paths.font("aller.ttf"), 25, FlxColor.CYAN, "center");
         add(engineText);
 
-        // --- Instrucción solo ENTER ---
+        // --- Instrucciones para continuar (diferentes para móvil y PC) ---
+        #if mobile
+        var continueText = new FlxText(50, FlxG.height - 75, 0, Language.getPhrase('results_press_enter_mobile', 'Touch anywhere or press A\nto Continue'), 26);
+        #else
         var continueText = new FlxText(50, FlxG.height - 75, 0, Language.getPhrase('results_press_enter', 'Press Enter\nfor Continue'), 26);
+        #end
         continueText.setFormat(Paths.font("aller.ttf"), 26, FlxColor.WHITE, "center");
         add(continueText);
+
+        // --- Agregar touchPad para dispositivos móviles ---
+        #if mobile
+        addTouchPad('NONE', 'A');
+        #end
     }
 
     override public function update(elapsed:Float)
@@ -318,8 +331,24 @@ class ResultsState extends MusicBeatState
         }
         accText.text = Language.getPhrase('results_accuracy', 'Accuracy') + ': ' + Std.string(Math.round(animatedAccuracy * 1000) / 10) + '%';
 
-        // --- Transición con ENTER (SIN PARAR LA MÚSICA) ---
-        if (FlxG.keys.justPressed.ENTER)
+        // --- Transición con múltiples controles (teclado, gamepad, móvil) ---
+        var shouldContinue:Bool = false;
+        
+        // Controles de teclado
+        if (FlxG.keys.justPressed.ENTER) shouldContinue = true;
+        
+        // Controles de gamepad y móviles (botón A en touchPad)
+        if (controls.ACCEPT) shouldContinue = true;
+        
+        #if mobile
+        // Toque directo en la pantalla
+        if (TouchUtil.justPressed) shouldContinue = true;
+        
+        // Alternativa con FlxG.touches para mayor compatibilidad
+        if (FlxG.touches.getFirst() != null && FlxG.touches.getFirst().justPressed) shouldContinue = true;
+        #end
+        
+        if (shouldContinue)
         {
             // NO parar la música: FlxG.sound.music.stop();
             

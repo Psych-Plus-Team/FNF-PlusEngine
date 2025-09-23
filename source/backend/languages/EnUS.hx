@@ -130,9 +130,11 @@ class EnUS
         "options_visuals" => "Visuals",
         "options_graphics" => "Graphics",
         "options_language" => "Language",
+        "options_mobile" => "Mobile Options",
         "graphics_menu" => "Graphics Settings",
         "visuals_menu" => "Visuals Settings",
         "gameplay_menu" => "Gameplay Settings",
+        "language_menu" => "Language Settings",
 
         // Note Colors Menu
         "note_colors_tip" => "Press RESET to Reset the selected Note Part.",
@@ -199,6 +201,8 @@ class EnUS
         "description_gpu_caching" => "If checked, allows the GPU to be used for caching textures, decreasing RAM usage.\nDon't turn this on if you have a shitty Graphics Card.",
         "setting_framerate" => "Framerate",
         "description_framerate" => "Pretty self explanatory, isn't it?",
+        "setting_fps_rework" => "FPS Rework",
+        "description_fps_rework" => "If checked, this prevents the game from becoming \"slower\" and \"smoother\" when current FPS are lower than the framerate cap.",
 
         // Visuals Settings
         "setting_note_skins" => "Note Skins:",
@@ -229,6 +233,8 @@ class EnUS
         "description_health_bar_opacity" => "How much transparent should the health bar and icons be.",
         "setting_fps_counter" => "FPS Counter",
         "description_fps_counter" => "If unchecked, hides FPS Counter.",
+        "setting_vsync" => "VSync",
+        "description_vsync" => "If checked, enables VSync by fixing any screen tearing at the cost of limiting FPS to your monitor's refresh rate.\n(You need to restart the game for it to take effect)",
         "setting_pause_music" => "Pause Screen Song:",
         "description_pause_music" => "What song do you prefer for the Pause Screen?",
         "setting_check_for_updates" => "Check for Updates",
@@ -253,6 +259,8 @@ class EnUS
         "description_ghost_tapping" => "If checked, you won't get misses from pressing keys\nwhile there are no notes able to be hit.",
         "setting_auto_pause" => "Auto Pause",
         "description_auto_pause" => "If checked, the game automatically pauses if the screen isn't on focus.",
+        "setting_pop_up_score" => "Combo and Rating Pop-ups",
+        "description_pop_up_score" => "If checked, shows combo and rating pop-ups when you hit notes.",
         "setting_disable_reset_button" => "Disable Reset Button",
         "description_disable_reset_button" => "If checked, pressing Reset won't do anything.",
         "setting_hitsound_volume" => "Hitsound Volume",
@@ -414,7 +422,10 @@ class EnUS
         "editorplaystate_section_current" => "Section: {1}",
         "editorplaystate_beat" => "Beat: {1}",
         "editorplaystate_step" => "Step: {1}",
-        "editorplaystate_score" => "Hits: {1} | Misses: {2}"
+        "editorplaystate_score" => "Hits: {1} | Misses: {2}",
+        
+        // Language example text
+        "language_example_text" => "This is an example text in English United States language"
     ];
 }
 

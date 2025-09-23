@@ -12,7 +12,8 @@ class OptionsState extends MusicBeatState
 		'Graphics',
 		'Visuals',
 		'Gameplay'
-		#if TRANSLATIONS_ALLOWED , 'Language' #end
+		#if TRANSLATIONS_ALLOWED , 'Language' #end,
+		#if mobile 'Mobile Options' #end
 	];
 	private var grpOptions:FlxTypedGroup<Alphabet>;
 	private static var curSelected:Int = 0;
@@ -20,6 +21,10 @@ class OptionsState extends MusicBeatState
 	public static var onPlayState:Bool = false;
 
 	function openSelectedSubstate(label:String) {
+		if (label != "Adjust Delay and Combo"){
+			removeTouchPad();
+			persistentUpdate = false;
+		}
 		switch(label)
 		{
 			case 'Note Colors':
@@ -34,6 +39,8 @@ class OptionsState extends MusicBeatState
 				openSubState(new options.GameplaySettingsSubState());
 			case 'Adjust Delay and Combo':
 				MusicBeatState.switchState(new options.NoteOffsetState());
+			case 'Mobile Options':
+				openSubState(new mobile.options.MobileOptionsSubState());
 			case 'Language':
 				openSubState(new options.LanguageSubState());
 		}
@@ -56,6 +63,16 @@ class OptionsState extends MusicBeatState
 		bg.screenCenter();
 		add(bg);
 
+		if (controls.mobileC)
+		{
+			var tipText:FlxText = new FlxText(150, FlxG.height - 24, 0, 'Press ' + (FlxG.onMobile ? 'C' : 'CTRL or C') + ' to Go Mobile Controls Menu', 16);
+			tipText.setFormat("VCR OSD Mono", 17, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			tipText.borderSize = 1.25;
+			tipText.scrollFactor.set();
+			tipText.antialiasing = ClientPrefs.data.antialiasing;
+			add(tipText);
+		}
+
 		grpOptions = new FlxTypedGroup<Alphabet>();
 		add(grpOptions);
 
@@ -75,6 +92,8 @@ class OptionsState extends MusicBeatState
 		changeSelection();
 		ClientPrefs.saveSettings();
 
+		addTouchPad('UP_DOWN', 'A_B_C');
+
 		super.create();
 	}
 
@@ -85,28 +104,42 @@ class OptionsState extends MusicBeatState
 		#if DISCORD_ALLOWED
 		DiscordClient.changePresence("Options Menu", null);
 		#end
+		controls.isInSubstate = false;
+		removeTouchPad();
+		addTouchPad('UP_DOWN', 'A_B_C');
+		persistentUpdate = true;
 	}
 
+	var exiting = false;
 	override function update(elapsed:Float) {
 		super.update(elapsed);
 
-		if (controls.UI_UP_P)
-			changeSelection(-1);
-		if (controls.UI_DOWN_P)
-			changeSelection(1);
-
-		if (controls.BACK)
-		{
-			FlxG.sound.play(Paths.sound('cancelMenu'));
-			if(onPlayState)
+		if(!exiting) {
+			if (controls.UI_UP_P)
+				changeSelection(-1);
+			if (controls.UI_DOWN_P)
+				changeSelection(1);
+			
+			if (touchPad.buttonC.justPressed || FlxG.keys.justPressed.CONTROL && controls.mobileC)
 			{
-				StageData.loadDirectory(PlayState.SONG);
-				LoadingState.loadAndSwitchState(new PlayState());
-				FlxG.sound.music.volume = 0;
+				persistentUpdate = false;
+				openSubState(new mobile.substates.MobileControlSelectSubState());
 			}
-			else MusicBeatState.switchState(new MainMenuState());
+
+			if (controls.BACK)
+			{
+				exiting = true;
+				FlxG.sound.play(Paths.sound('cancelMenu'));
+				if(onPlayState)
+				{
+					StageData.loadDirectory(PlayState.SONG);
+					LoadingState.loadAndSwitchState(new PlayState());
+					FlxG.sound.music.volume = 0;
+				}
+				else MusicBeatState.switchState(new MainMenuState());
+			}
+			else if (controls.ACCEPT) openSelectedSubstate(options[curSelected]);
 		}
-		else if (controls.ACCEPT) openSelectedSubstate(options[curSelected]);
 	}
 	
 	function changeSelection(change:Int = 0)

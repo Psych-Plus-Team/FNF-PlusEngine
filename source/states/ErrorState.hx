@@ -26,12 +26,14 @@ class ErrorState extends MusicBeatState
 		bg.screenCenter();
 
 		errorText = new FlxText(0, 0, FlxG.width - 300, errorMsg, 32);
-		errorText.setFormat(Paths.defaultFont(), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		errorText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		errorText.scrollFactor.set();
 		errorText.borderSize = 2;
 		errorText.screenCenter();
 		add(errorText);
 		super.create();
+		addTouchPad('NONE', 'A_B');
+		addTouchPadCamera();
 	}
 
 	override function update(elapsed:Float)

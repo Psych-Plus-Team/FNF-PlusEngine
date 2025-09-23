@@ -17,6 +17,9 @@ class FlashingState extends MusicBeatState
 	{
 		super.create();
 
+		final enter:String = (controls.mobileC) ? 'A' : 'ENTER';
+		final back:String = (controls.mobileC) ? 'B' : 'BACK';
+
 		bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
 
@@ -28,22 +31,26 @@ class FlashingState extends MusicBeatState
 			"Hey, watch out!\n
 			This Mod contains some flashing lights!\n
 			Do you wish to disable them?");
-		warnText.setFormat(Paths.defaultFont(), 32, FlxColor.WHITE, CENTER);
+		warnText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER);
 		warnText.screenCenter(Y);
 		texts.add(warnText);
 
 		final keys = ["Yes", "No"];
 		for (i in 0...keys.length) {
 			final button = new FlxText(0, 0, FlxG.width, keys[i]);
-			button.setFormat(Paths.defaultFont(), 32, FlxColor.WHITE, CENTER);
+			button.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER);
 			button.y = (warnText.y + warnText.height) + 24;
 			button.x += (128 * i) - 80;
 			texts.add(button);
 		}
 
+		addTouchPad("LEFT_RIGHT", "A_B");
+		touchPad.alpha = 0;
+
 		FlxTween.tween(texts, {alpha: 1.0}, 0.5, {
 			onComplete: (_) -> updateItems()
 		});
+		FlxTween.tween(touchPad, {alpha: 1.0}, 0.5);
 	}
 
 	override function update(elapsed:Float)
@@ -72,6 +79,7 @@ class FlashingState extends MusicBeatState
 						FlxTween.tween(texts, {alpha: 0}, 0.2, {
 							onComplete: (_) -> MusicBeatState.switchState(new TitleState())
 						});
+						FlxTween.tween(touchPad, {alpha: 0}, 0.2);
 					});
 				});
 			} else {
@@ -79,6 +87,7 @@ class FlashingState extends MusicBeatState
 				FlxTween.tween(texts, {alpha: 0}, 1, {
 					onComplete: (_) -> MusicBeatState.switchState(new TitleState())
 				});
+				FlxTween.tween(touchPad, {alpha: 0}, 1);
 			}
 		}
 		super.update(elapsed);
