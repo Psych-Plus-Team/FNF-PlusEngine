@@ -10,7 +10,7 @@ jobs:
         include:
           - name: Windows
             os: windows-2022
-            buildArgs: windows
+            buildArgs: windows -64
             setupCommand: .\"setup/windows.bat"
             artifactName: windowsBuild-x86_64
             artifactPath: export\release\windows\bin\*
