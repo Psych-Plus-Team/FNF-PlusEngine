@@ -218,7 +218,7 @@ class FPSCounter extends TextField
 				
 				// Agregar texto del autor del mod si está disponible
 				if (modAuthor != null && modAuthor.length > 0) {
-					displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">' + modAuthor + '</font>';
+					displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="16" color="' + colorHex + '">' + modAuthor + '</font>';
 				}
 			
 			case 1:

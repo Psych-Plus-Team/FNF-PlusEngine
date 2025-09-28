@@ -1,0 +1,13 @@
+Install hmm:
+
+- haxelib install hmm
+
+After that, run in the terminal:
+
+- haxelib run hmm install
+
+If you want to update the dependencies then:
+
+- haxelib run hmm update
+
+End =)

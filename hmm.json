@@ -1,0 +1,91 @@
+{
+  "dependencies": [
+    {
+      "name": "hxcpp",
+      "type": "git",
+      "url": "https://github.com/kittycathy233/hxcpp"
+    },
+    {
+      "name": "lime",
+      "type": "git",
+      "url": "https://github.com/kittycathy233/lime"
+    },
+    {
+      "name": "openfl",
+      "type": "haxelib",
+      "version": "9.4.1"
+    },
+    {
+      "name": "flixel",
+      "type": "git",
+      "url": "https://github.com/kittycathy233/flixel"
+    },
+    {
+      "name": "flixel-addons",
+      "type": "haxelib",
+      "version": "3.3.2"
+    },
+    {
+      "name": "flixel-ui",
+      "type": "haxelib",
+      "version": "2.6.2"
+    },
+    {
+      "name": "sl-windows-api",
+      "type": "haxelib",
+      "version": "1.1.0"
+    },
+    {
+      "name": "funkin-modchart",
+      "type": "git",
+      "url": "https://github.com/LeninAsto/FunkinModchart.git"
+    },
+    {
+      "name": "flixel-tools",
+      "type": "haxelib",
+      "version": "1.5.1"
+    },
+    {
+      "name": "hscript-iris",
+      "type": "haxelib",
+      "version": "1.1.3"
+    },
+    {
+      "name": "tjson",
+      "type": "haxelib",
+      "version": "1.4.0"
+    },
+    {
+      "name": "flxanimate",
+      "type": "git",
+      "url": "https://github.com/Dot-Stuff/flxanimate",
+      "ref": "768740a56b26aa0c072720e0d1236b94afe68e3e"
+    },
+    {
+      "name": "linc_luajit",
+      "type": "git",
+      "url": "https://github.com/kittycathy233/linc_luajit"
+    },
+    {
+      "name": "hxdiscord_rpc",
+      "type": "haxelib"
+    },
+    {
+      "name": "hxvlc",
+      "type": "haxelib",
+      "version": "2.0.1"
+    },
+    {
+      "name": "funkin.vis",
+      "type": "git",
+      "url": "https://github.com/FunkinCrew/funkVis",
+      "ref": "22b1ce089dd924f15cdc4632397ef3504d464e90"
+    },
+    {
+      "name": "grig.audio",
+      "type": "git",
+      "url": "https://gitlab.com/haxe-grig/grig.audio.git",
+      "ref": "cbf91e2180fd2e374924fe74844086aab7891666"
+    }
+  ]
+}

@@ -33,6 +33,18 @@ To learn about variables Lua for Modcharts, clic [here](https://github.com/Lenin
 * Karim - Second Porter of Psych Engine Mobile.
 * Moxie - Helper of Psych Engine Mobile.
 
+### This engine works with hmm, so you need to install it first:
+
+```bash
+
+haxelib install hmm
+
+# After that, run:
+
+haxelib run hmm install
+
+```
+
 ### Build Mobile:
 You need have:
 
