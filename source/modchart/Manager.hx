@@ -60,12 +60,18 @@ final class Manager extends FlxBasic {
 	@:noCompletion
 	private inline function __forEachPlayfield(func:PlayField->Void, player:Int = -1) {
 		// If there's only one playfield or a specific player is provided, apply the function directly
-		if (playfieldCount <= 1 || player != -1)
-			return func(playfields[player != -1 ? player : 0]);
+		if (playfieldCount <= 1 || player != -1) {
+			var targetPlayer = player != -1 ? player : 0;
+			if (targetPlayer < playfieldCount && playfields[targetPlayer] != null)
+				return func(playfields[targetPlayer]);
+			return;
+		}
 
 		// Otherwise, apply the function to all playfields
-		for (i in 0...playfields.length)
-			func(playfields[i]);
+		for (i in 0...playfieldCount) {
+			if (playfields[i] != null)
+				func(playfields[i]);
+		}
 	}
 
 	/**
@@ -231,8 +237,10 @@ final class Manager extends FlxBasic {
 	/**
 	 * Adds a new playfield to the Manager.
 	 */
-	public inline function addPlayfield()
-		playfields[playfieldCount++] = new PlayField();
+	public inline function addPlayfield() {
+		if (playfieldCount < playfields.length)
+			playfields[playfieldCount++] = new PlayField();
+	}
 
 	/**
 	 * Updates all playfields in the game loop.
@@ -251,16 +259,22 @@ final class Manager extends FlxBasic {
 	override function draw():Void {
 		var total = 0;
 		__forEachPlayfield(pf -> {
-			pf.draw();
-			total += pf.drawCB.length;
+			if (pf != null && pf.drawCB != null) {
+				pf.draw();
+				total += pf.drawCB.length;
+			}
 		});
+
+		if (total == 0) return;
 
 		var drawQueue:haxe.ds.Vector<Funny> = new haxe.ds.Vector<Funny>(total);
 
 		var j = 0;
 		__forEachPlayfield(pf -> {
-			for (x in pf.drawCB)
-				drawQueue[j++] = x;
+			if (pf != null && pf.drawCB != null) {
+				for (x in pf.drawCB)
+					drawQueue[j++] = x;
+			}
 		});
 
 		drawQueue.sort((a, b) -> {
@@ -268,7 +282,8 @@ final class Manager extends FlxBasic {
 		});
 
 		for (item in drawQueue) {
-			item.callback();
+			if (item != null && item.callback != null)
+				item.callback();
 		}
 	}
 
@@ -279,7 +294,8 @@ final class Manager extends FlxBasic {
 		super.destroy();
 
 		__forEachPlayfield(pf -> {
-			pf.destroy();
+			if (pf != null)
+				pf.destroy();
 		});
 	}
 
