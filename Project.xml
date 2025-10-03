@@ -208,10 +208,11 @@
 	<!-- ____________________________ Modcharts? _______________________________ -->
 
     <section if="MODCHARTS_NOTITG_ALLOWED">
+		<assets path="assets/modchart"/>
 		<haxedef name="FM_ENGINE" value="PSYCH"/>
     	<haxedef name="FM_ENGINE_VERSION" value="1.0"/>
-		<haxelib name="funkin-modchart" version="git"/>
     	<haxeflag name="--macro" value="modchart.core.macros.Macro.includeFiles()"/>
+		<haxeflag name="source/extraParams.hxml"/>
 	</section>
 
 	<!-- _________________________________ Custom _______________________________ -->

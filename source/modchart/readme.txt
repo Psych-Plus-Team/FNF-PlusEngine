@@ -1,0 +1,1 @@
+Thanks to TheoDev for creating an amazing modcharts library for Friday Night Funkin, this folder is from version 1.2.1 of the github commit "psychfix", several things were modified.
