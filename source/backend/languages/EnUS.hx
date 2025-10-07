@@ -129,11 +129,13 @@ class EnUS
         "options_gameplay" => "Gameplay",
         "options_visuals" => "Visuals",
         "options_graphics" => "Graphics",
+        "options_modchart" => "Modchart",
         "options_language" => "Language",
         "options_mobile" => "Mobile Options",
         "graphics_menu" => "Graphics Settings",
         "visuals_menu" => "Visuals Settings",
         "gameplay_menu" => "Gameplay Settings",
+        "modchart_menu" => "Modchart Settings",
         "language_menu" => "Language Settings",
 
         // Note Colors Menu
@@ -285,6 +287,12 @@ class EnUS
         "description_show_end_countdown" => "If checked, shows a countdown at the end of the song.",
         "setting_end_countdown_seconds" => "End Countdown Seconds:",
         "description_end_countdown_seconds" => "How many seconds should the countdown last at the end of the song.\n(10 - 30)",
+
+        // Modchart Settings
+        "setting_enable_modcharting" => "Enable Modchart Manager",
+        "description_enable_modcharting" => "Enables the Funkin Modchart system.\nSome functions that have to do with notes, whether playerStrums or opponentStrums, and their variables may not be valid while this is active, only the \"noteTween*\" will work.",
+        "setting_hold_subdivisions" => "Hold Subdivisions",
+        "description_hold_subdivisions" => "Subdivides hold/sustain tails for smoother visuals.\nHigher values improve quality but can hurt performance.\n(Recommended: 4-8)",
 
         // Loading Screen
         "now_loading" => "Loading{1}",

@@ -4,16 +4,16 @@ package options;
  * Submenu for modcharting-related options.
  * Allows users to configure settings that affect modchart performance and quality.
  */
-class ModchartingOptionsSubState extends BaseOptionsMenu
+class ModchartOptionsSubState extends BaseOptionsMenu
 {
 	public function new()
 	{
-		title = 'Modcharting Settings';
-		rpcTitle = 'Modcharting Options Menu'; // for Discord Rich Presence
+		title = 'Modchart Settings';
+		rpcTitle = 'Modchart Options Menu'; // for Discord Rich Presence
 
-		// Enable Modcharting option
-		var option:Option = new Option('Enable Modcharting',
-			'Enables the modcharting system.\n(Disabling improves performance)',
+		// Enable Modchart option
+		var option:Option = new Option('Enable Modchart Manager',
+			'Enables the Funkin Modchart system.\nSome functions that have to do with notes, whether playerStrums or opponentStrums, and their variables may not be valid while this is active, only the "noteTween*" will work.',
 			'enableModcharting',
 			BOOL);
 		addOption(option);
