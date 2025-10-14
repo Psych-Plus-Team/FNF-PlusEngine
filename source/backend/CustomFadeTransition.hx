@@ -133,14 +133,14 @@ class CustomFadeTransition extends MusicBeatSubstate {
             
             // Crear puertas con imágenes personalizadas
             topDoor = new FlxSprite();
-            topDoor.loadGraphic(Paths.image('transUp'));
+            topDoor.loadGraphic(Paths.image('ui/transUp'));
             topDoor.scrollFactor.set();
             topDoor.setGraphicSize(width, height);
             topDoor.updateHitbox();
             topDoor.antialiasing = ClientPrefs.data.antialiasing;
             
             bottomDoor = new FlxSprite();
-            bottomDoor.loadGraphic(Paths.image('transDown'));
+            bottomDoor.loadGraphic(Paths.image('ui/transDown'));
             bottomDoor.scrollFactor.set();
             bottomDoor.setGraphicSize(width, height);
             bottomDoor.updateHitbox();

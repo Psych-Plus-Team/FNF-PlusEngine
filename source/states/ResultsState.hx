@@ -80,7 +80,7 @@ class ResultsState extends MusicBeatState
 
         // 2. CAPA MEDIA: backdrop.png (alpha 0.8)
         backdropImage = new FlxSprite();
-        backdropImage.loadGraphic(Paths.image('backdrop'));
+        backdropImage.loadGraphic(Paths.image('ui/backdrop'));
         backdropImage.setGraphicSize(FlxG.width, FlxG.height + 1);
         backdropImage.updateHitbox();
         backdropImage.alpha = 0.8;
@@ -88,7 +88,7 @@ class ResultsState extends MusicBeatState
 
         // 3. CAPA SUPERIOR (pero debajo del texto): flxgroup.png (alpha 0.8)
         flxGroupImage = new FlxSprite();
-        flxGroupImage.loadGraphic(Paths.image('flxgroup'));
+        flxGroupImage.loadGraphic(Paths.image('ui/flxgroup'));
         flxGroupImage.setGraphicSize(FlxG.width, FlxG.height + 1);
         flxGroupImage.updateHitbox();
         flxGroupImage.alpha = 0.4;

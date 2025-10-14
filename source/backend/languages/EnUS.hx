@@ -63,7 +63,7 @@ class EnUS
         "storyname_weekend1" => "Due Debts",
 
         // Freeplay
-        "personal_best" => "PERSONAL BEST: {1} ({2}%)",
+        "personal_best" => "PERSONAL BEST:\n{1} ({2}%)",
         "freeplay_tip" => "Press SPACE to listen to the Song / Press CTRL to open the Gameplay Changers Menu / Press RESET to Reset your Score and Accuracy.",
         "musicplayer_playing" => "PLAYING: {1}",
         "musicplayer_paused" => "PLAYING: {1} (PAUSED)",

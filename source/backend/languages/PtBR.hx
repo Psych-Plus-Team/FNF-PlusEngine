@@ -51,7 +51,7 @@ class PtBR
         "blueballed" => "Broxadas: {1}",
 
         // Story Mode
-        "week_score" => "PONTUAÇÃO: {1}",
+        "week_score" => "PONTUAÇÃO:{1}",
         "storyname_tutorial" => "Tutorial",
         "storyname_week1" => "Daddy Dearest",
         "storyname_week2" => "Spooky Month",
@@ -63,7 +63,7 @@ class PtBR
         "storyname_weekend1" => "Dívidas Fora do Prazo",
 
         // Freeplay
-        "personal_best" => "MELHOR PONTUAÇÃO: {1} ({2}%)",
+        "personal_best" => "MELHOR PONTUAÇÃO:\n{1} ({2}%)",
         "freeplay_tip" => "Aperte SPACE para ouvir a Música / Aperte CTRL para abrir o Menu de Modificadores / Aperte RESET para limpar sua pontuação.",
         "musicplayer_playing" => "MÚSICA: {1}",
         "musicplayer_paused" => "MÚSICA: {1} (PAUSADO)",

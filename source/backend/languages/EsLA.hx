@@ -61,7 +61,7 @@ class EsLA
         "storyname_weekend1" => "Deudas vencidas",
 
         // Freeplay
-        "personal_best" => "MEJOR PUNTUACIÓN: {1} ({2}%)",
+        "personal_best" => "MEJOR PUNTUACIÓN:\n{1} ({2}%)",
         "freeplay_tip" => "Toca ESPACIO para escuchar la canción / Tocar CTRL abre menú de cambios de juego / Toca REINICIAR para restablecer puntuación y precisión.",
         "musicplayer_playing" => "MÚSICA: {1}",
         "musicplayer_paused" => "MÚSICA: {1} (PAUSADO)",
