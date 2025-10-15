@@ -215,7 +215,21 @@ class AchievementsMenuState extends MusicBeatState
 
 		if (controls.BACK) {
 			FlxG.sound.play(Paths.sound('cancelMenu'));
-			MusicBeatState.switchState(new MainMenuState());
+			
+			// Verificar si venimos de un ModState personalizado
+			#if HSCRIPT_ALLOWED
+			if(states.ModState.sharedVars.exists('cameFromMainMenu') && 
+			   states.ModState.sharedVars.get('cameFromMainMenu') == true)
+			{
+				// Volver al MainMenuState personalizado (ModState)
+				MusicBeatState.switchState(new states.ModState('MainMenuState'));
+			}
+			else
+			#end
+			{
+				// Volver al MainMenuState original
+				MusicBeatState.switchState(new MainMenuState());
+			}
 			goingBack = true;
 		}
 		super.update(elapsed);

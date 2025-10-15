@@ -148,27 +148,46 @@ class HScript extends Iris
 
 		// Some very commonly used classes
 		set('Type', Type);
+		set('Map', haxe.ds.StringMap);
 		#if sys
 		set('File', File);
 		set('FileSystem', FileSystem);
 		#end
 		set('FlxG', CustomFlxG);
-		set('FlxMath', flixel.math.FlxMath);
+		set('FlxMath', CustomFlxMath);
 		set('FlxSprite', flixel.FlxSprite);
 		set('FlxText', flixel.text.FlxText);
+		set('FlxTextAlign', CustomFlxTextAlign);
+		set('FlxTextBorderStyle', CustomFlxTextBorderStyle);
 		set('FlxCamera', flixel.FlxCamera);
 		set('PsychCamera', backend.PsychCamera);
 		set('FlxTimer', flixel.util.FlxTimer);
 		set('FlxTween', flixel.tweens.FlxTween);
 		set('FlxEase', flixel.tweens.FlxEase);
+		set('FlxFlicker', flixel.effects.FlxFlicker);
 		set('FlxColor', CustomFlxColor);
+		set('FlxAxes', CustomFlxAxes);
+		set('FlxTypedGroup', flixel.group.FlxTypedGroup);
+		set('FlxGroup', flixel.group.FlxGroup);
 		set('Capabilities', openfl.system.Capabilities);
 		set('RatioScaleMode', flixel.system.scaleModes.RatioScaleMode);
 		set('Countdown', backend.BaseStage.Countdown);
 		set('PlayState', PlayState);
+		set('ModState', states.ModState);
+		set('TitleState', states.TitleState);
+		set('MainMenuState', states.MainMenuState);
+		set('FreeplayState', states.FreeplayState);
+		set('StoryMenuState', states.StoryMenuState);
+		set('LoadingState', states.LoadingState);
+		set('CreditsState', states.CreditsState);
+		set('AchievementsMenuState', states.AchievementsMenuState);
+		set('MusicBeatState', MusicBeatState);
+		set('GameplayChangersSubstate', options.GameplayChangersSubstate);
 		set('Paths', Paths);
 		set('Conductor', Conductor);
 		set('ClientPrefs', ClientPrefs);
+		set('Highscore', backend.Highscore);
+		set('Song', backend.Song);
 		#if ACHIEVEMENTS_ALLOWED
 		set('Achievements', Achievements);
 		#end
@@ -433,6 +452,8 @@ class HScript extends Iris
 		#end
 		set('this', this);
 		set('game', FlxG.state);
+		set('state', FlxG.state);
+		set('modstate', FlxG.state);
 		set('controls', Controls.instance);
 
 		set('buildTarget', LuaUtils.getBuildTarget());
@@ -610,6 +631,7 @@ class CustomFlxG {
 	public static var sound(get, never):Dynamic;
 	public static var stage(get, never):Dynamic;
 	public static var cameras(get, never):Dynamic;
+	public static var camera(get, never):Dynamic;
 	public static var keys(get, never):Dynamic;
 	public static var mouse(get, never):Dynamic;
 	public static var gamepads(get, never):Dynamic;
@@ -617,6 +639,7 @@ class CustomFlxG {
 	public static var height(get, never):Int;
 	public static var autoPause(get, set):Bool;
 	public static var signals(get, never):Dynamic;
+	public static var random(get, never):Dynamic;
 	
 	// Getters para propiedades
 	static function get_state():Dynamic return FlxG.state;
@@ -624,6 +647,7 @@ class CustomFlxG {
 	static function get_sound():Dynamic return FlxG.sound;
 	static function get_stage():Dynamic return FlxG.stage;
 	static function get_cameras():Dynamic return FlxG.cameras;
+	static function get_camera():Dynamic return FlxG.camera;
 	static function get_keys():Dynamic return FlxG.keys;
 	static function get_mouse():Dynamic return FlxG.mouse;
 	static function get_gamepads():Dynamic return FlxG.gamepads;
@@ -632,6 +656,7 @@ class CustomFlxG {
 	static function get_autoPause():Bool return FlxG.autoPause;
 	static function set_autoPause(value:Bool):Bool return FlxG.autoPause = value;
 	static function get_signals():Dynamic return FlxG.signals;
+	static function get_random():Dynamic return FlxG.random;
 	
 	// Funciones de compatibilidad para mods antiguos
 	public static function addChildBelowMouse(object:Dynamic, ?IndexModifier:Int = 0):Void {
@@ -650,6 +675,54 @@ class CustomFlxG {
 	public static function resetState():Void {
 		FlxG.resetState();
 	}
+}
+
+class CustomFlxMath {
+	// Funciones matemáticas más usadas
+	public static inline function lerp(a:Float, b:Float, ratio:Float):Float
+		return flixel.math.FlxMath.lerp(a, b, ratio);
+	
+	public static inline function bound(value:Float, min:Float, max:Float):Float
+		return flixel.math.FlxMath.bound(value, min, max);
+	
+	public static inline function wrap(value:Int, min:Int, max:Int):Int
+		return flixel.math.FlxMath.wrap(value, min, max);
+	
+	public static inline function remapToRange(value:Float, start1:Float, stop1:Float, start2:Float, stop2:Float):Float
+		return flixel.math.FlxMath.remapToRange(value, start1, stop1, start2, stop2);
+	
+	public static inline function roundDecimal(value:Float, precision:Int):Float
+		return flixel.math.FlxMath.roundDecimal(value, precision);
+	
+	public static inline function isDistanceWithin(spriteA:flixel.FlxSprite, spriteB:flixel.FlxSprite, distance:Float, ?includeScale:Bool = false):Bool
+		return flixel.math.FlxMath.isDistanceWithin(spriteA, spriteB, distance, includeScale);
+	
+	public static inline function distanceBetween(spriteA:flixel.FlxSprite, spriteB:flixel.FlxSprite):Float
+		return flixel.math.FlxMath.distanceBetween(spriteA, spriteB);
+	
+	public static inline function equal(a:Float, b:Float, precision:Float = 0.0000001):Bool
+		return flixel.math.FlxMath.equal(a, b, precision);
+	
+	public static inline function min(a:Float, b:Float):Float
+		return flixel.math.FlxMath.MIN_VALUE_FLOAT;
+	
+	public static inline function max(a:Float, b:Float):Float
+		return flixel.math.FlxMath.MAX_VALUE_FLOAT;
+	
+	public static inline function minInt(a:Int, b:Int):Int
+		return flixel.math.FlxMath.minInt(a, b);
+	
+	public static inline function maxInt(a:Int, b:Int):Int
+		return flixel.math.FlxMath.maxInt(a, b);
+	
+	public static inline function absInt(value:Int):Int
+		return flixel.math.FlxMath.absInt(value);
+	
+	public static inline function signOf(value:Float):Int
+		return flixel.math.FlxMath.signOf(value);
+	
+	public static inline function inBounds(value:Float, min:Float, max:Float):Bool
+		return flixel.math.FlxMath.inBounds(value, min, max);
 }
 
 class CustomFlxColor {
@@ -690,6 +763,32 @@ class CustomFlxColor {
 
 	public static function fromString(str:String):Int
 		return cast FlxColor.fromString(str);
+	
+	public static function interpolate(Color1:Int, Color2:Int, Factor:Float = 0.5):Int
+		return cast FlxColor.interpolate(Color1, Color2, Factor);
+	
+	public static function gradient(Color1:Int, Color2:Int, Steps:Int, ?Ease:Float->Float):Array<Int>
+		return cast FlxColor.gradient(Color1, Color2, Steps, Ease);
+}
+
+class CustomFlxAxes {
+	public static var X(default, null):flixel.util.FlxAxes = flixel.util.FlxAxes.X;
+	public static var Y(default, null):flixel.util.FlxAxes = flixel.util.FlxAxes.Y;
+	public static var XY(default, null):flixel.util.FlxAxes = flixel.util.FlxAxes.XY;
+}
+
+class CustomFlxTextAlign {
+	public static var LEFT(default, null):flixel.text.FlxText.FlxTextAlign = flixel.text.FlxText.FlxTextAlign.LEFT;
+	public static var CENTER(default, null):flixel.text.FlxText.FlxTextAlign = flixel.text.FlxText.FlxTextAlign.CENTER;
+	public static var RIGHT(default, null):flixel.text.FlxText.FlxTextAlign = flixel.text.FlxText.FlxTextAlign.RIGHT;
+	public static var JUSTIFY(default, null):flixel.text.FlxText.FlxTextAlign = flixel.text.FlxText.FlxTextAlign.JUSTIFY;
+}
+
+class CustomFlxTextBorderStyle {
+	public static var NONE(default, null):flixel.text.FlxText.FlxTextBorderStyle = flixel.text.FlxText.FlxTextBorderStyle.NONE;
+	public static var SHADOW(default, null):flixel.text.FlxText.FlxTextBorderStyle = flixel.text.FlxText.FlxTextBorderStyle.SHADOW;
+	public static var OUTLINE(default, null):flixel.text.FlxText.FlxTextBorderStyle = flixel.text.FlxText.FlxTextBorderStyle.OUTLINE;
+	public static var OUTLINE_FAST(default, null):flixel.text.FlxText.FlxTextBorderStyle = flixel.text.FlxText.FlxTextBorderStyle.OUTLINE_FAST;
 }
 
 class CustomInterp extends crowplexus.hscript.Interp

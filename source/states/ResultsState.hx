@@ -352,13 +352,31 @@ class ResultsState extends MusicBeatState
         {
             // NO parar la música: FlxG.sound.music.stop();
             
+            // Guardar información del mod en sharedVars antes de volver a Freeplay
+            #if HSCRIPT_ALLOWED
+            if (params.isMod && params.modFolder != null && params.modFolder != "") {
+                states.ModState.sharedVars.set('cameFromResults', true);
+                states.ModState.sharedVars.set('modFolderFromResults', params.modFolder);
+            }
+            #end
+            
             // Resetear mod directory antes de ir a freeplay
             #if MODS_ALLOWED
             backend.Mods.currentModDirectory = '';
             #end
             
-            // Ir directamente a FreeplayState manteniendo la música
-            MusicBeatState.switchState(new FreeplayState());
+            // Ir directamente a FreeplayState (mod o engine)
+            #if HSCRIPT_ALLOWED
+            if (params.isMod && params.modFolder != null && params.modFolder != "") {
+                // Volver al FreeplayState personalizado del mod (si existe)
+                MusicBeatState.switchState(new states.ModState('FreeplayState'));
+            }
+            else
+            #end
+            {
+                // Volver al FreeplayState original del engine
+                MusicBeatState.switchState(new FreeplayState());
+            }
         }
     }
 

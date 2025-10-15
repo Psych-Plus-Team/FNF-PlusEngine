@@ -42,6 +42,9 @@ class TitleState extends MusicBeatState
 	public static var volumeUpKeys:Array<FlxKey> = [FlxKey.NUMPADPLUS, FlxKey.PLUS];
 
 	public static var initialized:Bool = false;
+	public static var fromSubstate:Bool = false; // Variable para detectar si viene del substate
+	
+	var forceShowIntro:Bool = false; // Si debe forzar mostrar la intro
 
 	var credGroup:FlxGroup = new FlxGroup();
 	var textGroup:FlxGroup = new FlxGroup();
@@ -70,6 +73,16 @@ class TitleState extends MusicBeatState
 		super.create();
 		Paths.clearUnusedMemory();
 
+		// Si viene del substate, forzar reinicio completo
+		if(fromSubstate)
+		{
+			initialized = false;
+			fromSubstate = false;
+			forceShowIntro = true; // Marcar que debe mostrar la intro
+			closedState = false; // Resetear para que las letras aparezcan
+			trace('TitleState: Coming from substate, forcing full restart with intro');
+		}
+
 		if(!initialized)
 		{
 			ClientPrefs.loadPrefs();
@@ -89,7 +102,7 @@ class TitleState extends MusicBeatState
 
 		curWacky = FlxG.random.getObject(getIntroTextShit());
 
-		if(!initialized)
+		if(!initialized || forceShowIntro)
 		{
 			if(FlxG.save.data != null && FlxG.save.data.fullscreen)
 			{
@@ -98,7 +111,7 @@ class TitleState extends MusicBeatState
 			}
 			persistentUpdate = true;
 			persistentDraw = true;
-			MobileData.init();
+			if(!initialized) MobileData.init();
 		}
 
 		if (FlxG.save.data.weekCompleted != null)
@@ -133,8 +146,20 @@ class TitleState extends MusicBeatState
 	function startIntro()
 	{
 		persistentUpdate = true;
+		
+		// Reproducir música si no está inicializado o si no hay música
 		if (!initialized && FlxG.sound.music == null)
+		{
 			FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+			FlxG.sound.music.fadeIn(4, 0, 0.7);
+		}
+		// Si viene del substate y la música existe pero no está sonando, reiniciarla
+		else if (!initialized && FlxG.sound.music != null)
+		{
+			FlxG.sound.music.stop();
+			FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
+			FlxG.sound.music.fadeIn(4, 0, 0.7);
+		}
 
 		loadJsonData();
 		#if TITLE_SCREEN_EASTER_EGG easterEggData(); #end
@@ -216,10 +241,13 @@ class TitleState extends MusicBeatState
 		add(credGroup);
 		add(ngSpr);
 
-		if (initialized)
+		if (initialized && !forceShowIntro)
 			skipIntro();
 		else
+		{
 			initialized = true;
+			forceShowIntro = false; // Resetear después de usarla
+		}
 
 		// credGroup.add(credTextShit);
 	}

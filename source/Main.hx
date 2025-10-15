@@ -199,7 +199,10 @@ class Main extends Sprite
 		DiscordClient.prepare();
 		#end
 		
-		#if desktop FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, toggleFullScreen); #end
+		#if desktop 
+		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, toggleFullScreen);
+		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);
+		#end
 
 		#if mobile
 		#if android FlxG.android.preventDefaultKeys = [BACK]; #end
@@ -245,6 +248,57 @@ class Main extends Sprite
 	function toggleFullScreen(event:KeyboardEvent) {
 		if (Controls.instance.justReleased('fullscreen'))
 			FlxG.fullscreen = !FlxG.fullscreen;
+	}
+
+	function onKeyUp(event:KeyboardEvent) {
+		// Presionar tecla "1" para abrir el selector de mods con states
+		if (event.keyCode == 49) // 49 = tecla "1"
+		{
+			openStateModSubstate();
+		}
+	}
+
+	function openStateModSubstate() {
+		// Lista de estados bloqueados donde no se puede abrir el substate
+		var blockedStates:Array<String> = [
+			'states.PlayState',
+			'states.LoadingState',
+			'options.OptionsState',
+			'states.editors.ChartingState',
+			'states.editors.CharacterEditorState',
+			'states.editors.StageEditorState',
+			'states.editors.WeekEditorState',
+			'states.editors.MenuCharacterEditorState',
+			'states.editors.DialogueEditorState',
+			'states.editors.DialogueCharacterEditorState',
+			'states.editors.NoteSplashEditorState',
+			'states.editors.MasterEditorMenu'
+		];
+		
+		// Verificar que FlxG.state existe y es un MusicBeatState
+		if (FlxG.state != null && Std.isOfType(FlxG.state, backend.MusicBeatState))
+		{
+			// Obtener el nombre de la clase del estado actual
+			var currentStateClass:String = Type.getClassName(Type.getClass(FlxG.state));
+			
+			// Verificar si el estado actual está en la lista de bloqueados
+			if (blockedStates.contains(currentStateClass))
+			{
+				trace('Cannot open StateModSubstate: Currently in $currentStateClass (blocked state)');
+				return;
+			}
+			
+			var state:backend.MusicBeatState = cast FlxG.state;
+			
+			// Pausar el estado actual
+			state.persistentUpdate = false;
+			
+			state.openSubState(new substates.StateModSubstate());
+		}
+		else
+		{
+			trace('Cannot open StateModSubstate: Current state is not a MusicBeatState');
+		}
 	}
 
 	function positionWatermark():Void {

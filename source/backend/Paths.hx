@@ -201,6 +201,9 @@ class Paths
 	inline static public function lua(key:String, ?folder:String)
 		return getPath('$key.lua', TEXT, folder, true);
 
+	inline static public function hx(key:String, ?folder:String)
+		return getPath('states/$key.hx', TEXT, folder, true);
+
 	static public function video(key:String)
 	{
 		#if MODS_ALLOWED
