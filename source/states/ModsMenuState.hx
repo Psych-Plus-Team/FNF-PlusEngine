@@ -918,6 +918,10 @@ class ModsMenuState extends MusicBeatState
 		File.saveContent(path, fileStr);
 		Mods.parseList();
 		Mods.loadTopMod();
+		
+		// Limpiar sharedVars de mods desactivados para evitar memory leaks
+		states.ModState.clearAllSharedVars();
+		trace('ModsMenuState: Cleared all ModState shared vars after mod list change');
 	}
 }
 

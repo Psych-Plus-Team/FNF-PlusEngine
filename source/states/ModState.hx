@@ -29,6 +29,30 @@ class ModState extends MusicBeatState
     // Sistema de variables compartidas entre ModStates
     public static var sharedVars:Map<String, Dynamic> = new Map<String, Dynamic>();
     
+    // Limpia sharedVars (útil al cambiar de mod o resetear)
+    public static function clearAllSharedVars():Void
+    {
+        sharedVars.clear();
+        trace('ModState: All shared vars cleared globally');
+    }
+    
+    // Limpia solo variables de un mod específico (prefix-based)
+    public static function clearModSharedVars(modName:String):Void
+    {
+        var keysToRemove:Array<String> = [];
+        for(key in sharedVars.keys())
+        {
+            if(key.startsWith('${modName}_'))
+                keysToRemove.push(key);
+        }
+        
+        for(key in keysToRemove)
+        {
+            sharedVars.remove(key);
+            trace('ModState: Removed shared var: $key');
+        }
+    }
+    
     public function new(?stateName:String = '')
     {
         super();
@@ -91,21 +115,20 @@ class ModState extends MusicBeatState
     public function loadStateScripts(stateName:String)
     {
         #if (HSCRIPT_ALLOWED && sys)
-        // Intentar restaurar el mod directory desde sharedVars si existe
-        var savedModDir:String = null;
-        if(sharedVars.exists('currentModDirectory'))
+        // Obtener el mod activo actual
+        #if MODS_ALLOWED
+        Mods.loadTopMod(); // Carga el mod activo
+        var currentMod:String = Mods.currentModDirectory;
+        #else
+        var currentMod:String = '';
+        #end
+        
+        // Limpiar sharedVars si cambió el mod
+        var savedModDir:String = sharedVars.exists('currentModDirectory') ? sharedVars.get('currentModDirectory') : null;
+        if(savedModDir != null && savedModDir != currentMod)
         {
-            savedModDir = sharedVars.get('currentModDirectory');
-            #if MODS_ALLOWED
-            Mods.currentModDirectory = savedModDir;
-            #end
-        }
-        else
-        {
-            // Si no hay mod guardado, cargar el mod top (el de mayor prioridad)
-            #if MODS_ALLOWED
-            Mods.loadTopMod();
-            #end
+            trace('ModState: Mod changed from "$savedModDir" to "$currentMod" - Clearing shared vars');
+            sharedVars.clear(); // ✅ Limpia datos del mod anterior
         }
         
         var scriptPath:String = Paths.hx(stateName);
@@ -116,16 +139,18 @@ class ModState extends MusicBeatState
             
             // Guardar el mod directory actual en sharedVars para futuros usos
             #if MODS_ALLOWED
-            if(Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0)
+            if(currentMod != null && currentMod.length > 0)
             {
-                sharedVars.set('currentModDirectory', Mods.currentModDirectory);
+                sharedVars.set('currentModDirectory', currentMod);
             }
             #end
         }
         else
         {
             trace('No script found for state: $stateName at $scriptPath');
-            trace('Current mod directory: ${Mods.currentModDirectory}');
+            #if MODS_ALLOWED
+            trace('Current mod directory: ${currentMod}');
+            #end
         }
         #end
     }
