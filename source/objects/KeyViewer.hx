@@ -10,8 +10,11 @@ import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
 import openfl.display.BitmapData;
 import openfl.display.Shape;
+import openfl.geom.Matrix;
 
 using StringTools;
 
@@ -23,10 +26,12 @@ class KeyViewer extends FlxSpriteGroup
 	public var keyTexts:Array<FlxText> = [];
 	public var keyCount:Int = 4;
 	
+	public var pressureBars:Array<PressureBar> = [];
+	public var flyingBars:Array<PressureBar> = [];
+	
 	public var kpsText:FlxText;
 	public var totalText:FlxText;
 	
-	// Para KPS tracking
 	public var hitArray:Array<Date> = [];
 	public var kps:Int = 0;
 	public var total:Int = 0;
@@ -36,45 +41,49 @@ class KeyViewer extends FlxSpriteGroup
 		super(x, y);
 		instance = this;
 		
-		// Engine es solo 4K (4 teclas fijas)
 		keyCount = 4;
 		
 		createKeyViewer();
-		centerOnScreen(); // Llamar centerOnScreen como el original
-		alpha = 0.6; // Transparencia como en NovaFlare
+		centerOnScreen();
+		alpha = 0.6;
 	}
 	
 	function createKeyViewer()
 	{
-		var keySize:Float = 45; // Más grande que antes (era 35)
-		var spacing:Float = 6; // Más espacio entre teclas
+		var keySize:Float = 45;
+		var spacing:Float = 6;
 		var totalWidth:Float = (keySize + spacing) * keyCount - spacing;
 		
-		// Crear botones de teclas
+		// Crear botones de teclas y texto primero
 		for (i in 0...keyCount)
 		{
 			var keyButton = new KeyButton(i * (keySize + spacing), 0, keySize, i);
 			keys.push(keyButton);
 			add(keyButton);
 			
-			// Crear texto de tecla
 			var keyName:String = getKeyName(i);
-			var keyText = new FlxText(keyButton.x, keyButton.y, keySize, keyName, 14); // Texto más grande
-			var textColor = FlxColor.BLACK; // Negro para fondo blanco
+			var keyText = new FlxText(keyButton.x, keyButton.y, keySize, keyName, 14); 
+			var textColor = FlxColor.WHITE;
 			keyText.setFormat(Paths.font("vcr.ttf"), 14, textColor, CENTER);
-			keyText.y += (keySize - keyText.height) / 2; // Centrar verticalmente
+			keyText.y += (keySize - keyText.height) / 2; 
+			keyText.alpha = 0.6; 
 			keyTexts.push(keyText);
 			add(keyText);
 		}
 		
-		// KPS Text
-		kpsText = new FlxText(0, keySize + 10, totalWidth, "KPS: 0", 14); // Más grande
+		for (i in 0...keyCount)
+		{
+			var pressureBar = new PressureBar(i * (keySize + spacing), 0 - 10, keySize, i);
+			pressureBars.push(pressureBar);
+			add(pressureBar);
+		}
+		
+		kpsText = new FlxText(0, keySize + 10, totalWidth, "KPS: 0", 14);
 		kpsText.setFormat(Paths.font("vcr.ttf"), 14, FlxColor.WHITE, CENTER);
 		kpsText.alpha = 0.8;
 		add(kpsText);
 		
-		// Total Text
-		totalText = new FlxText(0, keySize + 28, totalWidth, "Total: " + total, 14); // Más grande
+		totalText = new FlxText(0, keySize + 28, totalWidth, "Total: " + total, 14);
 		totalText.setFormat(Paths.font("vcr.ttf"), 14, FlxColor.WHITE, CENTER);
 		totalText.alpha = 0.8;
 		add(totalText);
@@ -82,7 +91,6 @@ class KeyViewer extends FlxSpriteGroup
 	
 	function getKeyName(keyIndex:Int):String
 	{
-		// Solo 4 teclas: LEFT, DOWN, UP, RIGHT
 		var keysArray = ['note_left', 'note_down', 'note_up', 'note_right'];
 		
 		if (keyIndex < keysArray.length) {
@@ -99,12 +107,13 @@ class KeyViewer extends FlxSpriteGroup
 	{
 		if (keyIndex >= 0 && keyIndex < keys.length)
 		{
-			// Activar visual de la tecla
 			keys[keyIndex].press();
-			var textColor = FlxColor.BLACK; // Texto negro cuando se presiona
-			keyTexts[keyIndex].color = textColor;
+			var keyColor = CoolUtil.colorFromString(ClientPrefs.data.keyViewerColor);
+			keyTexts[keyIndex].color = keyColor;
+			keyTexts[keyIndex].alpha = 1.0;
 			
-			// Registrar hit para KPS
+			pressureBars[keyIndex].startGrowing();
+			
 			hitArray.unshift(Date.now());
 			total++;
 			updateTexts();
@@ -115,10 +124,26 @@ class KeyViewer extends FlxSpriteGroup
 	{
 		if (keyIndex >= 0 && keyIndex < keys.length)
 		{
-			// Desactivar visual de la tecla
 			keys[keyIndex].release();
-			var textColor = FlxColor.BLACK; // Texto negro siempre (para fondo blanco)
-			keyTexts[keyIndex].color = textColor;
+			keyTexts[keyIndex].color = FlxColor.WHITE;
+			keyTexts[keyIndex].alpha = 0.6;
+			
+			var currentBar = pressureBars[keyIndex];
+			if (currentBar.height > 10) {
+				currentBar.startFlying();
+				flyingBars.push(currentBar);
+				
+				var keySize:Float = 45;
+				var spacing:Float = 6;
+				var keyButton = keys[keyIndex];
+				var newBar = new PressureBar(keyIndex * (keySize + spacing), keyButton.y - 10, keySize, keyIndex);
+				pressureBars[keyIndex] = newBar;
+				add(newBar);
+			} else {
+				currentBar.isGrowing = false;
+				currentBar.alpha = 0;
+				currentBar.visible = false;
+			}
 		}
 	}
 	
@@ -126,16 +151,26 @@ class KeyViewer extends FlxSpriteGroup
 	{
 		super.update(elapsed);
 		
-		// Actualizar KPS
-		var i = hitArray.length - 1;
+		var i = flyingBars.length - 1;
 		while (i >= 0)
 		{
-			var time:Date = hitArray[i];
+			var bar = flyingBars[i];
+			if (bar != null && bar.isDestroyed) {
+				flyingBars.splice(i, 1);
+				remove(bar, true);
+			}
+			i--;
+		}
+		
+		var j = hitArray.length - 1;
+		while (j >= 0)
+		{
+			var time:Date = hitArray[j];
 			if (time != null && time.getTime() + 1000 < Date.now().getTime())
 				hitArray.remove(time);
 			else
-				i = -1; // salir del bucle
-			i--;
+				j = -1;
+			j--;
 		}
 		
 		var newKps = hitArray.length;
@@ -157,7 +192,6 @@ class KeyViewer extends FlxSpriteGroup
 	
 	function getTextColorForBackground(colorName:String):FlxColor
 	{
-		// Para colores claros usar texto oscuro, para colores oscuros usar texto claro
 		switch(colorName.toLowerCase())
 		{
 			case 'white', 'cyan', 'pink', 'orange': 
@@ -167,35 +201,56 @@ class KeyViewer extends FlxSpriteGroup
 		}
 	}
 	
-	// Métodos adicionales requeridos por otros archivos
 	public function updateKeyColors()
 	{
-		// Actualizar colores de las teclas según su estado
 		for (key in keys) {
 			if (key.isPressed) {
 				var keyColor = CoolUtil.colorFromString(ClientPrefs.data.keyViewerColor);
 				key.color = keyColor;
 			} else {
-				key.color = FlxColor.WHITE; // Blanco cuando no está presionada
+				key.color = FlxColor.WHITE; 
 			}
 		}
 		
-		// Actualizar colores del texto según el estado de las teclas
 		for (i in 0...keyTexts.length) {
-			keyTexts[i].color = FlxColor.BLACK; // Negro siempre para fondo blanco
+			if (keys[i].isPressed) {
+				var keyColor = CoolUtil.colorFromString(ClientPrefs.data.keyViewerColor);
+				keyTexts[i].color = keyColor;
+				keyTexts[i].alpha = 1.0;
+			} else {
+				keyTexts[i].color = FlxColor.WHITE; 
+				keyTexts[i].alpha = 0.6; 
+			}
 		}
 	}
 	
 	public function centerOnScreen()
 	{
-		// Centrar el KeyViewer en la pantalla (4 teclas fijas)
-		var keySize:Float = 45; // Mismo tamaño que en createKeyViewer
+		var keySize:Float = 45;
 		var spacing:Float = 6;
-		var totalWidth = (keySize + spacing) * 4 - spacing; // 45px tecla + 6px spacing * 4 teclas
+		var totalWidth = (keySize + spacing) * 4 - spacing;
 		
-		// Usar la misma posición que el backup original + offset aplicado
 		x = (FlxG.width - totalWidth) / 2 + ClientPrefs.data.keyViewerOffset[0];
-		y = FlxG.height - 150 + ClientPrefs.data.keyViewerOffset[1]; // Misma posición que el original
+		y = FlxG.height - 150 + ClientPrefs.data.keyViewerOffset[1];
+	}
+	
+	override function destroy()
+	{
+		for (bar in flyingBars) {
+			if (bar != null) {
+				remove(bar, true);
+			}
+		}
+		flyingBars = [];
+		
+		for (bar in pressureBars) {
+			if (bar != null) {
+				remove(bar, true);
+			}
+		}
+		pressureBars = [];
+		
+		super.destroy();
 	}
 }
 
@@ -204,19 +259,19 @@ class KeyButton extends FlxSprite
 	public var keyIndex:Int;
 	public var isPressed:Bool = false;
 	private var originalAlpha:Float = 0.6;
+	private var pressTween:FlxTween;
+	private var releaseTween:FlxTween;
 	
 	public function new(x:Float, y:Float, size:Float, keyIndex:Int)
 	{
 		super(x, y);
 		this.keyIndex = keyIndex;
 		
-		// Intentar cargar gráfico externo
 		if (Paths.fileExists('images/ui/key.png', IMAGE)) {
 			loadGraphic(Paths.image('ui/key'));
 			setGraphicSize(Std.int(size), Std.int(size));
 			updateHitbox();
 		} else {
-			// Fallback: crear rectángulo con bordes redondeados
 			var shape:Shape = new Shape();
 			shape.graphics.lineStyle(2, FlxColor.WHITE, 0.8);
 			shape.graphics.drawRoundRect(0, 0, size, size, size/6, size/6);
@@ -230,7 +285,6 @@ class KeyButton extends FlxSprite
 			loadGraphic(bitmapData);
 		}
 		
-		// Las teclas empiezan en blanco
 		color = FlxColor.WHITE;
 		alpha = originalAlpha;
 	}
@@ -238,23 +292,132 @@ class KeyButton extends FlxSprite
 	public function press()
 	{
 		isPressed = true;
-		// Cambiar al color personalizado cuando se presiona
 		var keyColor = CoolUtil.colorFromString(ClientPrefs.data.keyViewerColor);
 		color = keyColor;
-		alpha = 1.0; // Brillo completo al presionar
+		alpha = 1.0;
 		
-		// Escalar la tecla para que se vea más grande
-		scale.set(1.1, 1.1); // 10% más grande
+		if (releaseTween != null) {
+			releaseTween.cancel();
+			releaseTween = null;
+		}
+		
+		pressTween = FlxTween.tween(scale, {x: 0.85, y: 0.85}, 0.08, {
+			ease: FlxEase.quadOut
+		});
 	}
 	
 	public function release()
 	{
 		isPressed = false;
-		// Volver a blanco cuando se suelta
 		color = FlxColor.WHITE;
-		alpha = originalAlpha; // Volver a la transparencia original
+		alpha = originalAlpha;
 		
-		// Volver al tamaño normal
-		scale.set(1.0, 1.0);
+		if (pressTween != null) {
+			pressTween.cancel();
+			pressTween = null;
+		}
+		
+		releaseTween = FlxTween.tween(scale, {x: 1.0, y: 1.0}, 0.12, {
+			ease: FlxEase.elasticOut
+		});
+	}
+	
+	override function destroy()
+	{
+		if (pressTween != null) {
+			pressTween.cancel();
+			pressTween = null;
+		}
+		if (releaseTween != null) {
+			releaseTween.cancel();
+			releaseTween = null;
+		}
+		super.destroy();
+	}
+}
+
+class PressureBar extends FlxSprite
+{
+	public var keyIndex:Int;
+	public var isGrowing:Bool = false;
+	public var isDestroyed:Bool = false;
+	private var maxHeight:Float = 500;
+	private var growSpeed:Float = 150;
+	private var flyTween:FlxTween;
+	private var releaseTween:FlxTween;
+	private var fadeTween:FlxTween;
+	public var baseWidth:Float; 
+	public var baseY:Float; 
+	
+	public function new(x:Float, y:Float, width:Float, keyIndex:Int)
+	{
+		super(x, y);
+		this.keyIndex = keyIndex;
+		this.baseWidth = width;
+		this.baseY = y;
+		
+		var keyColor = CoolUtil.colorFromString(ClientPrefs.data.keyViewerColor);
+		makeGraphic(Std.int(width), 1, keyColor);
+		
+		alpha = 0;
+		visible = false;
+	}
+	
+	public function startGrowing()
+	{
+		isGrowing = true;
+		visible = true;
+		alpha = 0.8;
+		var keyColor = CoolUtil.colorFromString(ClientPrefs.data.keyViewerColor);
+		makeGraphic(Std.int(baseWidth), 10, keyColor);
+		y = baseY - height;
+	}
+	
+	override function update(elapsed:Float)
+	{
+		super.update(elapsed);
+		
+		if (isGrowing && !isDestroyed)
+		{
+			var newHeight = height + (growSpeed * elapsed);
+			if (newHeight > maxHeight) newHeight = maxHeight;
+			
+			var keyColor = CoolUtil.colorFromString(ClientPrefs.data.keyViewerColor);
+			makeGraphic(Std.int(baseWidth), Std.int(newHeight), keyColor);
+			
+			y = baseY - height;
+		}
+	}
+	
+	public function startFlying()
+	{
+		isGrowing = false;
+		
+		var currentY = y;
+		flyTween = FlxTween.tween(this, {y: currentY - 100}, 1.0, {
+			ease: FlxEase.quadOut,
+			onComplete: function(tween:FlxTween) {
+				isDestroyed = true;
+			}
+		});
+		
+		fadeTween = FlxTween.tween(this, {alpha: 0}, 1.0, {
+			ease: FlxEase.quadOut
+		});
+	}
+	
+
+	
+	override function destroy()
+	{
+		if (flyTween != null) {
+			flyTween.cancel();
+			flyTween = null;
+		}
+		if (fadeTween != null) {
+			fadeTween.cancel();
+			fadeTween = null;
+		}
+		super.destroy();
 	}
 }
