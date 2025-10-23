@@ -124,7 +124,11 @@ class Psych implements IAdapter {
 	}
 
 	public function getHoldSubdivisions():Int {
-		return 4;
+		#if (FM_ENGINE_VERSION >= "0.7")
+		return ClientPrefs.data.holdSubdivisions;
+		#else
+		return ClientPrefs.holdSubdivisions;
+		#end
 	}
 
 	public function getHoldParentTime(arrow:FlxSprite) {
