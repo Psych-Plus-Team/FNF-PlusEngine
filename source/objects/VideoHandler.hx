@@ -31,13 +31,12 @@ class VideoHandler extends FlxSprite
 	private var pauseMusic:Bool = false;
 	private var videoSprite:FlxVideoSprite;
 	private var isCurrentlyPlaying:Bool = false;
-	private var updateListener:Event->Void;
 	private var allowDestroy:Bool = false; // Prevenir destrucción prematura
-	private var preventExternalDestroy:Bool = false; // Prevenir destrucción externa
 	private var isDestroyed:Bool = false; // Bandera para evitar múltiples destrucciones
 	private var endReachedCalled:Bool = false; // Prevenir múltiples llamadas a onVLCEndReached
 	private static var instanceCounter:Int = 0;
 	private var instanceId:Int;
+	private var videoStartTime:Float = 0;
 
 	// Propiedades emuladas de VLC
 	public var isPlaying(get, never):Bool;
@@ -62,10 +61,6 @@ class VideoHandler extends FlxSprite
 		// Marcar como persistente para evitar destrucción automática
 		this.active = true;
 		this.exists = true;
-		
-		// Setup del listener de update
-		updateListener = updateVideo;
-	
 	}
 
 	/**
@@ -104,19 +99,10 @@ class VideoHandler extends FlxSprite
 			pauseBool = PauseMusic == "true" || PauseMusic == "1";
 		}
 
-
 		pauseMusic = pauseBool;
 
 		if (FlxG.sound.music != null && pauseBool)
 			FlxG.sound.music.pause();
-
-		FlxG.stage.addEventListener(Event.ENTER_FRAME, updateListener);
-
-		if (FlxG.autoPause)
-		{
-			FlxG.signals.focusGained.add(resume);
-			FlxG.signals.focusLost.add(pause);
-		}
 
 		// Determinar la ruta del video
 		var videoPath = Path;
@@ -142,7 +128,7 @@ class VideoHandler extends FlxSprite
 			// Configurar callback de fin
 			videoSprite.bitmap.onEndReached.add(onVLCEndReached);
 			
-			// Centrar el video en pantalla (pero sin añadirlo al state)
+			// Centrar el video en pantalla
 			videoSprite.screenCenter();
 			
 			// Para hxvlc, el loop se maneja diferente
@@ -151,10 +137,10 @@ class VideoHandler extends FlxSprite
 				// Remover el callback anterior y añadir uno que reinicie
 				videoSprite.bitmap.onEndReached.removeAll();
 				videoSprite.bitmap.onEndReached.add(function() {
-					if (isCurrentlyPlaying) {
+					if (isCurrentlyPlaying && !isDestroyed) {
 						videoSprite.stop();
 						haxe.Timer.delay(function() {
-							if (videoSprite != null && isCurrentlyPlaying) {
+							if (videoSprite != null && isCurrentlyPlaying && !isDestroyed) {
 								videoSprite.play();
 							}
 						}, 50);
@@ -179,19 +165,17 @@ class VideoHandler extends FlxSprite
 				// Configurar volumen inicial
 				haxe.Timer.delay(updateVolumeInternal, 200);
 			} else {
-				trace('VideoHandler: Error starting playback: $videoPath');
+				trace('VideoHandler[${instanceId}]: Error starting playback: $videoPath');
 				cleanupVideoSprite();
 			}
 		} else {
-			trace('VideoHandler: Error loading video: $videoPath');
+			trace('VideoHandler[${instanceId}]: Error loading video: $videoPath');
 			videoSprite = null;
 		}
 		#else
-		trace('VideoHandler: hxvlc not available');
+		trace('VideoHandler[${instanceId}]: hxvlc not available');
 		#end
 	}
-
-	private var videoStartTime:Float = 0;
 
 	private function onVLCEndReached():Void
 	{
@@ -209,9 +193,6 @@ class VideoHandler extends FlxSprite
 			trace('VideoHandler[${instanceId}]: Not currently playing, skipping onVLCEndReached');
 			return;
 		}
-		
-		// Marcar inmediatamente como no reproduciendo para evitar race conditions
-		isCurrentlyPlaying = false;
 		
 		// Verificar que haya pasado suficiente tiempo desde que comenzó el video
 		var currentTime = haxe.Timer.stamp();
@@ -232,20 +213,11 @@ class VideoHandler extends FlxSprite
 		
 		trace('VideoHandler[${instanceId}]: Processing video end...');
 		
+		// Marcar como no reproduciendo ANTES de limpiar
+		isCurrentlyPlaying = false;
+		
 		if (FlxG.sound.music != null && pauseMusic)
 			FlxG.sound.music.resume();
-
-		if (FlxG.stage.hasEventListener(Event.ENTER_FRAME))
-			FlxG.stage.removeEventListener(Event.ENTER_FRAME, updateListener);
-
-		if (FlxG.autoPause)
-		{
-			if (FlxG.signals.focusGained.has(resume))
-				FlxG.signals.focusGained.remove(resume);
-
-			if (FlxG.signals.focusLost.has(pause))
-				FlxG.signals.focusLost.remove(pause);
-		}
 
 		cleanupVideoSprite();
 
@@ -255,8 +227,7 @@ class VideoHandler extends FlxSprite
 
 	private function cleanupVideoSprite():Void
 	{
-		trace('VideoHandler[${instanceId}]: cleanupVideoSprite called from:');
-		trace(haxe.CallStack.toString(haxe.CallStack.callStack()));
+		trace('VideoHandler[${instanceId}]: cleanupVideoSprite called');
 		
 		// Evitar múltiples limpiezas
 		if (isDestroyed) {
@@ -276,19 +247,27 @@ class VideoHandler extends FlxSprite
 		if (videoSprite != null) {
 			trace('VideoHandler[${instanceId}]: Cleaning up video sprite...');
 			
+			// IMPORTANTE: Detener el video primero
+			try {
+				videoSprite.stop();
+				trace('VideoHandler[${instanceId}]: Video stopped');
+			} catch (e:Dynamic) {
+				trace('VideoHandler[${instanceId}]: Error stopping video: $e');
+			}
+			
 			// Remover callbacks de forma segura
 			#if hxvlc
 			try {
 				if (videoSprite.bitmap != null && videoSprite.bitmap.onEndReached != null) {
 					videoSprite.bitmap.onEndReached.removeAll();
+					trace('VideoHandler[${instanceId}]: Callbacks removed');
 				}
 			} catch (e:Dynamic) {
 				trace('VideoHandler[${instanceId}]: Error removing callbacks: $e');
 			}
 			#end
 			
-			// NO intentar remover del state ya que no lo añadimos directamente
-			
+			// Destruir el sprite de video
 			try {
 				videoSprite.destroy();
 				videoSprite = null;
@@ -300,37 +279,6 @@ class VideoHandler extends FlxSprite
 		} else {
 			trace('VideoHandler[${instanceId}]: No video sprite to clean up');
 		}
-	}
-
-	private function updateVideo(?E:Event):Void
-	{
-		// Verificar si ya fue destruido
-		if (isDestroyed) {
-			return;
-		}
-		
-		// SKIP FUNCTIONALITY DISABLED - No permitir saltar videos con teclas
-		// Esto previene crashes de null object reference cuando se presiona espacio
-		
-		// Solo continuar si el video sigue activo y no destruido
-		if (!isCurrentlyPlaying || videoSprite == null || isDestroyed) {
-			return;
-		}
-
-		if (canUseAutoResize && videoSprite != null && videoSprite.bitmap != null)
-		{
-			var newWidth = calcSize(0);
-			var newHeight = calcSize(1);
-			
-			if (newWidth > 0 && newHeight > 0) {
-				videoSprite.setGraphicSize(newWidth, newHeight);
-				videoSprite.updateHitbox();
-				videoSprite.screenCenter();
-			}
-		}
-
-		// Actualizar volumen solo si el video sigue activo
-		updateVolumeInternal();
 	}
 
 	private function updateVolumeInternal():Void
@@ -357,60 +305,35 @@ class VideoHandler extends FlxSprite
 		#end
 	}
 
-	public function calcSize(Ind:Int):Int
-	{
-		var appliedWidth:Float = Lib.current.stage.stageHeight * (FlxG.width / FlxG.height);
-		var appliedHeight:Float = Lib.current.stage.stageWidth * (FlxG.height / FlxG.width);
-
-		if (appliedHeight > Lib.current.stage.stageHeight)
-			appliedHeight = Lib.current.stage.stageHeight;
-
-		if (appliedWidth > Lib.current.stage.stageWidth)
-			appliedWidth = Lib.current.stage.stageWidth;
-
-		switch (Ind)
-		{
-			case 0:
-				return Std.int(appliedWidth);
-			case 1:
-				return Std.int(appliedHeight);
-		}
-
-		return 0;
-	}
-
 	// Métodos de control de reproducción
 	public function pause():Void 
 	{
 		#if hxvlc
-		if (videoSprite != null) {
+		if (videoSprite != null && !isDestroyed) {
 			videoSprite.pause();
-		} else {
-			trace('VideoHandler[${instanceId}]: Cannot pause - videoSprite is null');
 		}
-		#else
-		trace('VideoHandler[${instanceId}]: Cannot pause - hxvlc not available');
 		#end
 	}
 
 	public function resume():Void 
 	{
 		#if hxvlc
-		if (videoSprite != null) {
+		if (videoSprite != null && !isDestroyed) {
 			videoSprite.resume();
-		} else {
-			trace('VideoHandler[${instanceId}]: Cannot resume - videoSprite is null');
 		}
-		#else
-		trace('VideoHandler[${instanceId}]: Cannot resume - hxvlc not available');
 		#end
 	}
 
 	public function stop():Void 
 	{
-		trace('VideoHandler[${instanceId}]: stop() called - DISABLED for safety');
-		// MÉTODO DESHABILITADO - Puede causar crashes de null object reference
-		// Los videos deben terminar naturalmente
+		#if hxvlc
+		if (videoSprite != null && !isDestroyed) {
+			videoSprite.stop();
+			if (!endReachedCalled) {
+				haxe.Timer.delay(onVLCEndReached, 1);
+			}
+		}
+		#end
 	}
 
 	// Getters para propiedades emuladas
@@ -474,14 +397,26 @@ class VideoHandler extends FlxSprite
 	// Métodos para emular VLC
 	public function dispose():Void 
 	{
-		cleanupVideoSprite();
+		#if hxvlc
+		if (videoSprite != null && !isDestroyed) {
+			videoSprite.stop();
+			if (!endReachedCalled) {
+				haxe.Timer.delay(onVLCEndReached, 1);
+			}
+		}
+		#end
 	}
 
 	public function finishVideo():Void 
 	{
-		trace('VideoHandler[${instanceId}]: finishVideo() called - DISABLED for safety');
-		// MÉTODO DESHABILITADO - Puede causar crashes de null object reference
-		// Los videos deben terminar naturalmente
+		#if hxvlc
+		if (videoSprite != null && !isDestroyed) {
+			videoSprite.stop();
+			if (!endReachedCalled) {
+				haxe.Timer.delay(onVLCEndReached, 1);
+			}
+		}
+		#end
 	}
 	
 	// Método para verificar si el VideoHandler es válido
@@ -489,22 +424,6 @@ class VideoHandler extends FlxSprite
 	{
 		var valid = videoSprite != null && !allowDestroy && !isDestroyed;
 		return valid;
-	}
-	
-	// Método para configurar el callback de fin manualmente
-	public function setupEndCallback():Void 
-	{
-		#if hxvlc
-		if (videoSprite != null && videoSprite.bitmap != null && isCurrentlyPlaying && !isDestroyed) {
-			videoSprite.bitmap.onEndReached.add(onVLCEndReached);
-		}
-		#end
-	}
-	
-	// Método para permitir destrucción manual
-	public function allowDestruction():Void 
-	{
-		allowDestroy = true;
 	}
 
 	// Propiedad bitmapData para compatibilidad con scripts
@@ -542,18 +461,6 @@ class VideoHandler extends FlxSprite
 		
 		// Marcar como destruido inmediatamente para evitar re-entrada
 		isDestroyed = true;
-		
-		if (FlxG.stage.hasEventListener(Event.ENTER_FRAME))
-			FlxG.stage.removeEventListener(Event.ENTER_FRAME, updateListener);
-
-		if (FlxG.autoPause)
-		{
-			if (FlxG.signals.focusGained.has(resume))
-				FlxG.signals.focusGained.remove(resume);
-
-			if (FlxG.signals.focusLost.has(pause))
-				FlxG.signals.focusLost.remove(pause);
-		}
 
 		cleanupVideoSprite();
 		
@@ -566,7 +473,22 @@ class VideoHandler extends FlxSprite
 		trace('VideoHandler[${instanceId}]: Destroy completed');
 	}
 	
-	// Sobrescribir update para compatibilidad con scripts antiguos
+	// Método de emergencia para forzar limpieza
+	public function forceCleanup():Void 
+	{
+		trace('VideoHandler[${instanceId}]: Force cleanup requested');
+		allowDestroy = true;
+		isDestroyed = false; // Permitir una limpieza final
+		cleanupVideoSprite();
+	}
+	
+	// Método para permitir destrucción manual
+	public function allowDestruction():Void 
+	{
+		allowDestroy = true;
+	}
+	
+	// Sobrescribir update para auto-resize si está habilitado
 	override public function update(elapsed:Float):Void 
 	{
 		// Verificar si ya fue destruido antes de actualizar
@@ -575,16 +497,25 @@ class VideoHandler extends FlxSprite
 		}
 		
 		super.update(elapsed);
-		// El script lua puede llamar FlxG.stage.removeEventListener("enterFrame", video.update)
-		// pero esto no afecta nuestro funcionamiento interno ya que usamos updateListener
-	}
-	
-	// Método de emergencia para forzar limpieza
-	public function forceCleanup():Void 
-	{
-		trace('VideoHandler[${instanceId}]: Force cleanup requested');
-		allowDestroy = true;
-		isDestroyed = false; // Permitir una limpieza final
-		cleanupVideoSprite();
+		
+		// Auto-resize del video si está habilitado
+		if (canUseAutoResize && isCurrentlyPlaying && videoSprite != null && videoSprite.bitmap != null)
+		{
+			try {
+				var newWidth = Std.int(FlxG.width);
+				var newHeight = Std.int(FlxG.height);
+				
+				if (newWidth > 0 && newHeight > 0) {
+					videoSprite.setGraphicSize(newWidth, newHeight);
+					videoSprite.updateHitbox();
+					videoSprite.screenCenter();
+				}
+			} catch (e:Dynamic) {
+				trace('VideoHandler[${instanceId}]: Error resizing video: $e');
+			}
+		}
+		
+		// Actualizar volumen
+		updateVolumeInternal();
 	}
 }
