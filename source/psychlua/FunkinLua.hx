@@ -57,6 +57,9 @@ class FunkinLua {
 	public var scriptName:String = '';
 	public var modFolder:String = null;
 	public var closed:Bool = false;
+	
+	// Contador de errores de Lua para estadísticas
+	public static var lua_Errors:Int = 0;
 
 	#if HSCRIPT_ALLOWED
 	public var hscript:HScript = null;
@@ -1758,6 +1761,8 @@ class FunkinLua {
 			// También enviar al TraceDisplay si es un error
 			if(color == FlxColor.RED) {
 				TraceDisplay.addLuaError(text);
+				// Incrementar contador de errores para estadísticas
+				lua_Errors++;
 			}
 		}
 	}

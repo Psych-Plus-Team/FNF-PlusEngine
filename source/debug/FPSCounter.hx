@@ -85,6 +85,15 @@ class FPSCounter extends TextField
 	**/
 	private var lastCommit:String = "Loading...";
 	private var commitTime:String = ""; // Hora del commit
+	private var commitDate:String = ""; // Fecha del commit
+	
+	/**
+		Script statistics from PlayState
+	**/
+	public var luaScriptsLoaded:Int = 0;
+	public var luaScriptsFailed:Int = 0;
+	public var hscriptsLoaded:Int = 0;
+	public var hscriptsFailed:Int = 0;
 
 	/**
 		CPU and GPU usage tracking - ELIMINADO para optimización
@@ -252,20 +261,21 @@ class FPSCounter extends TextField
 						   '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Commit: ' + lastCommit + '</font>';
 			
 			case 2:
-				// Modo debug extendido - datos esenciales solamente
-				displayText = '<font face="' + Paths.font("aller.ttf") + '" size="24" color="' + colorHex + '">' + currentFPS + '</font>' +
-						   '<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '"> FPS</font>' +
-						   '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Memory: ' + currentMemoryStr + '</font>' +
-						   '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Peak: ' + peakMemoryStr + '</font>' +
-						   '\n\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">' + os.substring(1) + '</font>' +
-						   '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Commit: ' + lastCommit + '</font>';
-				
-				// Mostrar la hora del commit si está disponible (ANTES de expandir debug completo)
-				if (commitTime != null && commitTime.length > 0) {
-					displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Time: ' + commitTime + ' UTC</font>';
-				}
-				
-				// Solo datos esenciales y rápidos de obtener
+			// Modo debug extendido - datos esenciales solamente
+			displayText = '<font face="' + Paths.font("aller.ttf") + '" size="24" color="' + colorHex + '">' + currentFPS + '</font>' +
+					   '<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '"> FPS</font>' +
+					   '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Memory: ' + currentMemoryStr + '</font>' +
+					   '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Peak: ' + peakMemoryStr + '</font>' +
+					   '\n\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">' + os.substring(1) + '</font>' +
+					   '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Last Commit: ' + lastCommit + '</font>';
+			
+			// Mostrar la fecha y hora del commit si están disponibles
+			if (commitDate != null && commitDate.length > 0) {
+				displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Date: ' + commitDate + '</font>';
+			}
+			if (commitTime != null && commitTime.length > 0) {
+				displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Time: ' + commitTime + ' UTC</font>';
+			}				// Solo datos esenciales y rápidos de obtener
 				displayText += '\n\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Objects: ' + FlxG.state.members.length + '</font>';
 				displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Uptime: ' + getUptime() + '</font>';
 				displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">State: ' + cachedCurrentState + '</font>';
@@ -281,12 +291,23 @@ class FPSCounter extends TextField
 				displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="#FFFF00">BPM: ' + currentBPM + '</font>';
 				displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="#FFFF00">Health: ' + healthPercent + '%</font>';
 				
-				// Mostrar Rating y Combo (MAGENTA)
-				displayText += '\n\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="#FF00FF">Rating: ' + lastRating + '</font>';
-				displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="#FF00FF">Combo: x' + comboCount + '</font>';
+			// Mostrar Rating y Combo (MAGENTA)
+			displayText += '\n\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="#FF00FF">Rating: ' + lastRating + '</font>';
+			displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="#FF00FF">Combo: x' + comboCount + '</font>';
+			
+			// Mostrar estadísticas de scripts (GREEN/ORANGE para éxito/fallo)
+			var totalScripts = luaScriptsLoaded + hscriptsLoaded;
+			var totalFailed = luaScriptsFailed + hscriptsFailed;
+			displayText += '\n\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="#00FF00">Scripts: ' + totalScripts + '</font>';
+			if (totalFailed > 0) {
+				displayText += ' <font face="' + Paths.font("aller.ttf") + '" size="14" color="#FF8800">(Failed: ' + totalFailed + ')</font>';
+			}
+			if (totalScripts > 0) {
+				displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="12" color="#888888">  Lua: ' + luaScriptsLoaded + ' | HScript: ' + hscriptsLoaded + '</font>';
+			}
 
-				displayText += '\n\n\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Plus Engine v'+ MainMenuState.plusEngineVersion +'</font>';
-				displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Psych v'+ MainMenuState.psychEngineVersion +'</font>';
+			displayText += '\n\n\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Plus Engine v'+ MainMenuState.plusEngineVersion +'</font>';
+			displayText += '\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="' + colorHex + '">Psych v'+ MainMenuState.psychEngineVersion +'</font>';
 		}
 
 		// Usar htmlText para diferentes tamaños de fuente
@@ -402,11 +423,11 @@ class FPSCounter extends TextField
 				this.parent.addChildAt(bgShape, this.parent.getChildIndex(this));
 			}
 
-			// Calcular el tamaño del fondo basado en el texto
-			var lines = switch (debugLevel) {
-				case 1: 6; // FPS, Memory, Peak, espacio, OS, Commit
-				case 2: 24.5; // Lo anterior + espacio + Objects, Uptime, State + espacio + Step, Beat, Section + espacio + Speed, BPM, Health
-				default: 0;
+		// Calcular el tamaño del fondo basado en el texto
+		var lines = switch (debugLevel) {
+			case 1: 6; // FPS, Memory, Peak, espacio, OS, Commit
+			case 2: 29; // Aumentado para incluir: Date, Time, Scripts (hasta 3 líneas más)
+			default: 0;
 			}
 			
 			var bgWidth = 325; // Ancho suficiente
@@ -444,7 +465,7 @@ class FPSCounter extends TextField
 					var message:String = latestCommit.commit.message;
 					
 					// Obtener la fecha y hora del commit
-					var commitDate:String = latestCommit.commit.author.date; // Formato ISO 8601
+					var commitDateRaw:String = latestCommit.commit.author.date; // Formato ISO 8601
 					
 					// Tomar solo la primera línea del mensaje
 					if (message.indexOf('\n') != -1) {
@@ -456,12 +477,19 @@ class FPSCounter extends TextField
 						message = message.substring(0, 30) + "...";
 					}
 					
-					// Formatear la hora del commit
-					if (commitDate != null && commitDate.length > 0) {
-						// Formato: 2024-11-02T15:30:45Z -> extraer hora
-						var timePart = commitDate.split('T')[1]; // "15:30:45Z"
-						if (timePart != null) {
-							commitTime = timePart.substr(0, 5); // "15:30"
+					// Formatear la fecha y hora del commit
+					if (commitDateRaw != null && commitDateRaw.length > 0) {
+						// Formato: 2024-11-02T15:30:45Z
+						var parts = commitDateRaw.split('T');
+						if (parts.length >= 2) {
+							// Extraer fecha (2024-11-02)
+							commitDate = parts[0];
+							
+							// Extraer hora (15:30:45Z -> 15:30)
+							var timePart = parts[1];
+							if (timePart != null) {
+								commitTime = timePart.substr(0, 5); // "15:30"
+							}
 						}
 					}
 					
@@ -469,10 +497,12 @@ class FPSCounter extends TextField
 				} else {
 					lastCommit = "Build version";
 					commitTime = "";
+					commitDate = "";
 				}
 			} catch (e:Dynamic) {
 				lastCommit = "Build version";
 				commitTime = "";
+				commitDate = "";
 			}
 		};
 		

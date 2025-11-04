@@ -364,6 +364,11 @@ class PlayState extends MusicBeatState
 	override public function create()
 	{
 		
+		// Resetear contador de errores de scripts
+		#if LUA_ALLOWED
+		FunkinLua.lua_Errors = 0;
+		#end
+		
 		// Guardar el estado original de la ventana al entrar a PlayState
 		var window = openfl.Lib.application.window;
 		originalWinWidth = window.width;
@@ -821,6 +826,9 @@ class PlayState extends MusicBeatState
 
 		super.create();
 		Paths.clearUnusedMemory();
+		
+		// Actualizar estadísticas de scripts en el FPSCounter
+		updateScriptStats();
 
 		cacheCountdown();
 		cachePopUpScore();
@@ -3896,11 +3904,14 @@ class PlayState extends MusicBeatState
 		}
 		#end
 
-		if (Main.fpsVar != null) {
-			Main.fpsVar.modAuthor = "";
-		}
-		
-		instance = null;
+	if (Main.fpsVar != null) {
+		Main.fpsVar.modAuthor = "";
+		// Resetear estadísticas de scripts
+		Main.fpsVar.luaScriptsLoaded = 0;
+		Main.fpsVar.luaScriptsFailed = 0;
+		Main.fpsVar.hscriptsLoaded = 0;
+		Main.fpsVar.hscriptsFailed = 0;
+	}		instance = null;
 		shutdownThread = true;
 		FlxG.signals.preUpdate.remove(checkForResync);
 		super.destroy();
@@ -3915,12 +3926,10 @@ class PlayState extends MusicBeatState
 			return;
 		}
 
-		lastStepHit = curStep;
-		setOnScripts('curStep', curStep);
-		callOnScripts('onStepHit');
-	}
-
-	var lastBeatHit:Int = -1;
+	lastStepHit = curStep;
+	setOnScripts('curStep', curStep);
+	callOnScripts('onStepHit');
+}	var lastBeatHit:Int = -1;
 
 	override function beatHit()
 	{
@@ -4146,6 +4155,37 @@ class PlayState extends MusicBeatState
 		}
 	}
 	#end
+	
+	// Método para actualizar estadísticas de scripts en el FPSCounter
+	function updateScriptStats()
+	{
+		if (Main.fpsVar == null) return;
+		
+		#if LUA_ALLOWED
+		// Contar scripts Lua cargados
+		if (luaArray != null) {
+			Main.fpsVar.luaScriptsLoaded = luaArray.length;
+		}
+		
+		// Contar scripts Lua fallidos
+		Main.fpsVar.luaScriptsFailed = FunkinLua.lua_Errors;
+		#end
+		
+		#if HSCRIPT_ALLOWED
+		// Contar scripts HScript cargados
+		if (hscriptArray != null) {
+			Main.fpsVar.hscriptsLoaded = hscriptArray.length;
+		}
+		
+		// Contar scripts HScript fallidos (Iris mantiene registro de errores)
+		var hscriptErrors = 0;
+		for (key in Iris.instances.keys()) {
+			var instance = Iris.instances.get(key);
+			if (instance == null) hscriptErrors++;
+		}
+		Main.fpsVar.hscriptsFailed = hscriptErrors;
+		#end
+	}
 
 	public function callOnScripts(funcToCall:String, args:Array<Dynamic> = null, ignoreStops = false, exclusions:Array<String> = null, excludeValues:Array<Dynamic> = null):Dynamic {
 		var returnVal:Dynamic = LuaUtils.Function_Continue;
