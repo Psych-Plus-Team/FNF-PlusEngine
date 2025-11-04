@@ -39,6 +39,13 @@ class LoadingState extends MusicBeatState
 	static var requestedBitmaps:Map<String, BitmapData> = [];
 	static var mutex:Mutex;
 	static var threadPool:FixedThreadPool = null;
+	
+	// Timeout system
+	public static var returnState:FlxState = null; // Estado al que volver si falla la carga
+	var loadingTimer:Float = 0; // Contador de tiempo de carga
+	var timeoutWarning:FlxText; // Mensaje de advertencia
+	var canEscape:Bool = false; // Si se puede presionar ESC para salir
+	static final TIMEOUT_DURATION:Float = 5.0; // 5 segundos
 
 	function new(target:FlxState, stopMusic:Bool)
 	{
@@ -171,6 +178,14 @@ class LoadingState extends MusicBeatState
 		funkay.updateHitbox();
 		addBehindBar(funkay);
 		#end
+		
+		// Timeout warning message
+		timeoutWarning = new FlxText(0, FlxG.height - 100, FlxG.width, "", 24);
+		timeoutWarning.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.RED, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		timeoutWarning.borderSize = 2;
+		timeoutWarning.visible = false;
+		add(timeoutWarning);
+		
 		super.create();
 
 		if (stateChangeDelay <= 0 && checkLoaded())
@@ -190,6 +205,46 @@ class LoadingState extends MusicBeatState
 	{
 		super.update(elapsed);
 		if (dontUpdate) return;
+		
+		// Timeout system - incrementar el temporizador
+		if (!transitioning && !finishedLoading)
+		{
+			loadingTimer += elapsed;
+			
+			// Si pasan más de 10 segundos, mostrar mensaje de escape
+			if (loadingTimer >= TIMEOUT_DURATION && !canEscape)
+			{
+				canEscape = true;
+				timeoutWarning.text = Language.getPhrase('loading_timeout', 'Loading is taking too long...\nPress ESC to return', []);
+				timeoutWarning.visible = true;
+				FlxG.sound.play(Paths.sound('cancelMenu'));
+			}
+			
+			// Si se puede escapar y se presiona ESC, volver al estado anterior
+			if (canEscape && FlxG.keys.justPressed.ESCAPE)
+			{
+				transitioning = true;
+				FlxG.sound.play(Paths.sound('cancelMenu'));
+				
+				// Limpiar recursos
+				if (threadPool != null)
+				{
+					threadPool.shutdown();
+					threadPool = null;
+				}
+				
+				// Volver al estado de retorno si existe, sino a MainMenuState
+				var targetState:FlxState = (returnState != null) ? returnState : new MainMenuState();
+				
+				if (stopMusic && FlxG.sound.music != null)
+					FlxG.sound.music.stop();
+				
+				FlxG.camera.fade(FlxColor.BLACK, 0.3, false, function() {
+					MusicBeatState.switchState(targetState);
+				});
+				return;
+			}
+		}
 
 		if (!transitioning)
 		{

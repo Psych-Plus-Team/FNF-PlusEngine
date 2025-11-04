@@ -533,20 +533,19 @@ class FreeplayState extends MusicBeatState
 					updateTexts(elapsed);
 					super.update(elapsed);
 					return;
-				}
+			}
 
-				@:privateAccess
-				if(PlayState._lastLoadedModDirectory != Mods.currentModDirectory)
-				{
-					trace('CHANGED MOD DIRECTORY, RELOADING STUFF');
-					Paths.freeGraphicsFromMemory();
-				}
-				LoadingState.prepareToSong();
-				LoadingState.loadAndSwitchState(new PlayState());
-				#if !SHOW_LOADING_SCREEN FlxG.sound.music.stop(); #end
-				stopMusicPlay = true;
-
-				destroyFreeplayVocals();
+			@:privateAccess
+			if(PlayState._lastLoadedModDirectory != Mods.currentModDirectory)
+			{
+				trace('CHANGED MOD DIRECTORY, RELOADING STUFF');
+				Paths.freeGraphicsFromMemory();
+			}
+			LoadingState.prepareToSong();
+			LoadingState.returnState = new FreeplayState(); // Establecer estado de retorno
+			LoadingState.loadAndSwitchState(new PlayState());
+			#if !SHOW_LOADING_SCREEN FlxG.sound.music.stop(); #end
+			stopMusicPlay = true;				destroyFreeplayVocals();
 				#if (MODS_ALLOWED && DISCORD_ALLOWED)
 				DiscordClient.loadModRPC();
 				#end
