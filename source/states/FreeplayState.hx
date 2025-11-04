@@ -15,14 +15,19 @@ import flixel.util.FlxDestroyUtil;
 
 import openfl.utils.Assets;
 
+#if MODS_ALLOWED
+import sys.FileSystem;
+#end
+
 import haxe.Json;
 
 class FreeplayState extends MusicBeatState
 {
-	var songs:Array<SongMetadata> = [];
+	public static var instance:FreeplayState;
+	public var songs:Array<SongMetadata> = [];
 
 	var selector:FlxText;
-	private static var curSelected:Int = 0;
+	public static var curSelected:Int = 0;
 	var lerpSelected:Float = 0;
 	var curDifficulty:Int = -1;
 	private static var lastDifficultyName:String = Difficulty.getDefault();
@@ -68,6 +73,7 @@ class FreeplayState extends MusicBeatState
 		//Paths.clearStoredMemory();
 		//Paths.clearUnusedMemory();
 		
+		instance = this;
 		persistentUpdate = true;
 		PlayState.isStoryMode = false;
 		WeekData.reloadWeekFiles(false);
@@ -107,6 +113,11 @@ class FreeplayState extends MusicBeatState
 			WeekData.setDirectoryFromWeek(leWeek);
 			for (song in leWeek.songs)
 			{
+				// Skip erect variant songs as they will be shown as difficulties
+				var songName:String = song[0].toLowerCase();
+				if(songName.endsWith('-erect'))
+					continue;
+				
 				var colors:Array<Int> = song[2];
 				if(colors == null || colors.length < 3)
 				{
@@ -826,6 +837,46 @@ class DifficultySelector
 		cards.clear();
 		Difficulty.loadFromWeek();
 		
+		// Detect all available difficulties by checking which chart files exist
+		if (FreeplayState.instance == null) return;
+		
+		var songName:String = Paths.formatToSongPath(FreeplayState.instance.songs[FreeplayState.curSelected].songName);
+		var availableDiffs:Array<String> = [];
+		
+		// Check default difficulties
+		for (diff in Difficulty.list)
+		{
+			availableDiffs.push(diff);
+		}
+		
+		// Check for erect and nightmare difficulties
+		var erectDiffs:Array<String> = ['Erect', 'Nightmare'];
+		for (diff in erectDiffs)
+		{
+			if (!availableDiffs.contains(diff))
+			{
+				var checkPath:String = Paths.formatToSongPath(diff);
+				var fullPath:String = Paths.json('$songName/$songName-$checkPath');
+				
+				#if MODS_ALLOWED
+				if (FileSystem.exists(fullPath))
+				{
+					availableDiffs.push(diff);
+				}
+				else
+				#end
+				{
+					if (Assets.exists(fullPath))
+					{
+						availableDiffs.push(diff);
+					}
+				}
+			}
+		}
+		
+		// Update Difficulty.list with all available difficulties
+		Difficulty.list = availableDiffs;
+		
 		for (i in 0...Difficulty.list.length)
 		{
 			var diffText:FlxText = new FlxText(0, 0, 500, Difficulty.getString(i), 48);
@@ -854,6 +905,10 @@ class DifficultySelector
 			return 0xFFD43B;
 		else if (lowerName == 'hard')
 			return 0xFF6B6B;
+		else if (lowerName == 'erect')
+			return 0xFF6BCE; // Pink/magenta color for Erect
+		else if (lowerName == 'nightmare')
+			return 0x9D00FF; // Purple color for Nightmare
 		else
 		{
 			var pastelColors:Array<Int> = [

@@ -1,1 +1,0 @@
-Put your album images 350 x 350, boopeboo.png, etc; respect any song.
