@@ -3826,20 +3826,11 @@ class PlayState extends MusicBeatState
 
 	override function destroy() {
 		// Restaurar el estado original de la ventana al salir de PlayState
-		var window = openfl.Lib.application.window;
 		if (windowResizedByScript) {
-			// En lugar de restaurar valores originales, redimensionar a 1280x720 y centrar
-			window.width = 1280;
-			window.height = 720;
-			
-			// Centrar la ventana en la pantalla
-			var screenWidth = openfl.system.Capabilities.screenResolutionX;
-			var screenHeight = openfl.system.Capabilities.screenResolutionY;
-			window.x = Std.int((screenWidth - 1280) / 2);
-			window.y = Std.int((screenHeight - 720) / 2);
-			
-			flixel.FlxG.scaleMode = new flixel.system.scaleModes.RatioScaleMode(true);
-			window.resizable = true;
+			// Usar WindowTweens para restaurar la ventana a 1280x720 centrada
+			// El último parámetro 'false' evita que se marque windowResizedByScript nuevamente
+			psychlua.WindowTweens.winResizeCenter(1280, 720, true, false);
+			windowResizedByScript = false; // Resetear la flag
 		}
 
 		if (psychlua.CustomSubstate.instance != null)
@@ -3904,14 +3895,16 @@ class PlayState extends MusicBeatState
 		}
 		#end
 
-	if (Main.fpsVar != null) {
-		Main.fpsVar.modAuthor = "";
-		// Resetear estadísticas de scripts
-		Main.fpsVar.luaScriptsLoaded = 0;
-		Main.fpsVar.luaScriptsFailed = 0;
-		Main.fpsVar.hscriptsLoaded = 0;
-		Main.fpsVar.hscriptsFailed = 0;
-	}		instance = null;
+		if (Main.fpsVar != null) {
+			Main.fpsVar.modAuthor = "";
+			// Resetear estadísticas de scripts
+			Main.fpsVar.luaScriptsLoaded = 0;
+			Main.fpsVar.luaScriptsFailed = 0;
+			Main.fpsVar.hscriptsLoaded = 0;
+			Main.fpsVar.hscriptsFailed = 0;
+		}		
+		
+		instance = null;
 		shutdownThread = true;
 		FlxG.signals.preUpdate.remove(checkForResync);
 		super.destroy();

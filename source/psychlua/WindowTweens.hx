@@ -473,9 +473,9 @@ class WindowTweens {
         #end
     }
 
-    public static function winResizeCenter(width:Int, height:Int, ?skip:Bool = false) {
+    public static function winResizeCenter(width:Int, height:Int, ?skip:Bool = false, ?markAsResized:Bool = true) {
         #if windows
-        if (PlayState.instance != null) {
+        if (markAsResized && PlayState.instance != null) {
             PlayState.instance.windowResizedByScript = true;
         }
         var window = Lib.application.window;

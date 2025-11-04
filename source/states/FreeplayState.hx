@@ -440,6 +440,15 @@ class FreeplayState extends MusicBeatState
 				FlxG.sound.music.volume = 0;
 
 				Mods.currentModDirectory = songs[curSelected].folder;
+				
+				// Load all available difficulties for this song before loading the chart
+				Difficulty.loadFromWeek();
+				detectAndLoadAllDifficulties();
+				
+				// Make sure curDifficulty is within bounds
+				if(curDifficulty >= Difficulty.list.length)
+					curDifficulty = 0;
+				
 				var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
 				Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase());
 				if (PlayState.SONG.needsVoices)
@@ -695,6 +704,9 @@ class FreeplayState extends MusicBeatState
 		PlayState.storyWeek = songs[curSelected].week;
 		Difficulty.loadFromWeek();
 		
+		// Detect all available difficulties for this song
+		detectAndLoadAllDifficulties();
+		
 		var savedDiff:String = songs[curSelected].lastDifficulty;
 		var lastDiff:Int = Difficulty.list.indexOf(lastDifficultyName);
 		if(savedDiff != null && !Difficulty.list.contains(savedDiff) && Difficulty.list.contains(savedDiff))
@@ -708,6 +720,47 @@ class FreeplayState extends MusicBeatState
 
 		changeDiff();
 		_updateSongLastDifficulty();
+	}
+	
+	public function detectAndLoadAllDifficulties():Void
+	{
+		// Detect all available difficulties by checking which chart files exist
+		var songName:String = Paths.formatToSongPath(songs[curSelected].songName);
+		var availableDiffs:Array<String> = [];
+		
+		// Check default difficulties
+		for (diff in Difficulty.list)
+		{
+			availableDiffs.push(diff);
+		}
+		
+		// Check for erect and nightmare difficulties
+		var erectDiffs:Array<String> = ['Erect', 'Nightmare'];
+		for (diff in erectDiffs)
+		{
+			if (!availableDiffs.contains(diff))
+			{
+				var checkPath:String = Paths.formatToSongPath(diff);
+				var fullPath:String = Paths.json('$songName/$songName-$checkPath');
+				
+				#if MODS_ALLOWED
+				if (FileSystem.exists(fullPath))
+				{
+					availableDiffs.push(diff);
+				}
+				else
+				#end
+				{
+					if (Assets.exists(fullPath))
+					{
+						availableDiffs.push(diff);
+					}
+				}
+			}
+		}
+		
+		// Update Difficulty.list with all available difficulties
+		Difficulty.list = availableDiffs;
 	}
 
 	inline private function _updateSongLastDifficulty()
@@ -837,45 +890,11 @@ class DifficultySelector
 		cards.clear();
 		Difficulty.loadFromWeek();
 		
-		// Detect all available difficulties by checking which chart files exist
-		if (FreeplayState.instance == null) return;
-		
-		var songName:String = Paths.formatToSongPath(FreeplayState.instance.songs[FreeplayState.curSelected].songName);
-		var availableDiffs:Array<String> = [];
-		
-		// Check default difficulties
-		for (diff in Difficulty.list)
+		// Detect all available difficulties using the FreeplayState function
+		if (FreeplayState.instance != null)
 		{
-			availableDiffs.push(diff);
+			FreeplayState.instance.detectAndLoadAllDifficulties();
 		}
-		
-		// Check for erect and nightmare difficulties
-		var erectDiffs:Array<String> = ['Erect', 'Nightmare'];
-		for (diff in erectDiffs)
-		{
-			if (!availableDiffs.contains(diff))
-			{
-				var checkPath:String = Paths.formatToSongPath(diff);
-				var fullPath:String = Paths.json('$songName/$songName-$checkPath');
-				
-				#if MODS_ALLOWED
-				if (FileSystem.exists(fullPath))
-				{
-					availableDiffs.push(diff);
-				}
-				else
-				#end
-				{
-					if (Assets.exists(fullPath))
-					{
-						availableDiffs.push(diff);
-					}
-				}
-			}
-		}
-		
-		// Update Difficulty.list with all available difficulties
-		Difficulty.list = availableDiffs;
 		
 		for (i in 0...Difficulty.list.length)
 		{
