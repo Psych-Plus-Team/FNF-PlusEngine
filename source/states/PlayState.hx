@@ -270,6 +270,7 @@ class PlayState extends MusicBeatState
 	var timeTxt:FlxText;
 	var scoreTxtTween:FlxTween;
 	var timeTxtTween:FlxTween;
+	var versionTextTween:FlxTween;
 	var judgementCounter:JudCounter;
 
 	// TPS/NPS System
@@ -619,8 +620,8 @@ class PlayState extends MusicBeatState
 		// Versión en la esquina inferior izquierda
 		var versionStr = "Plus Engine v" + MainMenuState.plusEngineVersion + "\n" + SONG.song + " (" + Difficulty.getString() + ")";
 
-		versionText = new FlxText(10, FlxG.height - 38, FlxG.width, versionStr, 16); // Solo mostrar versión
-		versionText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		versionText = new FlxText(10, -50, FlxG.width, versionStr, 16); // Solo mostrar versión
+		versionText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		versionText.scrollFactor.set();
 		versionText.alpha = 0.7;
 		versionText.borderSize = 1;
@@ -1491,6 +1492,19 @@ class PlayState extends MusicBeatState
 		});
 	}
 
+	public function doVerBump():Void {
+		if(versionTextTween != null)
+			versionTextTween.cancel();
+
+			versionText.scale.set(1.5, 1.5);
+			versionTextTween = FlxTween.tween(versionText.scale, {x: 1, y: 1}, 0.3, {
+				ease: FlxEase.expoOut, // <-- Easing suave
+				onComplete: function(twn:FlxTween) {
+					versionTextTween = null;
+			}
+		});
+	}
+
 	public function setSongTime(time:Float)
 	{
 		FlxG.sound.music.pause();
@@ -1554,6 +1568,7 @@ class PlayState extends MusicBeatState
 		// Song duration in a float, useful for the time left feature
 		songLength = FlxG.sound.music.length;
 		FlxTween.tween(timeBar.scale, {x: 1}, 0.5, {ease: FlxEase.circOut});
+		FlxTween.tween(versionText, {y: 5}, 0.5, {ease: FlxEase.circOut});
 
 		#if DISCORD_ALLOWED
 		// Updating Discord Rich Presence (with Time Left)
@@ -3974,6 +3989,7 @@ class PlayState extends MusicBeatState
 		characterBopper(curBeat);
 
 		doTimeBump();
+		doVerBump();
 		
 		// Animar flechas NotITG en el beat
 		animateNotITGArrows();

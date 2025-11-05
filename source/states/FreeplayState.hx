@@ -972,7 +972,7 @@ class FreeplayState extends MusicBeatState
 			
 			if (!sys.FileSystem.isDirectory(folderPath)) continue;
 			
-			trace('Checking folder: ' + folder);
+			//trace('Checking folder: ' + folder);
 			
 			// Buscar archivo .sm en la carpeta
 			var smFile:String = null;
@@ -990,7 +990,7 @@ class FreeplayState extends MusicBeatState
 			
 			// Cargar el archivo SM
 			var fullPath = folderPath + '/' + smFile;
-			trace('Loading SM file: ' + fullPath);
+			//trace('Loading SM file: ' + fullPath);
 			
 			try {
 				var sm = backend.stepmania.SMFile.loadFile(fullPath);

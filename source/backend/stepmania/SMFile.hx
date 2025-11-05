@@ -80,13 +80,12 @@ class SMFile {
 			
 			// Verificar tipo de chart
 			var chartType = fileData[inc].trim().toLowerCase();
-			trace('Chart type detected: "$chartType"');
 			
 			if (chartType.contains('dance-double') || chartType == 'dance-double:') {
 				isDouble = true;
 				trace('Double chart detected');
 			} else if (chartType.contains('dance-single') || chartType == 'dance-single:') {
-				trace('Single chart detected');
+				//trace('Single chart detected');
 			} else {
 				trace('ERROR: Chart must be dance-single or dance-double! Found: "$chartType"');
 				isValid = false;
@@ -99,7 +98,6 @@ class SMFile {
 			if (difficultyRaw.length > 0) {
 				// Capitalizar primera letra
 				difficulty = difficultyRaw.charAt(0).toUpperCase() + difficultyRaw.substr(1).toLowerCase();
-				trace('Difficulty detected: "$difficulty"');
 			}
 			
 			inc += 3; // Saltar a las notas (meter + groove radar)
@@ -120,7 +118,6 @@ class SMFile {
 				}
 			}
 			
-			trace('Loaded ${measures.length} measures from SM file');
 			
 		} catch (e:Dynamic) {
 			trace('Error parsing SM file: ' + e);
