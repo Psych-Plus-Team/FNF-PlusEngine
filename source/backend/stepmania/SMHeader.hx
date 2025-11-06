@@ -70,8 +70,18 @@ class SMHeader {
 	function parseBPMChanges():Void {
 		bpmChanges = [];
 		
+		if (BPMS == null || BPMS.trim() == "") {
+			trace('No BPM data found, using default');
+			BPMS = "0=120";
+		}
+		
 		var bpmPairs = BPMS.split(',');
-		var currentTime:Float = -Std.parseFloat(OFFSET); // Offset negativo
+		var currentTime:Float = 0;
+		
+		// Validar offset
+		var offsetValue = Std.parseFloat(OFFSET);
+		if (Math.isNaN(offsetValue)) offsetValue = 0;
+		currentTime = -offsetValue; // Offset negativo
 		
 		for (i in 0...bpmPairs.length) {
 			var pair = bpmPairs[i].trim();
@@ -82,6 +92,12 @@ class SMHeader {
 			
 			var beat = Std.parseFloat(parts[0]);
 			var bpm = Std.parseFloat(parts[1]);
+			
+			// Validar que beat y bpm sean válidos
+			if (Math.isNaN(beat) || Math.isNaN(bpm) || bpm <= 0) {
+				trace('Invalid BPM data: beat=$beat, bpm=$bpm');
+				continue;
+			}
 			
 			// Calcular el tiempo en segundos
 			if (i > 0) {
@@ -106,7 +122,21 @@ class SMHeader {
 				Std.parseFloat(bpmPairs[i + 1].split('=')[0]) : 
 				Math.POSITIVE_INFINITY;
 				
+			// Validar endBeat
+			if (Math.isNaN(endBeat)) endBeat = Math.POSITIVE_INFINITY;
+				
 			TimingStruct.addTiming(beat, bpm, endBeat, currentTime);
+		}
+		
+		// Si no hay cambios válidos, agregar uno por defecto
+		if (bpmChanges.length == 0) {
+			bpmChanges.push({
+				beat: 0,
+				bpm: 120,
+				time: currentTime
+			});
+			TimingStruct.clearTimings();
+			TimingStruct.addTiming(0, 120, Math.POSITIVE_INFINITY, currentTime);
 		}
 	}
 	
@@ -114,7 +144,15 @@ class SMHeader {
 	 * Obtiene el BPM en un beat específico
 	 */
 	public function getBPM(beat:Float):Float {
-		if (bpmChanges.length == 0) return 120;
+		if (bpmChanges.length == 0) {
+			trace('No BPM changes found, returning default');
+			return 120;
+		}
+		
+		if (Math.isNaN(beat)) {
+			trace('Invalid beat value, using first BPM');
+			return bpmChanges[0].bpm;
+		}
 		
 		var currentBPM = bpmChanges[0].bpm;
 		for (change in bpmChanges) {
@@ -124,6 +162,13 @@ class SMHeader {
 				break;
 			}
 		}
+		
+		// Validar que el BPM sea válido
+		if (Math.isNaN(currentBPM) || currentBPM <= 0) {
+			trace('Invalid BPM found, using default');
+			return 120;
+		}
+		
 		return currentBPM;
 	}
 	

@@ -134,32 +134,63 @@ class SMFile {
 			return null;
 		}
 		
+		if (songName == null || songName.trim() == "") {
+			trace('Invalid song name for conversion');
+			return null;
+		}
+		
+		if (header == null) {
+			trace('No header data available for conversion');
+			return null;
+		}
+		
+		var bpm = header.getBPM(0);
+		if (bpm <= 0 || Math.isNaN(bpm)) {
+			trace('Invalid BPM detected, using default of 120');
+			bpm = 120;
+		}
+
 		var song:SwagSong = {
 			song: songName,
 			notes: [],
 			events: [],
-			bpm: header.getBPM(0),
+			bpm: bpm,
 			needsVoices: false,
 			player1: 'bf',
 			player2: 'dad',
 			gfVersion: 'gf',
 			speed: 2.0,
-			stage: 'stage',
+			stage: 'notitg', // Usar stage NotITG para canciones de StepMania
 			format: 'psych_v1',
 			offset: 0
-		};
-		
-		var heldNotes:Array<Array<Dynamic>> = isDouble ? [[], [], [], [], [], [], [], []] : [[], [], [], []];
+		};		var heldNotes:Array<Array<Dynamic>> = isDouble ? [[], [], [], [], [], [], [], []] : [[], [], [], []];
 		var currentBeat:Float = 0;
 		var measureIndex:Int = 0;
 		
 		var section:SwagSection = createNewSection();
 		
+		if (measures == null || measures.length == 0) {
+			trace('No measures found in SM file');
+			return song; // Retornar canción vacía pero válida
+		}
+		
 		for (measure in measures) {
+			if (measure == null || measure.noteRows == null) {
+				trace('Invalid measure found, skipping');
+				continue;
+			}
+			
 			var lengthInRows = Math.floor(192 / (measure.noteRows.length));
+			if (lengthInRows <= 0) lengthInRows = 1; // Evitar división por cero
+			
 			var rowIndex = 0;
 			
 			for (row in measure.noteRows) {
+				if (row == null || row.length == 0) {
+					rowIndex++;
+					continue;
+				}
+				
 				var noteRow = (measureIndex * 192) + (lengthInRows * rowIndex);
 				currentBeat = noteRow / 48;
 				
@@ -170,33 +201,62 @@ class SMFile {
 				}
 				
 				var seg = TimingStruct.getTimingAtBeat(currentBeat);
+				if (seg == null) {
+					trace('No timing data found for beat $currentBeat');
+					rowIndex++;
+					continue;
+				}
+				
 				var timeInSec = (seg.startTime + ((currentBeat - seg.startBeat) / (seg.bpm / 60)));
 				var rowTime = timeInSec * 1000;
+				
+				if (Math.isNaN(rowTime) || rowTime < 0) {
+					trace('Invalid time calculated: $rowTime');
+					rowIndex++;
+					continue;
+				}
 				
 				// Procesar cada nota en la fila
 				for (i in 0...row.length) {
 					var note = row.charAt(i);
 					
-					if (note == 'M' || note == '0') continue; // Minas o vacío
+					// Ignorar espacios vacíos
+					if (note == '0') continue;
 					
 					var lane = i;
+					
+					// Manejar minas como Hurt Notes
+					if (note == 'M') {
+						section.sectionNotes.push([rowTime, lane, 0, 'Hurt Note']);
+						continue;
+					}
+					
 					var noteType = Std.parseInt(note);
+					if (noteType == null || Math.isNaN(noteType)) continue;
 					
 					switch (noteType) {
-						case 1: // Nota normal
+						case 1: // Nota normal (tap)
 							section.sectionNotes.push([rowTime, lane, 0]);
 							
-						case 2: // Inicio de hold
+						case 2: // Inicio de hold normal
 							heldNotes[lane] = [rowTime, lane, 0];
 							
-						case 3: // Fin de hold
+						case 3: // Fin de hold normal
 							if (heldNotes[lane].length > 0) {
 								var holdStart = heldNotes[lane];
 								var duration = rowTime - holdStart[0];
-								holdStart[2] = duration;
-								section.sectionNotes.push(holdStart);
+								if (duration > 0) { // Solo agregar holds válidos
+									holdStart[2] = duration;
+									section.sectionNotes.push(holdStart);
+								}
 								heldNotes[lane] = [];
 							}
+							
+						case 4: // Inicio de roll (tratar como hold normal)
+							heldNotes[lane] = [rowTime, lane, 0];
+							
+						// Nota: El tipo 3 sirve tanto para finalizar holds (2) como rolls (4)
+						// Por eso no necesitamos un case separado para finalizar rolls
 					}
 				}
 				

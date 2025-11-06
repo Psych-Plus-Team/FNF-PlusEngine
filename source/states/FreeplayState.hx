@@ -153,27 +153,69 @@ class FreeplayState extends MusicBeatState
 
 		for (i in 0...songs.length)
 		{
+			// Validar que la canción tenga datos válidos
+			if (songs[i] == null || songs[i].songName == null || songs[i].songName == "")
+			{
+				trace('Skipping invalid song at index $i');
+				continue;
+			}
+			
 			var songText:FlxText = new FlxText(90, 320, 400, songs[i].songName, 32);
 			songText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			songText.borderSize = 2;
 			songText.ID = i;
 			grpSongs.add(songText);
 
-			Mods.currentModDirectory = songs[i].folder;
-			var icon:HealthIcon = new HealthIcon(songs[i].songCharacter);
+			// Para canciones de StepMania, no cambiar el directorio de mod
+			if (!songs[i].isStepMania)
+			{
+				Mods.currentModDirectory = songs[i].folder;
+			}
+			
+			// Validar el personaje para el icono
+			var characterName = songs[i].songCharacter;
+			if (characterName == null || characterName == "")
+			{
+				characterName = songs[i].isStepMania ? "stepmania" : "bf";
+			}
+			
+			var icon:HealthIcon = new HealthIcon(characterName);
 			icon.scale.set(0.8, 0.8);
 			
 			// too laggy with a lot of songs, so i had to recode the logic for it
 			songText.visible = songText.active = false;
 			icon.visible = icon.active = false;
 
-			var card:FlxSprite = new FlxSprite().loadGraphic(Paths.image('ui/card'));
-			card.antialiasing = ClientPrefs.data.antialiasing;
-			card.setGraphicSize(470, 110);
-			card.updateHitbox();
-			card.visible = false;
-			cardArray.push(card);
-			add(card);
+			try 
+			{
+				var card:FlxSprite = new FlxSprite().loadGraphic(Paths.image('ui/card'));
+				if (card != null && card.graphic != null)
+				{
+					card.antialiasing = ClientPrefs.data.antialiasing;
+					card.setGraphicSize(470, 110);
+					card.updateHitbox();
+					card.visible = false;
+					cardArray.push(card);
+					add(card);
+				}
+				else
+				{
+					// Crear card vacía si falla la carga de imagen
+					var card:FlxSprite = new FlxSprite().makeGraphic(470, 110, FlxColor.GRAY);
+					card.visible = false;
+					cardArray.push(card);
+					add(card);
+				}
+			}
+			catch (e:Dynamic)
+			{
+				trace('Error creating card for song ${songs[i].songName}: $e');
+				// Crear card de respaldo
+				var card:FlxSprite = new FlxSprite().makeGraphic(470, 110, FlxColor.GRAY);
+				card.visible = false;
+				cardArray.push(card);
+				add(card);
+			}
 		
 			var modName:String = songs[i].folder;
 			if (modName == null || modName == '')
@@ -1000,8 +1042,19 @@ class FreeplayState extends MusicBeatState
 					continue;
 				}
 				
+				// Validar que el título no esté vacío
+				if (sm.header == null || sm.header.TITLE == null || sm.header.TITLE.trim() == "") {
+					trace('SM file has no title: ' + smFile);
+					continue;
+				}
+				
 				// Crear nombre de archivo basado en canción y dificultad
 				var songNameClean = Paths.formatToSongPath(sm.header.TITLE);
+				if (songNameClean == null || songNameClean == "") {
+					trace('Failed to format song name for: ' + sm.header.TITLE);
+					continue;
+				}
+				
 				var diffName = Paths.formatToSongPath(sm.difficulty);
 				var jsonFileName = '$songNameClean.json';
 				var jsonPath = folderPath + '/' + jsonFileName;
@@ -1015,9 +1068,17 @@ class FreeplayState extends MusicBeatState
 					
 					if (song != null) {
 						// Guardar el JSON convertido
-						var json = haxe.Json.stringify({song: song}, null, '\t');
-						sys.io.File.saveContent(jsonPath, json);
-						trace('Saved converted chart: ' + jsonPath);
+						try {
+							var json = haxe.Json.stringify({song: song}, null, '\t');
+							sys.io.File.saveContent(jsonPath, json);
+							trace('Saved converted chart: ' + jsonPath);
+						} catch (e:Dynamic) {
+							trace('Error saving converted chart: ' + e);
+							continue;
+						}
+					} else {
+						trace('Failed to convert SM file: ' + smFile);
+						continue;
 					}
 				}
 				
@@ -1026,17 +1087,27 @@ class FreeplayState extends MusicBeatState
 				// Limpiar caracteres especiales que pueden causar problemas de renderizado
 				cleanTitle = StringTools.replace(cleanTitle, '\r', '');
 				cleanTitle = StringTools.replace(cleanTitle, '\n', '');
+				cleanTitle = StringTools.trim(cleanTitle);
+				
+				// Validar que el título limpio no esté vacío
+				if (cleanTitle == "") {
+					trace('Empty title after cleaning for: ' + smFile);
+					continue;
+				}
 				
 				addSong(cleanTitle, -1, 'stepmania', FlxColor.fromRGB(255, 140, 0));
 				
 				// Marcar como canción de StepMania
 				var lastSong = songs[songs.length - 1];
-				lastSong.folder = ''; // Dejar vacío para que use el folder por defecto
-				lastSong.isStepMania = true; // Marcar como StepMania
-				lastSong.smFolder = folder; // Guardar la carpeta original del .sm
+				if (lastSong != null) {
+					lastSong.folder = ''; // Dejar vacío para que use el folder por defecto
+					lastSong.isStepMania = true; // Marcar como StepMania
+					lastSong.smFolder = folder; // Guardar la carpeta original del .sm
+				}
 				
 			} catch (e:Dynamic) {
 				trace('Error loading SM file ' + smFile + ': ' + e);
+				continue;
 			}
 		}
 		

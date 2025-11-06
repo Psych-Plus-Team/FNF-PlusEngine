@@ -361,6 +361,41 @@ class PlayState extends MusicBeatState
 
 	public var luaTouchPad:TouchPad;
 
+	/**
+	 * Detecta si la canción actual es de StepMania basándose en varias pistas
+	 */
+	function isStepManiaLevel():Bool
+	{
+		// Verificar si el directorio de audio personalizado está configurado (indicador de StepMania)
+		if (customAudioPath != null && customAudioPath.contains('/sm/'))
+			return true;
+		
+		// Verificar si el nombre de la canción tiene formato StepMania (con guión)
+		if (SONG != null && SONG.song != null)
+		{
+			var songName = SONG.song.toLowerCase();
+			// Los archivos de StepMania suelen tener formato "nombre-dificultad"
+			if (songName.contains('-normal') || songName.contains('-hard') || 
+				songName.contains('-expert') || songName.contains('-challenge') ||
+				songName.contains('-beginner') || songName.contains('-easy'))
+				return true;
+		}
+		
+		// Verificar si estamos viniendo desde FreeplayState con una canción marcada como StepMania
+		if (FreeplayState.instance != null && FreeplayState.instance.songs != null)
+		{
+			var curSel = FreeplayState.curSelected;
+			if (curSel >= 0 && curSel < FreeplayState.instance.songs.length)
+			{
+				var selectedSong = FreeplayState.instance.songs[curSel];
+				if (selectedSong != null && selectedSong.isStepMania)
+					return true;
+			}
+		}
+		
+		return false;
+	}
+
 	override public function create()
 	{
 		
@@ -465,8 +500,16 @@ class PlayState extends MusicBeatState
 		songName = Paths.formatToSongPath(SONG.song);
 		if(SONG.stage == null || SONG.stage.length < 1)
 			SONG.stage = StageData.vanillaSongStage(Paths.formatToSongPath(Song.loadedSongName));
+		
+		// Detectar si es una canción de StepMania y usar stage NotITG
+		if (isStepManiaLevel()) {
+			SONG.stage = 'notitg';
+		}
 
 		curStage = SONG.stage;
+
+		// Flag para etapas NotITG (StepMania) donde ocultamos HUD y personajes
+		var isNotITG:Bool = (curStage == 'notitg');
 
 		var stageData:StageFile = StageData.getStageFile(curStage);
 		defaultCamZoom = stageData.defaultZoom;
@@ -516,6 +559,7 @@ class PlayState extends MusicBeatState
 			case 'tank': new Tank();					//Week 7 - Ugh, Guns, Stress
 			case 'phillyStreets': new PhillyStreets(); 	//Weekend 1 - Darnell, Lit Up, 2Hot
 			case 'phillyBlazin': new PhillyBlazin();	//Weekend 1 - Blazin
+			case 'notitg': new NotITG();				//StepMania NotITG stage - Stage negro vacío
 		}
 		if(isPixelStage) introSoundsSuffix = '-pixel';
 
@@ -525,22 +569,42 @@ class PlayState extends MusicBeatState
 		add(luaDebugGroup);
 		#end
 
-		if (!stageData.hide_girlfriend)
-		{
-			if(SONG.gfVersion == null || SONG.gfVersion.length < 1) SONG.gfVersion = 'gf'; //Fix for the Chart Editor
-			gf = new Character(0, 0, SONG.gfVersion);
+		if (!isNotITG) {
+			if (!stageData.hide_girlfriend)
+			{
+				if(SONG.gfVersion == null || SONG.gfVersion.length < 1) SONG.gfVersion = 'gf'; //Fix for the Chart Editor
+				gf = new Character(0, 0, SONG.gfVersion);
+				startCharacterPos(gf);
+				gfGroup.scrollFactor.set(0.95, 0.95);
+				gfGroup.add(gf);
+			}
+
+			dad = new Character(0, 0, SONG.player2);
+			startCharacterPos(dad, true);
+			dadGroup.add(dad);
+
+			boyfriend = new Character(0, 0, SONG.player1, true);
+			startCharacterPos(boyfriend);
+			boyfriendGroup.add(boyfriend);
+		} else {
+			// En NotITG no mostraremos personajes: crear instancias pero ocultarlas para evitar NPEs
+			// Usamos las versiones por defecto de los nombres de personaje si faltan
+			var p1 = (SONG.player1 == null || SONG.player1.length == 0) ? 'bf' : SONG.player1;
+			var p2 = (SONG.player2 == null || SONG.player2.length == 0) ? 'dad' : SONG.player2;
+			var gfver = (SONG.gfVersion == null || SONG.gfVersion.length == 0) ? 'gf' : SONG.gfVersion;
+			gf = new Character(0, 0, gfver);
 			startCharacterPos(gf);
-			gfGroup.scrollFactor.set(0.95, 0.95);
-			gfGroup.add(gf);
+			gf.visible = false;
+			// No añadir al grupo para mantener el stage limpio
+			
+			dad = new Character(0, 0, p2);
+			startCharacterPos(dad, true);
+			dad.visible = false;
+			
+			boyfriend = new Character(0, 0, p1, true);
+			startCharacterPos(boyfriend);
+			boyfriend.visible = false;
 		}
-
-		dad = new Character(0, 0, SONG.player2);
-		startCharacterPos(dad, true);
-		dadGroup.add(dad);
-
-		boyfriend = new Character(0, 0, SONG.player1, true);
-		startCharacterPos(boyfriend);
-		boyfriendGroup.add(boyfriend);
 		
 		if(stageData.objects != null && stageData.objects.length > 0)
 		{
@@ -551,9 +615,12 @@ class PlayState extends MusicBeatState
 		}
 		else
 		{
-			add(gfGroup);
-			add(dadGroup);
-			add(boyfriendGroup);
+			// Sólo añadir grupos si no es NotITG (mantener stage vacío para StepMania)
+			if (!isNotITG) {
+				add(gfGroup);
+				add(dadGroup);
+				add(boyfriendGroup);
+			}
 		}
 		
 		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
@@ -683,23 +750,25 @@ class PlayState extends MusicBeatState
 		healthBar.screenCenter(X);
 		healthBar.leftToRight = false;
 		healthBar.scrollFactor.set();
-		healthBar.visible = !ClientPrefs.data.hideHud;
+		// Ocultar barra de vida en niveles NotITG (StepMania)
+		healthBar.visible = !ClientPrefs.data.hideHud && !isNotITG;
 		healthBar.alpha = ClientPrefs.data.healthBarAlpha;
 		healthBar.scale.x = 0;
 		reloadHealthBarColors();
-		uiGroup.add(healthBar);
+		if (!isNotITG) uiGroup.add(healthBar);
 
-		iconP1 = new HealthIcon(boyfriend.healthIcon, true);
+		iconP1 = new HealthIcon(boyfriend != null ? boyfriend.healthIcon : 'bf', true);
 		iconP1.y = healthBar.y - 75;
-		iconP1.visible = !ClientPrefs.data.hideHud;
+		// Ocultar iconos en NotITG
+		iconP1.visible = !ClientPrefs.data.hideHud && !isNotITG;
 		iconP1.alpha = ClientPrefs.data.healthBarAlpha;
-		uiGroup.add(iconP1);
+		if (!isNotITG) uiGroup.add(iconP1);
 
-		iconP2 = new HealthIcon(dad.healthIcon, false);
+		iconP2 = new HealthIcon(dad != null ? dad.healthIcon : 'dad', false);
 		iconP2.y = healthBar.y - 75;
-		iconP2.visible = !ClientPrefs.data.hideHud;
+		iconP2.visible = !ClientPrefs.data.hideHud && !isNotITG;
 		iconP2.alpha = ClientPrefs.data.healthBarAlpha;
-		uiGroup.add(iconP2);
+		if (!isNotITG) uiGroup.add(iconP2);
 
 		scoreTxt = new FlxText(0, healthBar.y + 40, FlxG.width, "", 20);
 		scoreTxt.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -3915,6 +3984,9 @@ class PlayState extends MusicBeatState
 	}
 
 	public function spawnHoldSplashOnNote(note:Note) {
+		// No mostrar hold splashes en niveles de StepMania NotITG
+		if(curStage == 'notitg') return;
+		
 		if (note != null) {
 			var strum:StrumNote = (note.mustPress ? playerStrums : opponentStrums).members[note.noteData];
 			if(strum != null && note.tail.length > 1)
@@ -3923,6 +3995,9 @@ class PlayState extends MusicBeatState
 	}
 
 	public function spawnHoldSplash(note:Note) {
+		// No mostrar hold splashes en niveles de StepMania NotITG
+		if(curStage == 'notitg') return;
+		
 		var end:Note = note.isSustainNote ? note.parent.tail[note.parent.tail.length - 1] : note.tail[note.tail.length - 1];
 		var splash:SustainSplash = grpHoldSplashes.recycle(SustainSplash);
 		splash.setupSusSplash((note.mustPress ? playerStrums : opponentStrums).members[note.noteData], note, playbackRate);
@@ -3930,6 +4005,9 @@ class PlayState extends MusicBeatState
 	}
 
 	public function spawnNoteSplashOnNote(note:Note) {
+		// No mostrar splashes en niveles de StepMania NotITG
+		if(curStage == 'notitg') return;
+		
 		if(note != null) {
 			var strum:StrumNote = playerStrums.members[note.noteData];
 			if(strum != null)
@@ -3938,6 +4016,9 @@ class PlayState extends MusicBeatState
 	}
 
 	public function spawnNoteSplash(x:Float = 0, y:Float = 0, ?data:Int = 0, ?note:Note, ?strum:StrumNote) {
+		// No mostrar splashes en niveles de StepMania NotITG
+		if(curStage == 'notitg') return;
+		
 		var splash:NoteSplash = grpNoteSplashes.recycle(NoteSplash);
 		splash.babyArrow = strum;
 		splash.spawnSplashNote(x, y, data, note);
