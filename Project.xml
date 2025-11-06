@@ -100,6 +100,7 @@
 
 	<section if="MODS_ALLOWED">
 		<assets path='example_mods' rename='mods' embed='false' />
+		<assets path='example_sm' rename='sm' embed='false' />
 		<assets path='list.txt' rename='modsList.txt' />
 	</section>
 	
