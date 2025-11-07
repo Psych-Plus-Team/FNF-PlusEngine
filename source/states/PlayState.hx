@@ -1707,14 +1707,29 @@ class PlayState extends MusicBeatState
 			if (customAudioPath != null)
 			{
 				#if sys
-				var instPath = customAudioPath + 'Song.ogg';
-				if (sys.FileSystem.exists(instPath))
+				// Buscar cualquier archivo .ogg en la carpeta
+				var oggFile:String = null;
+				if (sys.FileSystem.exists(customAudioPath))
 				{
+					for (file in sys.FileSystem.readDirectory(customAudioPath))
+					{
+						if (file.toLowerCase().endsWith('.ogg'))
+						{
+							oggFile = file;
+							break;
+						}
+					}
+				}
+				
+				if (oggFile != null)
+				{
+					var instPath = customAudioPath + oggFile;
+					trace('Loading StepMania audio: $instPath');
 					inst.loadEmbedded(openfl.media.Sound.fromFile(instPath));
 				}
 				else
 				{
-					trace('Custom audio file not found: $instPath');
+					trace('No .ogg file found in: $customAudioPath');
 					inst.loadEmbedded(Paths.inst(songData.song));
 				}
 				#else

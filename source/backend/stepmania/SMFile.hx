@@ -1,17 +1,17 @@
 package backend.stepmania;
 
 import backend.Song;
+import backend.stepmania.SMHeader;
 
 /**
  * Parser para archivos .sm de StepMania
  * Convierte charts de StepMania al formato de FNF
+ * Soporta múltiples dificultades en un solo archivo
  */
 class SMFile {
 	public var header:SMHeader;
-	public var measures:Array<SMMeasure> = [];
+	public var difficulties:Array<SMDifficulty> = [];
 	public var isValid:Bool = true;
-	public var isDouble:Bool = false;
-	public var difficulty:String = 'Normal'; // Almacenar la dificultad del chart
 	
 	private var fileData:Array<String>;
 	
@@ -55,19 +55,6 @@ class SMFile {
 			
 			header = new SMHeader(headerData);
 			
-			// Validar que solo hay 1 dificultad
-			var notesCount = 0;
-			for (line in fileData) {
-				if (line.contains('#NOTES'))
-					notesCount++;
-			}
-			
-			if (notesCount > 1) {
-				trace('ERROR: SM file has more than one difficulty! Only single difficulty charts are supported.');
-				isValid = false;
-				return;
-			}
-			
 			// Verificar que el archivo de música es .ogg
 			if (!header.MUSIC.toLowerCase().endsWith('.ogg')) {
 				trace('ERROR: Music file must be .ogg format!');
@@ -75,49 +62,88 @@ class SMFile {
 				return;
 			}
 			
-			// Saltar a la sección de notas (la primera línea después de #NOTES es el tipo de chart)
-			inc += 1; // Saltar solo 1 línea después de #NOTES
+			// Parsear todas las dificultades
+			while (inc < fileData.length) {
+				// Buscar siguiente #NOTES
+				while (inc < fileData.length && !fileData[inc].contains('#NOTES')) {
+					inc++;
+				}
+				
+				if (inc >= fileData.length) break;
+				
+				// Saltar la línea #NOTES
+				inc++;
+				
+				// Leer tipo de chart (dance-single, dance-double, etc.)
+				if (inc >= fileData.length) break;
+				var chartType = fileData[inc].trim().toLowerCase();
+				var isDouble = chartType.contains('dance-double');
+				
+				// Verificar que sea single o double
+				if (!chartType.contains('dance-single') && !chartType.contains('dance-double')) {
+					trace('Skipping unsupported chart type: $chartType');
+					// Saltar hasta el siguiente ; para ignorar esta dificultad
+					while (inc < fileData.length && !fileData[inc].contains(';')) {
+						inc++;
+					}
+					inc++;
+					continue;
+				}
+				
+				inc++; // Saltar a author/description
+				if (inc >= fileData.length) break;
+				
+				inc++; // Saltar a difficulty
+				if (inc >= fileData.length) break;
+				
+				var difficultyRaw = fileData[inc].trim().replace(':', '');
+				var difficultyName = 'Normal';
+				if (difficultyRaw.length > 0) {
+					difficultyName = difficultyRaw.charAt(0).toUpperCase() + difficultyRaw.substr(1).toLowerCase();
+				}
+				
+				inc += 3; // Saltar meter + groove radar para llegar a las notas
+				
+				// Parsear medidas de esta dificultad
+				var measures:Array<SMMeasure> = [];
+				var currentMeasure = '';
+				
+				while (inc < fileData.length) {
+					var line = fileData[inc].trim();
+					
+					if (line == ',' || line == ';') {
+						if (currentMeasure.length > 0) {
+							measures.push(new SMMeasure(currentMeasure.split('\n')));
+							currentMeasure = '';
+						}
+						if (line == ';') {
+							inc++;
+							break; // Fin de esta dificultad
+						}
+					} else if (line.length > 0 && !line.startsWith('//')) {
+						currentMeasure += line + '\n';
+					}
+					
+					inc++;
+				}
+				
+				// Agregar esta dificultad
+				difficulties.push({
+					name: difficultyName,
+					isDouble: isDouble,
+					measures: measures
+				});
+				
+				trace('Loaded difficulty: $difficultyName (${isDouble ? "Double" : "Single"}) with ${measures.length} measures');
+			}
 			
-			// Verificar tipo de chart
-			var chartType = fileData[inc].trim().toLowerCase();
-			
-			if (chartType.contains('dance-double') || chartType == 'dance-double:') {
-				isDouble = true;
-				trace('Double chart detected');
-			} else if (chartType.contains('dance-single') || chartType == 'dance-single:') {
-				//trace('Single chart detected');
-			} else {
-				trace('ERROR: Chart must be dance-single or dance-double! Found: "$chartType"');
+			if (difficulties.length == 0) {
+				trace('ERROR: No valid difficulties found in SM file');
 				isValid = false;
 				return;
 			}
 			
-			// Capturar la dificultad (línea inc+2: inc+1 es author/description, inc+2 es difficulty)
-			inc += 2;
-			var difficultyRaw = fileData[inc].trim().replace(':', '');
-			if (difficultyRaw.length > 0) {
-				// Capitalizar primera letra
-				difficulty = difficultyRaw.charAt(0).toUpperCase() + difficultyRaw.substr(1).toLowerCase();
-			}
-			
-			inc += 3; // Saltar a las notas (meter + groove radar)
-			
-			// Parsear medidas
-			var currentMeasure = '';
-			for (i in inc...fileData.length) {
-				var line = fileData[i].trim();
-				
-				if (line == ',' || line == ';') {
-					if (currentMeasure.length > 0) {
-						measures.push(new SMMeasure(currentMeasure.split('\n')));
-						currentMeasure = '';
-					}
-					if (line == ';') break; // Fin de la chart
-				} else if (line.length > 0 && !line.startsWith('//')) {
-					currentMeasure += line + '\n';
-				}
-			}
-			
+			trace('Successfully loaded ${difficulties.length} difficulties');
 			
 		} catch (e:Dynamic) {
 			trace('Error parsing SM file: ' + e);
@@ -126,9 +152,11 @@ class SMFile {
 	}
 	
 	/**
-	 * Convierte el archivo SM a formato JSON de FNF
+	 * Convierte una dificultad específica del archivo SM a formato JSON de FNF
+	 * @param songName Nombre de la canción
+	 * @param difficultyIndex Índice de la dificultad a convertir (0 = primera dificultad)
 	 */
-	public function convertToFNF(songName:String):SwagSong {
+	public function convertToFNF(songName:String, difficultyIndex:Int = 0):SwagSong {
 		if (!isValid) {
 			trace('Cannot convert invalid SM file');
 			return null;
@@ -144,11 +172,47 @@ class SMFile {
 			return null;
 		}
 		
+		if (difficultyIndex < 0 || difficultyIndex >= difficulties.length) {
+			trace('Invalid difficulty index: $difficultyIndex (total: ${difficulties.length})');
+			return null;
+		}
+		
+		var diff = difficulties[difficultyIndex];
+		var isDouble = diff.isDouble;
+		var measures = diff.measures;
+		
 		var bpm = header.getBPM(0);
 		if (bpm <= 0 || Math.isNaN(bpm)) {
 			trace('Invalid BPM detected, using default of 120');
 			bpm = 120;
 		}
+		
+		// Inicializar TimingStruct con los BPM del header
+		TimingStruct.clearTimings();
+		
+		// Cargar todos los BPM del header
+		var bpmChanges:Array<backend.stepmania.SMHeader.BPMChange> = header.bpmChanges;
+		if (bpmChanges.length == 0) {
+			// Si no hay cambios de BPM, crear uno inicial
+			TimingStruct.addTiming(0, bpm, 999999, 0);
+		} else {
+			// Ordenar por beat
+			bpmChanges.sort((a, b) -> a.beat < b.beat ? -1 : (a.beat > b.beat ? 1 : 0));
+			
+			// Agregar cada cambio de BPM
+			for (i in 0...bpmChanges.length) {
+				var change = bpmChanges[i];
+				var startBeat = change.beat;
+				var endBeat = (i < bpmChanges.length - 1) ? bpmChanges[i + 1].beat : 999999;
+				
+				// El campo 'time' ya contiene el offset de tiempo calculado
+				var timeOffset:Float = change.time;
+				
+				TimingStruct.addTiming(startBeat, change.bpm, endBeat, timeOffset);
+			}
+		}
+		
+		trace('Initialized TimingStruct with ${TimingStruct.allTimings.length} timing segments');
 
 		var song:SwagSong = {
 			song: songName,
@@ -167,7 +231,7 @@ class SMFile {
 		var currentBeat:Float = 0;
 		var measureIndex:Int = 0;
 		
-		var section:SwagSection = createNewSection();
+		var section:SwagSection = createNewSection(isDouble);
 		
 		if (measures == null || measures.length == 0) {
 			trace('No measures found in SM file');
@@ -270,20 +334,23 @@ class SMFile {
 			song.notes.push(section);
 		}
 		
-		// Agregar eventos de cambio de BPM si existen
-		if (header.bpmChanges.length > 0) {
-			for (change in header.bpmChanges) {
+		// Agregar eventos de cambio de BPM si existen (convertir tiempo a milisegundos)
+		if (header.bpmChanges.length > 1) { // Solo si hay más de un BPM (el primero ya está en song.bpm)
+			for (i in 1...header.bpmChanges.length) {
+				var change = header.bpmChanges[i];
+				var timeInMs = change.time * 1000; // Convertir a milisegundos
 				song.events.push([
-					change.time,
+					timeInMs,
 					[['Change BPM', Std.string(change.bpm), '']]
 				]);
+				trace('Added BPM change event: ${change.bpm} at ${timeInMs}ms');
 			}
 		}
 		
 		return song;
 	}
 	
-	function createNewSection():SwagSection {
+	function createNewSection(isDouble:Bool = false):SwagSection {
 		return {
 			sectionNotes: [],
 			sectionBeats: 4,
@@ -294,6 +361,13 @@ class SMFile {
 			altAnim: false
 		};
 	}
+}
+
+// Typedef para almacenar información de cada dificultad
+typedef SMDifficulty = {
+	var name:String;
+	var isDouble:Bool;
+	var measures:Array<SMMeasure>;
 }
 
 /**
