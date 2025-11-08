@@ -302,25 +302,38 @@ class Main extends Sprite
 	}
 
 	function positionWatermark():Void {
-		if (watermarkSprite != null) {
-			// Para el primer tipo de marca de agua (watermarkSprite)
+		if (watermarkSprite != null && watermark != null) {
+			// Posición ajustada al tamaño de ventana, pero tamaño fijo
 			var marginX = 10;
 			var marginY = 10;
 			var stageW = openfl.Lib.current.stage.stageWidth;
-			var scale = 0.85;
-			watermarkSprite.x = stageW - watermark.width * scale - marginX;
+			// Usar el tamaño real del bitmap sin multiplicar por scale variable
+			watermarkSprite.x = stageW - watermark.width * Math.abs(watermark.scaleX) - marginX;
 			watermarkSprite.y = marginY;
 		}
 		if (watermark != null && watermark.parent == this) {
-			// Para el segundo tipo de marca de agua (watermark directo)
-			var scale = 0.85;
-			watermark.x = Lib.current.stage.stageWidth - watermark.width * Math.abs(watermark.scaleX) + 110;
-			watermark.y = Lib.current.stage.stageHeight - watermark.height * scale - 30;
+			// Posición ajustada al tamaño de ventana, pero tamaño fijo
+			var stageW = Lib.current.stage.stageWidth;
+			var stageH = Lib.current.stage.stageHeight;
+			watermark.x = stageW - watermark.width * Math.abs(watermark.scaleX) + 110;
+			watermark.y = stageH - watermark.height * Math.abs(watermark.scaleY) - 30;
 		}
 	}
 
 	private function setupGame():Void
 	{
+		// Initialize shader compatibility system
+		shaders.ShaderCompatibility.init();
+		
+		// Display system information at startup
+		trace('\n' + backend.Native.buildSystemInfo());
+		
+		// Display shader compatibility info
+		trace('\n' + shaders.ShaderCompatibility.getCompatibilityReport());
+		
+		var enhancements = backend.Native.getGPUEnhancements();
+		trace('GPU Enhancements: ${enhancements}\n');
+		
 		// --- Marca de agua global ---
 		var flxGraphic = backend.Paths.image("marca");
 		if (flxGraphic != null) {

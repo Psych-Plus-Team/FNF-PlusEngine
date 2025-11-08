@@ -148,6 +148,49 @@ class FreeplayState extends MusicBeatState
 		layerFree.alpha = 0.5;
 		add(layerFree);
 
+		// Primero crear y añadir las cards (fondo)
+		for (i in 0...songs.length)
+		{
+			// Validar que la canción tenga datos válidos
+			if (songs[i] == null || songs[i].songName == null || songs[i].songName == "")
+			{
+				trace('Skipping invalid song at index $i');
+				continue;
+			}
+
+			try 
+			{
+				var card:FlxSprite = new FlxSprite().loadGraphic(Paths.image('ui/card'));
+				if (card != null && card.graphic != null)
+				{
+					card.antialiasing = ClientPrefs.data.antialiasing;
+					card.setGraphicSize(470, 110);
+					card.updateHitbox();
+					card.visible = false;
+					cardArray.push(card);
+					add(card);
+				}
+				else
+				{
+					// Crear card vacía si falla la carga de imagen
+					var card:FlxSprite = new FlxSprite().makeGraphic(470, 110, FlxColor.GRAY);
+					card.visible = false;
+					cardArray.push(card);
+					add(card);
+				}
+			}
+			catch (e:Dynamic)
+			{
+				trace('Error creating card for song ${songs[i].songName}: $e');
+				// Crear card de respaldo
+				var card:FlxSprite = new FlxSprite().makeGraphic(470, 110, FlxColor.GRAY);
+				card.visible = false;
+				cardArray.push(card);
+				add(card);
+			}
+		}
+
+		// Ahora crear los textos y elementos que van encima
 		grpSongs = new FlxTypedGroup<FlxText>();
 		add(grpSongs);
 
@@ -185,37 +228,6 @@ class FreeplayState extends MusicBeatState
 			// too laggy with a lot of songs, so i had to recode the logic for it
 			songText.visible = songText.active = false;
 			icon.visible = icon.active = false;
-
-			try 
-			{
-				var card:FlxSprite = new FlxSprite().loadGraphic(Paths.image('ui/card'));
-				if (card != null && card.graphic != null)
-				{
-					card.antialiasing = ClientPrefs.data.antialiasing;
-					card.setGraphicSize(470, 110);
-					card.updateHitbox();
-					card.visible = false;
-					cardArray.push(card);
-					add(card);
-				}
-				else
-				{
-					// Crear card vacía si falla la carga de imagen
-					var card:FlxSprite = new FlxSprite().makeGraphic(470, 110, FlxColor.GRAY);
-					card.visible = false;
-					cardArray.push(card);
-					add(card);
-				}
-			}
-			catch (e:Dynamic)
-			{
-				trace('Error creating card for song ${songs[i].songName}: $e');
-				// Crear card de respaldo
-				var card:FlxSprite = new FlxSprite().makeGraphic(470, 110, FlxColor.GRAY);
-				card.visible = false;
-				cardArray.push(card);
-				add(card);
-			}
 		
 			var modName:String = songs[i].folder;
 			if (modName == null || modName == '')
@@ -842,7 +854,6 @@ class FreeplayState extends MusicBeatState
 			if (songs[curSelected].smDifficulties != null && songs[curSelected].smDifficulties.length > 0)
 			{
 				Difficulty.list = songs[curSelected].smDifficulties.copy();
-				trace('Loaded SM difficulties: ' + songs[curSelected].smDifficulties.join(', '));
 			}
 			else
 			{

@@ -39,7 +39,11 @@ class ShaderFunctions
 
 			if(leObj != null) {
 				var arr:Array<String> = funk.runtimeShaders.get(shader);
-				leObj.shader = new shaders.ErrorHandledShader.ErrorHandledRuntimeShader(shader, arr[0], arr[1]);
+				
+				// Adapt shader code for compatibility if needed
+				var adapted = shaders.ShaderCompatibility.adaptShaderCode(arr[0], arr[1]);
+				
+				leObj.shader = new shaders.ErrorHandledShader.ErrorHandledRuntimeShader(shader, adapted[0], adapted[1]);
 				return true;
 			}
 			#else

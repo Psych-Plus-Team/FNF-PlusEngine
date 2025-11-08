@@ -277,6 +277,10 @@ class PlayState extends MusicBeatState
 	var smScoreTween:FlxTween;
 	var smDisplayedScore:Float = 0; // Score mostrado (animado)
 	var isStepManiaChart:Bool = false;
+	
+	// StepMania Judgements
+	var smJudgement:FlxSprite;
+	var smJudgementTween:FlxTween;
 
 	// TPS/NPS System
 	var notesHitArray:Array<Date> = [];
@@ -799,7 +803,7 @@ class PlayState extends MusicBeatState
 			
 			// Score grande en el medio derecho (centrado verticalmente)
 			smScoreTxt = new FlxText(FlxG.width - 320, centerY - 60, 300, "00000000", 48);
-			smScoreTxt.setFormat(Paths.font("vcr.ttf"), 48, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			smScoreTxt.setFormat(Paths.font("aller.ttf"), 48, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			smScoreTxt.scrollFactor.set();
 			smScoreTxt.borderSize = 2;
 			smScoreTxt.visible = !ClientPrefs.data.hideHud;
@@ -807,7 +811,7 @@ class PlayState extends MusicBeatState
 			
 			// Accuracy debajo del score
 			smAccuracyTxt = new FlxText(FlxG.width - 320, centerY, 300, "0.00%", 28);
-			smAccuracyTxt.setFormat(Paths.font("vcr.ttf"), 28, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			smAccuracyTxt.setFormat(Paths.font("aller.ttf"), 28, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			smAccuracyTxt.scrollFactor.set();
 			smAccuracyTxt.borderSize = 1.5;
 			smAccuracyTxt.visible = !ClientPrefs.data.hideHud;
@@ -815,11 +819,18 @@ class PlayState extends MusicBeatState
 			
 			// Rating name debajo del accuracy
 			smRatingTxt = new FlxText(FlxG.width - 320, centerY + 35, 300, "?", 24);
-			smRatingTxt.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			smRatingTxt.setFormat(Paths.font("aller.ttf"), 24, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			smRatingTxt.scrollFactor.set();
 			smRatingTxt.borderSize = 1.5;
 			smRatingTxt.visible = !ClientPrefs.data.hideHud;
 			uiGroup.add(smRatingTxt);
+			
+			// Crear sprite de judgement (inicialmente invisible)
+			smJudgement = new FlxSprite();
+			smJudgement.cameras = [camHUD];
+			smJudgement.visible = false;
+			smJudgement.alpha = 0;
+			add(smJudgement);
 		}
 
 		botplayTxt = new FlxText(400, healthBar.y - 90, FlxG.width - 800, "", 32);
@@ -1563,36 +1574,8 @@ class PlayState extends MusicBeatState
 		if (smScoreTxt == null || smAccuracyTxt == null || smRatingTxt == null)
 			return;
 		
-		// Animar el score contador 1 a 1 de forma dinámica
-		var targetScore:Float = songScore;
-		var scoreDiff:Float = targetScore - smDisplayedScore;
-		
-		if (Math.abs(scoreDiff) >= 1) {
-			// Incrementar/decrementar de 1 en 1 de forma rápida
-			if (scoreDiff > 0) {
-				// Velocidad dinámica: más rápido cuando hay más diferencia
-				var increment:Int = Math.ceil(Math.abs(scoreDiff) / 10);
-				if (increment < 1) increment = 1;
-				smDisplayedScore += increment;
-				
-				// No sobrepasar el objetivo
-				if (smDisplayedScore > targetScore) {
-					smDisplayedScore = targetScore;
-				}
-			} else {
-				// Decrementar (por si acaso)
-				var decrement:Int = Math.ceil(Math.abs(scoreDiff) / 10);
-				if (decrement < 1) decrement = 1;
-				smDisplayedScore -= decrement;
-				
-				if (smDisplayedScore < targetScore) {
-					smDisplayedScore = targetScore;
-				}
-			}
-		} else {
-			// Cuando la diferencia es menor a 1, igualar
-			smDisplayedScore = targetScore;
-		}
+		// No animar el score: mostrar el valor actual inmediatamente
+		smDisplayedScore = songScore;
 		
 		// Formatear score con 8 dígitos y ceros a la izquierda
 		var scoreInt:Int = Math.floor(smDisplayedScore);
@@ -1608,6 +1591,46 @@ class PlayState extends MusicBeatState
 		
 		// Mostrar rating name
 		smRatingTxt.text = ratingName + ' [' + ratingFC + ']';
+	}
+	
+	function showStepManiaJudgement(ratingName:String)
+	{
+		if (smJudgement == null || ClientPrefs.data.hideHud)
+			return;
+		
+		// Mapeo de ratings FNF a sprites StepMania
+		var smSprite:String = switch(ratingName.toLowerCase()) {
+			case 'epic': 'fantastic';
+			case 'sick': 'excellent';
+			case 'good': 'great';
+			case 'bad': 'decent';
+			case 'shit': 'way-off';
+			default: ratingName.toLowerCase();
+		}
+		
+		// Cancelar tween anterior si existe (esto hace que el anterior desaparezca inmediatamente)
+		if (smJudgementTween != null) {
+			smJudgementTween.cancel();
+			smJudgementTween = null;
+		}
+		
+		// Cargar sprite del judgement
+		smJudgement.loadGraphic(Paths.image('stepmania/' + smSprite));
+		smJudgement.setGraphicSize(Std.int(smJudgement.width * 0.7));
+		smJudgement.updateHitbox();
+		
+		// Centrar en pantalla
+		smJudgement.screenCenter();
+		
+		// Hacer visible con alpha completo y escala inicial para bump
+		smJudgement.visible = true;
+		smJudgement.alpha = 1;
+		smJudgement.scale.set(1.3, 1.3);
+		
+		// Animación bump: escalar de 1.3 a 1.0
+		smJudgementTween = FlxTween.tween(smJudgement.scale, {x: 1, y: 1}, 0.2, {
+			ease: FlxEase.backOut
+		});
 	}
 
 	public dynamic function fullComboFunction()
@@ -1639,18 +1662,8 @@ class PlayState extends MusicBeatState
 		if(!ClientPrefs.data.scoreZoom)
 			return;
 		
-		// Si es StepMania, animar el score de StepMania
-		if (isStepManiaChart && smScoreTxt != null) {
-			if(smScoreTween != null)
-				smScoreTween.cancel();
-
-			smScoreTxt.scale.x = 1.1;
-			smScoreTxt.scale.y = 1.1;
-			smScoreTween = FlxTween.tween(smScoreTxt.scale, {x: 1, y: 1}, 0.2, {
-				onComplete: function(twn:FlxTween) {
-					smScoreTween = null;
-				}
-			});
+		// Para charts StepMania, no animar el contador (el score se actualiza instantáneamente)
+		if (isStepManiaChart) {
 			return;
 		}
 
@@ -2172,6 +2185,12 @@ class PlayState extends MusicBeatState
 			FlxTween.globalManager.forEach(function(twn:FlxTween) if(!twn.finished) twn.active = true);
 
 			paused = false;
+			
+			// Reanudar todos los videos de Lua
+			#if LUA_ALLOWED
+			psychlua.LuaVideo.resumeAll();
+			#end
+			
 			callOnScripts('onResume');
 			resetRPC(startTimer != null && startTimer.finished);
 			runSongSyncThread();
@@ -2610,6 +2629,12 @@ class PlayState extends MusicBeatState
 			vocals.pause();
 			opponentVocals.pause();
 		}
+		
+		// Pausar todos los videos de Lua
+		#if LUA_ALLOWED
+		psychlua.LuaVideo.pauseAll();
+		#end
+		
 		if(!cpuControlled)
 		{
 			for (note in playerStrums)
@@ -3528,7 +3553,16 @@ class PlayState extends MusicBeatState
 			rating.acceleration.y = 550 * playbackRate * playbackRate;
 			rating.velocity.y -= FlxG.random.int(140, 175) * playbackRate;
 			rating.velocity.x -= FlxG.random.int(0, 10) * playbackRate;
-			rating.visible = (!ClientPrefs.data.hideHud && showRating);
+			
+			// En charts StepMania, hacer invisible el rating por defecto
+			if (isStepManiaChart) {
+				rating.visible = false;
+				// Mostrar judgement de StepMania en su lugar
+				showStepManiaJudgement(daRating.name);
+			} else {
+				rating.visible = (!ClientPrefs.data.hideHud && showRating);
+			}
+			
 			rating.x += ClientPrefs.data.comboOffset[0];
 			rating.y -= ClientPrefs.data.comboOffset[1];
 			rating.antialiasing = antialias;
@@ -3635,6 +3669,12 @@ class PlayState extends MusicBeatState
 	private function showComboBreak():Void
 	{
 		if (!ClientPrefs.data.popUpRating) return;
+		
+		// Si es chart StepMania, usar el sistema SM para el miss
+		if (isStepManiaChart) {
+			showStepManiaJudgement('miss');
+			return;
+		}
 
 		var uiFolder:String = "";
 		var antialias:Bool = ClientPrefs.data.antialiasing;
@@ -4262,6 +4302,11 @@ class PlayState extends MusicBeatState
 	}
 
 	override function destroy() {
+		// Limpiar todos los videos de Lua
+		#if LUA_ALLOWED
+		psychlua.LuaVideo.clearAll();
+		#end
+		
 		// Restaurar el estado original de la ventana al salir de PlayState
 		if (windowResizedByScript) {
 			#if windows

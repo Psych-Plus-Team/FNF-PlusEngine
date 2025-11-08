@@ -1591,6 +1591,7 @@ class FunkinLua {
 		#if WINDOWS_FUNCTIONS_ALLOWED WindowsFunctions.implement(this); #end
 		MobileFunctions.implement(this);
 		#if android AndroidFunctions.implement(this); #end
+		LuaVideo.implement(this);
 
 		for (name => func in customFunctions)
 		{

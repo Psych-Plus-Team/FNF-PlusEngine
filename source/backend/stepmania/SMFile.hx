@@ -134,7 +134,6 @@ class SMFile {
 					measures: measures
 				});
 				
-				trace('Loaded difficulty: $difficultyName (${isDouble ? "Double" : "Single"}) with ${measures.length} measures');
 			}
 			
 			if (difficulties.length == 0) {
@@ -143,7 +142,6 @@ class SMFile {
 				return;
 			}
 			
-			trace('Successfully loaded ${difficulties.length} difficulties');
 			
 		} catch (e:Dynamic) {
 			trace('Error parsing SM file: ' + e);
