@@ -68,6 +68,10 @@ class FreeplayState extends MusicBeatState
 	// Opponent Mode toggle
 	public static var viewingOpponentScores:Bool = false;
 	var opponentModeText:FlxText;
+	
+	// Variables para el zoom del bg
+	var bgZoom:Float = 1;
+	var defaultBgZoom:Float = 1;
 
 	override function create()
 	{
@@ -136,6 +140,7 @@ class FreeplayState extends MusicBeatState
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		add(bg);
 		bg.screenCenter();
+		bgZoom = defaultBgZoom = 1;
 		
 		blackOverlay = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		blackOverlay.alpha = 0.1;
@@ -353,6 +358,15 @@ class FreeplayState extends MusicBeatState
 
 		if (FlxG.sound.music.volume < 0.7)
 			FlxG.sound.music.volume += 0.5 * elapsed;
+		
+		// Sincronizar Conductor con la música para que beatHit funcione
+		Conductor.songPosition = FlxG.sound.music.time;
+		
+		// Lerp del zoom del bg (como en PlayState)
+		bgZoom = FlxMath.lerp(defaultBgZoom, bgZoom, Math.exp(-elapsed * 3.125));
+		bg.scale.set(bgZoom, bgZoom);
+		bg.updateHitbox();
+		bg.screenCenter();
 
 	lerpScore = Math.floor(FlxMath.lerp(intendedScore, lerpScore, Math.exp(-elapsed * 24)));
 	lerpRating = FlxMath.lerp(intendedRating, lerpRating, Math.exp(-elapsed * 12));
@@ -1106,6 +1120,17 @@ class FreeplayState extends MusicBeatState
 		#else
 		trace('StepMania support not available on this platform');
 		#end
+	}
+	
+	override public function beatHit():Void
+	{
+		super.beatHit();
+		
+		// Animar el fondo cada 2 beats (solo en beats pares)
+		if (curBeat % 2 == 0)
+		{
+			bgZoom += 0.015; // Mismo valor que en PlayState para la cámara
+		}
 	}
 	
 	override function destroy():Void
