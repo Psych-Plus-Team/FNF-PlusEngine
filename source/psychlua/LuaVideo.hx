@@ -1,13 +1,13 @@
 package psychlua;
 
 #if VIDEOS_ALLOWED
-import objects.VideoSprite;
+import hxvlc.flixel.FlxVideoSprite;
 #end
 
 class LuaVideo {
     #if LUA_ALLOWED
     // Mapa para rastrear videos activos
-    private static var activeVideos:Map<String, VideoSprite> = new Map();
+    private static var activeVideos:Map<String, FlxVideoSprite> = new Map();
     
     // Flags de protección
     private static var isDestroyed:Map<String, Bool> = new Map();
@@ -43,30 +43,35 @@ class LuaVideo {
             isDestroyed.set(tag, false);
             allowDestroy.set(tag, false);
             
-            // Crear nuevo video sprite usando VideoSprite (isWaiting=true para evitar el cover negro)
-            var videoSprite:VideoSprite = new VideoSprite(backend.Paths.video(path), true, false, false);
+            // Crear FlxVideoSprite directamente (sin usar VideoSprite para tener control total)
+            var videoSprite:FlxVideoSprite = new FlxVideoSprite();
+            videoSprite.antialiasing = ClientPrefs.data.antialiasing;
             
             // Configurar cámara por defecto en camHUD
             videoSprite.cameras = [PlayState.instance.camHUD];
             
-            // Callback para configurar cuando el video esté listo
-            videoSprite.videoSprite.bitmap.onFormatSetup.add(function() {
-                // Configurar posición manual (x, y) después de que el video esté cargado
-                // Primero aplicamos la posición base
-                videoSprite.videoSprite.x = x;
-                videoSprite.videoSprite.y = y;
+            // Callback cuando el video esté listo - SIN escalado automático
+            videoSprite.bitmap.onFormatSetup.add(function() {
+                // Solo actualizar hitbox, NO escalar ni centrar
+                videoSprite.updateHitbox();
                 
-                // Configurar volumen
-                videoSprite.videoSprite.bitmap.volume = Std.int(volume * 100);
+                // Configurar posición manual (x, y)
+                videoSprite.x = x;
+                videoSprite.y = y;
                 
-                trace('Playing "$tag"');
+                trace('Video "$tag" playing successfully');
             });
             
             // Callback cuando el video termina naturalmente
-            videoSprite.finishCallback = function() {
+            videoSprite.bitmap.onEndReached.add(function() {
                 funk.call('onVideoFinished', [tag]);
                 removeLuaVideo(tag);
-            };
+            });
+            
+            // Cargar y reproducir el video
+            videoSprite.load(backend.Paths.video(path), null);
+            videoSprite.bitmap.volume = Std.int(volume * 100);
+            videoSprite.play();
             
             // Permitir destrucción después de 2 segundos
             new flixel.util.FlxTimer().start(2.0, function(tmr:flixel.util.FlxTimer) {
@@ -90,10 +95,6 @@ class LuaVideo {
                 PlayState.instance.insert(position, videoSprite);
             }
             
-            // Iniciar reproducción explícitamente
-            videoSprite.play();
-            
-            trace('LuaVideo: "$tag" created and playing');
         });
         
         // Pausar video
@@ -101,7 +102,6 @@ class LuaVideo {
             var video = getLuaVideo(tag);
             if(video != null) {
                 video.pause();
-                FunkinLua.luaTrace('Video "$tag" paused', false, false);
             }
         });
         
@@ -110,7 +110,6 @@ class LuaVideo {
             var video = getLuaVideo(tag);
             if(video != null) {
                 video.resume();
-                FunkinLua.luaTrace('Video "$tag" resumed', false, false);
             }
         });
         
@@ -136,7 +135,7 @@ class LuaVideo {
         Lua_helper.add_callback(lua, "isLuaVideoPlaying", function(tag:String):Bool {
             var video = getLuaVideo(tag);
             if(video != null) {
-                return video.videoSprite.bitmap.isPlaying;
+                return video.bitmap.isPlaying;
             }
             return false;
         });
@@ -145,7 +144,7 @@ class LuaVideo {
         Lua_helper.add_callback(lua, "setLuaVideoVolume", function(tag:String, volume:Float) {
             var video = getLuaVideo(tag);
             if(video != null) {
-                video.videoSprite.bitmap.volume = Std.int(volume * 100);
+                video.bitmap.volume = Std.int(volume * 100);
             }
         });
         
@@ -153,7 +152,7 @@ class LuaVideo {
         Lua_helper.add_callback(lua, "getLuaVideoDuration", function(tag:String):Float {
             var video = getLuaVideo(tag);
             if(video != null) {
-                return haxe.Int64.toInt(video.videoSprite.bitmap.duration) / 1000.0;
+                return haxe.Int64.toInt(video.bitmap.duration) / 1000.0;
             }
             return 0;
         });
@@ -162,7 +161,7 @@ class LuaVideo {
         Lua_helper.add_callback(lua, "getLuaVideoTime", function(tag:String):Float {
             var video = getLuaVideo(tag);
             if(video != null) {
-                return haxe.Int64.toInt(video.videoSprite.bitmap.time) / 1000.0;
+                return haxe.Int64.toInt(video.bitmap.time) / 1000.0;
             }
             return 0;
         });
@@ -176,10 +175,10 @@ class LuaVideo {
     }
     
     #if VIDEOS_ALLOWED
-    private static function getLuaVideo(tag:String):VideoSprite {
+    private static function getLuaVideo(tag:String):FlxVideoSprite {
         var variables = MusicBeatState.getVariables();
         var sprite = variables.get(tag);
-        if(sprite != null && Std.isOfType(sprite, VideoSprite)) {
+        if(sprite != null && Std.isOfType(sprite, FlxVideoSprite)) {
             return cast sprite;
         }
         
@@ -206,47 +205,47 @@ class LuaVideo {
         var variables = MusicBeatState.getVariables();
         var video = variables.get(tag);
         
-        if(video == null || !Std.isOfType(video, VideoSprite)) {
+        if(video == null || !Std.isOfType(video, FlxVideoSprite)) {
             return;
         }
         
         // Marcar como destruido INMEDIATAMENTE
         isDestroyed.set(tag, true);
         
-        var videoSprite:VideoSprite = cast video;
+        var videoSprite:FlxVideoSprite = cast video;
         
         // Remover de los mapas
         variables.remove(tag);
         activeVideos.remove(tag);
         
-        // Limpiar callbacks del VideoSprite interno
-        if(videoSprite.videoSprite != null && videoSprite.videoSprite.bitmap != null) {
-            videoSprite.videoSprite.bitmap.onEndReached.removeAll();
-            videoSprite.videoSprite.bitmap.onFormatSetup.removeAll();
+        // Limpiar callbacks
+        if(videoSprite.bitmap != null) {
+            videoSprite.bitmap.onEndReached.removeAll();
+            videoSprite.bitmap.onFormatSetup.removeAll();
         }
         
-        // Remover del estado (VideoSprite ya maneja esto en su destroy())
+        // Remover del estado
         if(PlayState.instance != null && PlayState.instance.members != null) {
             if(PlayState.instance.members.contains(videoSprite)) {
                 PlayState.instance.remove(videoSprite);
             }
         }
         
-        // Destruir (VideoSprite tiene su propio sistema de destrucción)
+        // Destruir
         videoSprite.destroy();
         
         // Limpiar flags
         isDestroyed.remove(tag);
         allowDestroy.remove(tag);
         
-        trace('LuaVideo: "$tag" destroyed');
+        trace('Video "$tag" destroyed');
     }
     
     // Pausar todos los videos activos (llamado cuando se pausa el juego)
     public static function pauseAll():Void {
         #if VIDEOS_ALLOWED
         for(tag => video in activeVideos) {
-            if(video != null && video.videoSprite.bitmap.isPlaying) {
+            if(video != null && video.bitmap.isPlaying) {
                 video.pause();
             }
         }
@@ -257,7 +256,7 @@ class LuaVideo {
     public static function resumeAll():Void {
         #if VIDEOS_ALLOWED
         for(tag => video in activeVideos) {
-            if(video != null && !video.videoSprite.bitmap.isPlaying) {
+            if(video != null && !video.bitmap.isPlaying) {
                 video.resume();
             }
         }
