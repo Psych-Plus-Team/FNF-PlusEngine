@@ -38,11 +38,11 @@ To learn about variables Lua for Modcharts, clic [here](https://github.com/Lenin
 * Moxie - Helper of Psych Engine Mobile.
 
 ### Build Mobile:
-You need have:
+You need to have:
 
-- Android Build Tools (Android Studio)
+- Android Build Tools / Android Command Line Tools
 - Android SDK 35
-- NDK r27d
+- Android NDK r27d
 - Java JDK 17
 
 # Psych Team
