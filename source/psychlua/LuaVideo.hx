@@ -19,7 +19,7 @@ class LuaVideo {
         #if VIDEOS_ALLOWED
         // PlayLuaVideoSprite(tag, path, x, y, volume, front)
         // front: true = encima de todo, false = debajo de todo (default)
-        Lua_helper.add_callback(lua, "playLuaVideoSprite", function(tag:String, path:String, ?x:Float = 0, ?y:Float = 0, ?volume:Float = 1.0, ?front:Bool = false) {
+        Lua_helper.add_callback(lua, "playLuaVideoSprite", function(tag:String, path:String, ?x:Float = 0, ?y:Float = 0, ?front:Bool = false) {
             if(tag == null || tag.trim() == '') {
                 FunkinLua.luaTrace('playLuaVideoSprite: tag cannot be empty!', false, false, FlxColor.RED);
                 return;
@@ -70,7 +70,6 @@ class LuaVideo {
             
             // Cargar y reproducir el video
             videoSprite.load(backend.Paths.video(path), null);
-            videoSprite.bitmap.volume = Std.int(volume * 100);
             videoSprite.play();
             
             // Permitir destrucción después de 2 segundos
