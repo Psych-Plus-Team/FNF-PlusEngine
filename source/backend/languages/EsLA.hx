@@ -12,6 +12,7 @@ class EsLA
         "update_controls" => "Presione ENTER para actualizar a la última versión\nPresione ESCAPE si está en la versión correcta del motor\nPuede desactivar esta advertencia en el menú de opciones",
         "changelog_title" => "Novedades:\n{1}",
         "changelog_error" => "Error al cargar el registro de cambios: {1}",
+        "update_controls_mobile" => "Presione {1} para descargar la última versión\nPresione {2} si está en la versión correcta del motor\nPuede desactivar esta advertencia en el menú de opciones",
 
         // Gameplay
         "score_text" => "Puntuación: {1} | {2}: {3} | Clasificación: {4} | TPS: {5}/{6}",
@@ -136,6 +137,7 @@ class EsLA
         "gameplay_menu" => "Ajustes de jugabilidad",
         "modchart_menu" => "Ajustes de modcharts",
         "language_menu" => "Ajustes de idioma",
+        "mobile_controls_tip" => "Presiona {1} para ir al Menú de Controles Móviles",
 
         // Note Colors Menu
         "note_colors_notitg" => "Shaders RGB Desactivados - La skin NotITG preserva los colores originales",
@@ -275,7 +277,8 @@ class EsLA
         "description_opponent_notes" => "Si no esta marcado, las notas del oponente se ocultan",
         "setting_ghost_tapping" => "Notas fantasma",
         "description_ghost_tapping" => "Si está marcado, no fallará al presionar teclas mientras no haya notas que se puedan tocar.",
-        "setting_bad/shit_break_combo" => "Si está marcado, el combo se romperá al obtener un Bad o Shit.",
+        "setting_bad_and_shit_break_combo" => "Bad y Shit Rompera el Combo",
+        "description_bad_and_shit_break_combo" => "Si está marcado, el combo se romperá al obtener un Bad o Shit.",
         "setting_auto_pause" => "Pausa Automática",
         "description_auto_pause" => "Si está marcado, el juego se detiene automáticamente si la pantalla no está enfocada.",
         "setting_pop_up_score" => "Sprite de Combo y Rating",
@@ -325,6 +328,21 @@ class EsLA
         "setting_hold_end_scale" => "Tamaño del fin de notas largas",
         "description_hold_end_scale" => "Ajusta el tamaño del fin de las notas largas.\nAjusta según tus preferencias visuales.",
 
+        // Mobile Options
+        "setting_extra_controls" => "Controles extra",
+        "description_extra_controls" => "Selecciona cuantos controles extra quieres en pantalla.\nPuede ser usado para mecanicas con LUA o HSCRIPT.",
+        "setting_mobile_controls_opacity" => "Opacidad de controles",
+        "description_mobile_controls_opacity" => "Ajusta la opacidad de los controles en pantalla. (Procura no ponerlo al 0% o podria perderlos de la vista)",
+        "setting_allow_phone_screensaver" => "Salvapantallas",
+        "description_allow_phone_screensaver" => "Si está marcado, el salvapantallas del teléfono se activará normalmente.\n(El tiempo depende de la configuración del sistema)",
+        "setting_wide_screen_mode" => "Modo Pantalla Ancha",
+        "description_wide_screen_mode" => "Si está marcado, ajusta la relación de aspecto del juego para adaptarse a pantallas más anchas.\nPuede causar errores y crashes en algunos dispositivos.",
+        "setting_hitbox_design" => "Diseño de hitbox:",
+        "description_hitbox_design" => "Selecciona el diseño de hitbox preferido.",
+        "setting_hitbox_position" => "Posición de hitbox",
+        "description_hitbox_position" => "Si esta marcado, las hitboxes estaran abajo.\nSi no, estaran arriba.",
+        "setting_dynamic_controls_color" => "Color dinámico de controles",
+        "description_dynamic_controls_color" => "Si está marcado, los colores de los controles cambiarán dinámicamente según los colores de las notas de tus ajustes.",
 
         // Loading Screen
         "now_loading" => "Cargando{1}",

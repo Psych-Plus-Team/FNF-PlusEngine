@@ -32,7 +32,7 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 		
-		var option:Option = new Option('Bad/Shit Break Combo',
+		var option:Option = new Option('Bad and Shit Break Combo',
 			"If checked, hitting Bad or Shit notes will break your combo\nand count as Combo Breaks instead of just Misses.",
 			'badShitBreakCombo',
 			BOOL);
