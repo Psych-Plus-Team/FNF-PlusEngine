@@ -106,6 +106,43 @@ jobs:
         with:
           name: macBuild
           path: export/release/macos/bin
+  buildIOS:
+    runs-on: macos-15
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4.1.7
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.4
+      
+      # Runs a set of commands using the runners shell
+      - name: Install Haxelib
+        run: |
+          haxelib setup ~/haxelib
+          haxelib install hxcpp > /dev/null --quiet
+          chmod +x ./setup/unish-lib.sh
+          sh ./setup/unish-lib.sh
+      
+      - name: Setup Lime for iOS
+        run: |
+          haxelib run lime setup ios
+      
+      - name: Skip SScript setup mode
+        run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
+      
+      - name: Create Version Tag
+        run: echo "${{github.run_id}}" > VERSION
+      
+      - name: Compile
+        run: haxelib run lime build ios --app-version="4.0.0-${{ github.run_id}}" -D officialBuild
+      
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v4.3.4
+        with:
+          name: iosBuild
+          path: export/release/ios/bin
   buildAndroid:
     runs-on: ubuntu-latest
 
