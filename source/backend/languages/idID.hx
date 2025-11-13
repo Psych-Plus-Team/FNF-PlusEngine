@@ -1,6 +1,6 @@
 package backend.languages;
 
-class idID 
+class IdID 
 {
     public static var languageName:String = "Indonesian (Bahasa Indonesia)";
     public static var languageCode:String = "id-ID";
@@ -424,7 +424,7 @@ class idID
         "images/pixelui/sick-pixel" => "images/pixelUI/sick-pixel",
 
         // Story Menu
-        "images/storymenu/tutorial" => "images/storymenu/tutorial"
+        "images/storymenu/tutorial" => "images/storymenu/tutorial",
         "images/storymenu/week1" => "images/storymenu/week1",
         "images/storymenu/week2" => "images/storymenu/week2",
         "images/storymenu/week3" => "images/storymenu/week3",

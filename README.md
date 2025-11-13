@@ -44,6 +44,8 @@ Engine based on Psych Engine 1.0.4, with modcharts like NotITG, ModStates and co
 - More things will continue to be added in the future...
 
 ### 🤝 Contributions
+* sirthegamercoder - Indonesian translation
+
 Contributions are welcome! If you have ideas, improvements, or fixes, feel free to fork the repo and open a pull request.
 
 **Thanks for checking out FNF-PlusEngine! If you enjoy the project, leave a ⭐ and share it with other FNF fans.**

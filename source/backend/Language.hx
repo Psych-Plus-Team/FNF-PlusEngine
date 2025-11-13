@@ -25,7 +25,7 @@ class Language
         ZhCN,    // Chinese (Mainland)
         ZhHK,    // Chinese (Hong Kong)
         JpJP,     // Japanese (Japan)
-		idID      // Indonesian (Bahasa Indonesia)
+		IdID      // Indonesian (Bahasa Indonesia)
     ];
 
 	public static function reloadPhrases()
