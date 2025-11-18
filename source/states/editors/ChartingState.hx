@@ -2401,7 +2401,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			var sectionBeats:Float = lastSection != null ? lastSection.sectionBeats : 4;
 			var rowRound:Int = Math.round(4 * sectionBeats);
 			var timeAdd:Float = beat * (rowRound / 4);
-			var mustHitSec:Bool = lastSection != null ? lastSection.mustHitSection : true;
+			var mustHitSec:Bool = lastSection != null ? lastSection.mustHitSection : false;
 			var changeBpmSec:Bool = lastSection != null ? lastSection.changeBPM : false;
 			var altAnimSec:Bool = lastSection != null ? lastSection.altAnim : false;
 			var gfSec:Bool = lastSection != null ? lastSection.gfSection : false;

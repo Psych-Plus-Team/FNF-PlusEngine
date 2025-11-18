@@ -36,12 +36,16 @@ class KeyViewer extends FlxSpriteGroup
 	public var kps:Int = 0;
 	public var total:Int = 0;
 	
-	public function new(x:Float = 50, y:Float = 50)
+	// Referencia a PlayState para acceder a cpuControlled
+	private var playState:Dynamic = null;
+	
+	public function new(x:Float = 50, y:Float = 50, ?playStateRef:Dynamic = null)
 	{
 		super(x, y);
 		instance = this;
 		
 		keyCount = 4;
+		playState = playStateRef;
 		
 		createKeyViewer();
 		centerOnScreen();

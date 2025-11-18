@@ -60,6 +60,7 @@ class Note extends FlxSprite
 
 	public var wasGoodHit:Bool = false;
 	public var missed:Bool = false;
+	public var isOpponentMode:Bool = false; // Flag para detectar Opponent Mode
 
 	public var ignoreNote:Bool = false;
 	public var hitByOpponent:Bool = false;
@@ -504,18 +505,16 @@ class Note extends FlxSprite
 			if (strumTime < Conductor.songPosition - Conductor.safeZoneOffset && !wasGoodHit)
 				tooLate = true;
 		}
-		else
+	else
+	{
+		canBeHit = false;
+
+		if (!wasGoodHit && strumTime <= Conductor.songPosition)
 		{
-			canBeHit = false;
-
-			if (!wasGoodHit && strumTime <= Conductor.songPosition)
-			{
-				if(!isSustainNote || (prevNote.wasGoodHit && !ignoreNote))
-					wasGoodHit = true;
-			}
+			if(!isSustainNote || (prevNote.wasGoodHit && !ignoreNote))
+				wasGoodHit = true;
 		}
-
-		if (tooLate && !inEditor)
+	}		if (tooLate && !inEditor)
 		{
 			if (alpha > 0.3)
 				alpha = 0.3;

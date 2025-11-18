@@ -13,6 +13,7 @@ import flixel.FlxSubState;
 import flixel.util.FlxSort;
 import flixel.util.FlxStringUtil;
 import flixel.util.FlxSave;
+import flixel.util.FlxTimer;
 import flixel.input.keyboard.FlxKey;
 import flixel.animation.FlxAnimationController;
 import lime.utils.Assets;
@@ -701,19 +702,14 @@ class PlayState extends MusicBeatState
 		judgementCounter.setCameras([camHUD]);
 		add(judgementCounter);
 
-		var versionStr = "Plus Engine v" + MainMenuState.plusEngineVersion + "\n" + SONG.song + " (" + Difficulty.getString() + ")";
-		versionText = new FlxText(0, -50, FlxG.width, versionStr, 16); // Solo mostrar versión
-		versionText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		var versionStr = "PlE v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")";
+		versionText = new FlxText(0, -50, FlxG.width, versionStr, 14); // Solo mostrar versión
+		versionText.setFormat(Paths.font("vcr.ttf"), 14, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		versionText.scrollFactor.set();
 		versionText.alpha = 1.0; // Comienza completamente visible
 		versionText.borderSize = 1;
 		versionText.visible = true; // Siempre visible
 		versionText.cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
-		if (ClientPrefs.data.downScroll)
-			versionText.alignment = CENTER;
-	    else
-			versionText.alignment = RIGHT;
-		    versionText.x = -10;
 		add(versionText);
 
 		Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
@@ -769,7 +765,8 @@ class PlayState extends MusicBeatState
 
 		healthBar = new Bar(0, FlxG.height * (!ClientPrefs.data.downScroll ? 0.89 : 0.11), 'healthBar', function() return health, 0, 2);
 		healthBar.screenCenter(X);
-		healthBar.leftToRight = false;
+		// Opponent Mode: Invertir dirección de llenado (izquierda a derecha)
+		healthBar.leftToRight = playOpponent ? true : false;
 		healthBar.scrollFactor.set();
 		// Ocultar barra de vida en niveles NotITG (StepMania)
 		healthBar.visible = !ClientPrefs.data.hideHud && !isNotITG;
@@ -859,7 +856,7 @@ class PlayState extends MusicBeatState
 
 		// Key Viewer
 		if(ClientPrefs.data.showKeyViewer) {
-			keyViewer = new objects.KeyViewer(0, 0); // Las coordenadas no importan, se centra automáticamente
+			keyViewer = new objects.KeyViewer(0, 0); // Pasar referencia de PlayState
 			keyViewer.visible = !ClientPrefs.data.hideHud;
 			uiGroup.add(keyViewer);
 		}
@@ -1828,7 +1825,7 @@ class PlayState extends MusicBeatState
 		// Después de 5 segundos, cambiar el alpha a 0.6
 		new FlxTimer().start(5.0, function(tmr:FlxTimer)
 		{
-			FlxTween.tween(versionText, {alpha: 0.5}, 1.0, {ease: FlxEase.sineInOut});
+			FlxTween.tween(versionText, {alpha: 0.4}, 1.0, {ease: FlxEase.sineInOut});
 		});
 
 		#if DISCORD_ALLOWED
@@ -1990,6 +1987,7 @@ class PlayState extends MusicBeatState
 				
 				// Opponent Mode: Invierte quien debe tocar la nota
 				swagNote.mustPress = playOpponent ? !gottaHitNote : gottaHitNote;
+				swagNote.isOpponentMode = playOpponent; // Marcar si está en Opponent Mode
 				
 				swagNote.sustainLength = holdLength;
 				swagNote.noteType = noteType;
@@ -2010,6 +2008,7 @@ class PlayState extends MusicBeatState
 						sustainNote.mustPress = swagNote.mustPress;
 						sustainNote.gfNote = swagNote.gfNote;
 						sustainNote.noteType = swagNote.noteType;
+						sustainNote.isOpponentMode = swagNote.isOpponentMode;
 						sustainNote.scrollFactor.set();
 						sustainNote.parent = swagNote;
 						unspawnNotes.push(sustainNote);
@@ -2553,10 +2552,13 @@ class PlayState extends MusicBeatState
 			if(!inCutscene)
 			{
 				if(!cpuControlled)
+				{
 					keysCheck();
+					opponentDance(); // El oponente (IA) también debe hacer idle
+				}
 				else
 					playerDance();
-
+					
 				if(notes.length > 0)
 				{
 					if(startedCountdown)
@@ -2579,12 +2581,13 @@ class PlayState extends MusicBeatState
 								if(cpuControlled && !daNote.blockHit && daNote.canBeHit && (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition))
 									goodNoteHit(daNote);
 							}
-							else if (daNote.wasGoodHit && !daNote.hitByOpponent && !daNote.ignoreNote)
+							else if (!daNote.hitByOpponent && !daNote.ignoreNote && daNote.strumTime <= Conductor.songPosition)
+							{
+								// Notas del oponente - se tocan automáticamente cuando llega el tiempo
 								opponentNoteHit(daNote);
-
-							if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);
-
-							// Kill extremely late notes and cause misses
+							}
+						
+							if(daNote.isSustainNote && strum.sustainReduce) daNote.clipToStrumNote(strum);							// Kill extremely late notes and cause misses
 							if (Conductor.songPosition - daNote.strumTime > noteKillOffset)
 							{
 								// No Drop Penalty: Solo causa miss en sustains si la opción está desactivada
@@ -2667,8 +2670,14 @@ class PlayState extends MusicBeatState
 		var newPercent:Null<Float> = FlxMath.remapToRange(FlxMath.bound(healthBar.valueFunction(), healthBar.bounds.min, healthBar.bounds.max), healthBar.bounds.min, healthBar.bounds.max, 0, 100);
 		healthBar.percent = (newPercent != null ? newPercent : 0);
 
-		iconP1.animation.curAnim.curFrame = (healthBar.percent < 20) ? 1 : 0; //If health is under 20%, change player icon to frame 1 (losing icon), otherwise, frame 0 (normal)
-		iconP2.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0; //If health is over 80%, change opponent icon to frame 1 (losing icon), otherwise, frame 0 (normal)
+		// Opponent Mode: Invertir lógica de íconos cuando la barra va de izquierda a derecha
+		if (playOpponent) {
+			iconP1.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0; // Dad pierde cuando la barra está llena
+			iconP2.animation.curAnim.curFrame = (healthBar.percent < 20) ? 1 : 0; // Boyfriend pierde cuando la barra está vacía
+		} else {
+			iconP1.animation.curAnim.curFrame = (healthBar.percent < 20) ? 1 : 0; //If health is under 20%, change player icon to frame 1 (losing icon), otherwise, frame 0 (normal)
+			iconP2.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0; //If health is over 80%, change opponent icon to frame 1 (losing icon), otherwise, frame 0 (normal)
+		}
 		return health;
 	}
 
@@ -4155,7 +4164,8 @@ class PlayState extends MusicBeatState
 		}
 
 		// play character anims
-		var char:Character = boyfriend;
+		// Opponent Mode: El jugador controla a dad, así que dad hace la animación de miss, no boyfriend
+		var char:Character = playOpponent ? dad : boyfriend;
 		if((note != null && note.gfNote) || (SONG.notes[curSection] != null && SONG.notes[curSection].gfSection)) char = gf;
 
 		if(char != null && (note == null || !note.noMissAnimation) && char.hasMissAnimations)
@@ -4225,9 +4235,9 @@ class PlayState extends MusicBeatState
 
 		spawnHoldSplashOnNote(note);
 
-		if (!note.isSustainNote) invalidateNote(note);
+		// Invalidar la nota inmediatamente (tanto sustains como notas normales)
+		invalidateNote(note);
 	}
-
 	public function goodNoteHit(note:Note):Void
 	{
 		if(note.wasGoodHit) return;
@@ -4292,7 +4302,20 @@ class PlayState extends MusicBeatState
 				var spr = playerStrums.members[note.noteData];
 				if(spr != null) spr.playAnim('confirm', true);
 			}
-			else strumPlayAnim(false, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 1.25 / 1000 / playbackRate);
+			else 
+			{
+				strumPlayAnim(false, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 1.25 / 1000 / playbackRate);
+				
+				// Registrar tecla en KeyViewer cuando está en botplay (solo notas no-sustain)
+				if(keyViewer != null && !note.isSustainNote) {
+					var keyIndex:Int = note.noteData % 4;
+					keyViewer.keyPressed(keyIndex);
+					// Programar release automático después de un corto tiempo
+					new FlxTimer().start(0.1, function(tmr:FlxTimer) {
+						if(keyViewer != null) keyViewer.keyReleased(keyIndex);
+					});
+				}
+			}
 			vocals.volume = 1;
 
 			if (!note.isSustainNote)
@@ -4636,6 +4659,17 @@ class PlayState extends MusicBeatState
 		var anim:String = playerChar.getAnimationName();
 		if(playerChar.holdTimer > Conductor.stepCrochet * (0.0011 #if FLX_PITCH / FlxG.sound.music.pitch #end) * playerChar.singDuration && anim.startsWith('sing') && !anim.endsWith('miss'))
 			playerChar.dance();
+	}
+	
+	public function opponentDance():Void
+	{
+		// Opponent Mode: El oponente es boyfriend (IA), en modo normal es dad (IA)
+		var opponentChar:Character = playOpponent ? boyfriend : dad;
+		if(opponentChar == null) return;
+		
+		var anim:String = opponentChar.getAnimationName();
+		if(opponentChar.holdTimer > Conductor.stepCrochet * (0.0011 #if FLX_PITCH / FlxG.sound.music.pitch #end) * opponentChar.singDuration && anim.startsWith('sing') && !anim.endsWith('miss'))
+			opponentChar.dance();
 	}
 
 	override function sectionHit()
