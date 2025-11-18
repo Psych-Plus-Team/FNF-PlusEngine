@@ -31,7 +31,7 @@ final class Manager extends FlxBasic {
 	/**
 	 * Flag to enable or disable rendering of arrow paths.
 	 */
-	public var renderArrowPaths:Bool = false;
+	public var renderArrowPaths:Bool = Config.RENDER_ARROW_PATHS;
 
 	/**
 	 * List of playfields managed by the Manager.

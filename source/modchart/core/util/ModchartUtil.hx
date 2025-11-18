@@ -18,7 +18,7 @@ using StringTools;
 		return switch (spr.frame.angle) {
 			case ANGLE_90: 90;
 			case ANGLE_NEG_90: -90;
-			case ANGLE_270: 270;
+			// case ANGLE_270: 270; // Unused in practice (equivalent to ANGLE_NEG_90)
 			default: 0; // ANGLE_0
 		}
 	}

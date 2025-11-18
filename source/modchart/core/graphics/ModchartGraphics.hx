@@ -1,5 +1,9 @@
 package modchart.core.graphics;
 
+#if (FM_ENGINE_VERSION == "1.0" || FM_ENGINE_VERSION == "0.7")
+import backend.ClientPrefs;
+#end
+
 import flixel.FlxBasic;
 import flixel.FlxCamera;
 import flixel.FlxG;
@@ -624,11 +628,23 @@ class ModchartArrowPath extends ModchartRenderer<FlxSprite> {
 	var __queuedPoints:Array<Array<Float>> = [];
 	var __pathPoints:Vector<Float> = new Vector<Float>();
 	var __pathCommands:Vector<Int> = new Vector<Int>();
+	
+	// Optimization: frameskip counter to reduce draw frequency
+	var __frameSkipCounter:Int = 0;
 
 	public function new(instance:PlayField) {
 		super(instance);
 
 		__display.makeGraphic(FlxG.width, FlxG.height, 0x00FFFFFF);
+	}
+	
+	// Helper function to get frameskip rate from config
+	inline function getFrameSkipRate():Int {
+		#if (FM_ENGINE_VERSION >= "0.7")
+		return ClientPrefs.data.arrowPathFrameSkip;
+		#else
+		return 2; // Default fallback
+		#end
 	}
 
 	// the entry sprite should be A RECEPTOR / STRUM !!
@@ -642,8 +658,10 @@ class ModchartArrowPath extends ModchartRenderer<FlxSprite> {
 		if (alpha <= 0 || thickness <= 0)
 			return;
 
-		final divisions = Std.int(40 / Math.max(1, instance.getPercent('arrowPathDivisions', fn)));
-		final limit = 1500 * (1 + instance.getPercent('arrowPathLength', fn));
+		// Optimized: Reduced default divisions from 40 to 20 for better performance
+		final divisions = Std.int(20 / Math.max(1, instance.getPercent('arrowPathDivisions', fn)));
+		// Optimized: Reduced limit from 1500 to 1000
+		final limit = 1000 * (1 + instance.getPercent('arrowPathLength', fn));
 		final interval = limit / divisions;
 
 		var moved = false;
@@ -700,6 +718,13 @@ class ModchartArrowPath extends ModchartRenderer<FlxSprite> {
 	override public function shift() {
 		if (queue.length <= 0)
 			return;
+
+		// Optimization: Skip frames to reduce draw calls
+		__frameSkipCounter++;
+		if (__frameSkipCounter < getFrameSkipRate()) {
+			return;
+		}
+		__frameSkipCounter = 0;
 
 		__pathPoints.splice(0, __pathPoints.length);
 		__pathCommands.splice(0, __pathCommands.length);

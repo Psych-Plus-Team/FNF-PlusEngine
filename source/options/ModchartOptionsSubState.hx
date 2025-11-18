@@ -64,6 +64,18 @@ class ModchartOptionsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		// Arrow Path Quality option
+		var option:Option = new Option('Arrow Path Quality',
+			'Controls path rendering frequency.\nLower = Better FPS (paths update slower)\nHigher = Smoother paths (worse FPS)\n(Recommended: 2-3 for 60fps gameplay)',
+			'arrowPathFrameSkip',
+			INT);
+		option.scrollSpeed = 1;
+		option.minValue = 1;
+		option.maxValue = 6;
+		option.changeValue = 1;
+		option.decimals = 0;
+		addOption(option);
+
 		// Hold End Scale option
 		var option:Option = new Option('Hold End Scale',
 			'Scales the size of hold note endings.\nAdjust for visual preference.',
