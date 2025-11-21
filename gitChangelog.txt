@@ -1,14 +1,13 @@
-- Key viewer: will show the keys you press. You can change the position using note offset.
-- Added "callback" and "repeater" to Modchart functions in Lua.
-- Added more options to Modchart settings.
-- Added more debug text to FPSCounter (just press F4 on PC or the D button on Android).
-- New Gameplay Changers (Opponent Mode, No Drop Penalty, Perfect Only).
-- You can choose your default accuracy system. ITG, Psych, DJMax, Wife3, osu!, Simple
-- Added the songs "erect" and "nightmare," BUT without stages and events, only levels
-- Support for NotITG levels (without modifiers) and Stepmania, includes UI
-- Android support
-- Added the "miss" and "combo broken" sprites
-- Added the option for "bad" and "shit" to break the combo
-- New VideoSprite functionality with optimized hxvlc
-- New shader compatibility depending on your graphics card
-- And more!
+- Meh, viva Peru crj!!!!!!
+- Added support for Stepmania charts on Android
+- Fixed bugs and broken charts when using opponent mode
+- The modchart system was updated to version 1.2.4 (Funkin Modchart - Theo Dev)
+- New language: Indonesian (thanks to sirthegamercoder for the translation)
+- New 3D shader and Lua functions
+- Fixed a bug that prevented switching to a mod state in a mod
+- New touchpad back image for Android
+- Fixed GPU detection for Android
+- Some default icons were improved (thanks again to sirthegamercoder)
+- A new warning appears if a level has modcharts
+- The version and song text will be more discreet
+- A touchpad for Android was added to LoadingState.hx to allow you to exit if the chart fails to load and you get stuck.

@@ -186,6 +186,9 @@ class LoadingState extends MusicBeatState
 		timeoutWarning.visible = false;
 		add(timeoutWarning);
 		
+		// Añadir touchpad para Android
+		addTouchPad('NONE', 'B');
+		
 		super.create();
 
 		if (stateChangeDelay <= 0 && checkLoaded())
@@ -220,8 +223,8 @@ class LoadingState extends MusicBeatState
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 			}
 			
-			// Si se puede escapar y se presiona ESC, volver al estado anterior
-			if (canEscape && FlxG.keys.justPressed.ESCAPE)
+			// Si se puede escapar y se presiona ESC o botón B del touchpad, volver al estado anterior
+			if (canEscape && (FlxG.keys.justPressed.ESCAPE || (touchPad != null && touchPad.buttonB.justPressed)))
 			{
 				transitioning = true;
 				FlxG.sound.play(Paths.sound('cancelMenu'));
