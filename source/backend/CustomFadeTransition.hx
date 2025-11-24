@@ -142,7 +142,7 @@ class CustomFadeTransition extends MusicBeatSubstate {
             iconSprite.screenCenter();
             
             // Crear textos informativos
-            waterMark = new FlxText(0, height - 140, 300, 'Psych Engine v${MainMenuState.psychEngineVersion}', 32);
+            waterMark = new FlxText(0, height - 140, 300, 'Psych Engine\nv${MainMenuState.psychEngineVersion}', 32);
             waterMark.x = (width - waterMark.width) / 2;
             waterMark.setFormat(Paths.font("aller.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
             waterMark.scrollFactor.set();

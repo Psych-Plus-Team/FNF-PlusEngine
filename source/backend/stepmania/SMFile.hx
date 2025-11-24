@@ -3,11 +3,6 @@ package backend.stepmania;
 import backend.Song;
 import backend.stepmania.SMHeader;
 
-/**
- * Parser para archivos .sm de StepMania
- * Convierte charts de StepMania al formato de FNF
- * Soporta múltiples dificultades en un solo archivo
- */
 class SMFile {
 	public var header:SMHeader;
 	public var difficulties:Array<SMDifficulty> = [];
@@ -20,9 +15,6 @@ class SMFile {
 		parseFile();
 	}
 	
-	/**
-	 * Carga un archivo .sm desde una ruta
-	 */
 	public static function loadFile(path:String):SMFile {
 		#if sys
 		if (!sys.FileSystem.exists(path)) {
@@ -38,16 +30,11 @@ class SMFile {
 		#end
 	}
 	
-	/**
-	 * Parsea el contenido del archivo .sm
-	 */
 	function parseFile():Void {
 		try {
-			// Extraer header
 			var headerData = '';
 			var inc = 0;
 			
-			// Buscar hasta encontrar la sección de NOTES
 			while (inc < fileData.length && !fileData[inc].contains('#NOTES')) {
 				headerData += fileData[inc] + '\n';
 				inc++;
@@ -55,34 +42,27 @@ class SMFile {
 			
 			header = new SMHeader(headerData);
 			
-			// Verificar que el archivo de música es .ogg
 			if (!header.MUSIC.toLowerCase().endsWith('.ogg')) {
 				trace('ERROR: Music file must be .ogg format!');
 				isValid = false;
 				return;
 			}
 			
-			// Parsear todas las dificultades
 			while (inc < fileData.length) {
-				// Buscar siguiente #NOTES
 				while (inc < fileData.length && !fileData[inc].contains('#NOTES')) {
 					inc++;
 				}
 				
 				if (inc >= fileData.length) break;
 				
-				// Saltar la línea #NOTES
 				inc++;
 				
-				// Leer tipo de chart (dance-single, dance-double, etc.)
 				if (inc >= fileData.length) break;
 				var chartType = fileData[inc].trim().toLowerCase();
 				var isDouble = chartType.contains('dance-double');
 				
-				// Verificar que sea single o double
 				if (!chartType.contains('dance-single') && !chartType.contains('dance-double')) {
 					trace('Skipping unsupported chart type: $chartType');
-					// Saltar hasta el siguiente ; para ignorar esta dificultad
 					while (inc < fileData.length && !fileData[inc].contains(';')) {
 						inc++;
 					}
@@ -90,10 +70,10 @@ class SMFile {
 					continue;
 				}
 				
-				inc++; // Saltar a author/description
+				inc++; 
 				if (inc >= fileData.length) break;
 				
-				inc++; // Saltar a difficulty
+				inc++; 
 				if (inc >= fileData.length) break;
 				
 				var difficultyRaw = fileData[inc].trim().replace(':', '');
@@ -102,9 +82,8 @@ class SMFile {
 					difficultyName = difficultyRaw.charAt(0).toUpperCase() + difficultyRaw.substr(1).toLowerCase();
 				}
 				
-				inc += 3; // Saltar meter + groove radar para llegar a las notas
+				inc += 3;
 				
-				// Parsear medidas de esta dificultad
 				var measures:Array<SMMeasure> = [];
 				var currentMeasure = '';
 				
@@ -118,7 +97,7 @@ class SMFile {
 						}
 						if (line == ';') {
 							inc++;
-							break; // Fin de esta dificultad
+							break; 
 						}
 					} else if (line.length > 0 && !line.startsWith('//')) {
 						currentMeasure += line + '\n';
@@ -127,7 +106,6 @@ class SMFile {
 					inc++;
 				}
 				
-				// Agregar esta dificultad
 				difficulties.push({
 					name: difficultyName,
 					isDouble: isDouble,
@@ -150,9 +128,9 @@ class SMFile {
 	}
 	
 	/**
-	 * Convierte una dificultad específica del archivo SM a formato JSON de FNF
-	 * @param songName Nombre de la canción
-	 * @param difficultyIndex Índice de la dificultad a convertir (0 = primera dificultad)
+	 * Convert the SMFile to a FNF SwagSong format
+	 * @param songName 
+	 * @param difficultyIndex 
 	 */
 	public function convertToFNF(songName:String, difficultyIndex:Int = 0):SwagSong {
 		if (!isValid) {
@@ -185,25 +163,19 @@ class SMFile {
 			bpm = 120;
 		}
 		
-		// Inicializar TimingStruct con los BPM del header
 		TimingStruct.clearTimings();
 		
-		// Cargar todos los BPM del header
 		var bpmChanges:Array<backend.stepmania.SMHeader.BPMChange> = header.bpmChanges;
 		if (bpmChanges.length == 0) {
-			// Si no hay cambios de BPM, crear uno inicial
 			TimingStruct.addTiming(0, bpm, 999999, 0);
 		} else {
-			// Ordenar por beat
 			bpmChanges.sort((a, b) -> a.beat < b.beat ? -1 : (a.beat > b.beat ? 1 : 0));
 			
-			// Agregar cada cambio de BPM
 			for (i in 0...bpmChanges.length) {
 				var change = bpmChanges[i];
 				var startBeat = change.beat;
 				var endBeat = (i < bpmChanges.length - 1) ? bpmChanges[i + 1].beat : 999999;
 				
-				// El campo 'time' ya contiene el offset de tiempo calculado
 				var timeOffset:Float = change.time;
 				
 				TimingStruct.addTiming(startBeat, change.bpm, endBeat, timeOffset);
@@ -212,14 +184,10 @@ class SMFile {
 		
 		trace('Initialized TimingStruct with ${TimingStruct.allTimings.length} timing segments');
 		
-		// Obtener el offset del header (en segundos)
 		var offsetValue:Float = Std.parseFloat(header.OFFSET);
 		if (Math.isNaN(offsetValue)) offsetValue = 0;
 		
-		// En StepMania, OFFSET positivo significa que la música empieza DESPUÉS
-		// En FNF, offset negativo hace que las notas empiecen ANTES
-		// Entonces necesitamos invertir el signo: FNF offset = -SM offset
-		var fnfOffset:Float = -offsetValue * 1000; // Convertir a milisegundos e invertir
+		var fnfOffset:Float = -offsetValue * 1000; 
 
 		var song:SwagSong = {
 			song: songName,
@@ -231,7 +199,7 @@ class SMFile {
 			player2: 'dad',
 			gfVersion: 'gf',
 			speed: 2.0,
-			stage: 'notitg', // Usar stage NotITG para canciones de StepMania
+			stage: 'notitg',
 			format: 'psych_v1',
 			offset: fnfOffset
 		};		var heldNotes:Array<Array<Dynamic>> = isDouble ? [[], [], [], [], [], [], [], []] : [[], [], [], []];
@@ -242,7 +210,7 @@ class SMFile {
 		
 		if (measures == null || measures.length == 0) {
 			trace('No measures found in SM file');
-			return song; // Retornar canción vacía pero válida
+			return song;
 		}
 		
 		for (measure in measures) {
@@ -252,7 +220,7 @@ class SMFile {
 			}
 			
 			var lengthInRows = Math.floor(192 / (measure.noteRows.length));
-			if (lengthInRows <= 0) lengthInRows = 1; // Evitar división por cero
+			if (lengthInRows <= 0) lengthInRows = 1; 
 			
 			var rowIndex = 0;
 			
@@ -265,7 +233,6 @@ class SMFile {
 				var noteRow = (measureIndex * 192) + (lengthInRows * rowIndex);
 				currentBeat = noteRow / 48;
 				
-				// Crear nueva sección cada 4 beats
 				if (currentBeat % 4 == 0 && rowIndex == 0 && measureIndex > 0) {
 					song.notes.push(section);
 					section = createNewSection();
@@ -278,12 +245,10 @@ class SMFile {
 					continue;
 				}
 				
-				// Calcular tiempo: startTime + (beats desde inicio × segundos por beat)
 				var beatsSinceStart = currentBeat - seg.startBeat;
 				var secondsPerBeat = 60.0 / seg.bpm;
 				var timeInSec = seg.startTime + (beatsSinceStart * secondsPerBeat);
 				
-				// Ajustar para que los tiempos sean positivos (restar el offset negativo)
 				timeInSec -= (-offsetValue);
 				
 				var rowTime = timeInSec * 1000;
@@ -294,16 +259,13 @@ class SMFile {
 					continue;
 				}
 				
-				// Procesar cada nota en la fila
 				for (i in 0...row.length) {
 					var note = row.charAt(i);
 					
-					// Ignorar espacios vacíos
 					if (note == '0') continue;
 					
 					var lane = i;
 					
-					// Manejar minas como Hurt Notes
 					if (note == 'M') {
 						section.sectionNotes.push([rowTime, lane, 0, 'Hurt Note']);
 						continue;
@@ -313,28 +275,26 @@ class SMFile {
 					if (noteType == null || Math.isNaN(noteType)) continue;
 					
 					switch (noteType) {
-						case 1: // Nota normal (tap)
+						case 1: 
 							section.sectionNotes.push([rowTime, lane, 0]);
 							
-						case 2: // Inicio de hold normal
+						case 2: 
 							heldNotes[lane] = [rowTime, lane, 0];
 							
-						case 3: // Fin de hold normal
+						case 3:
 							if (heldNotes[lane].length > 0) {
 								var holdStart = heldNotes[lane];
 								var duration = rowTime - holdStart[0];
-								if (duration > 0) { // Solo agregar holds válidos
+								if (duration > 0) { 
 									holdStart[2] = duration;
 									section.sectionNotes.push(holdStart);
 								}
 								heldNotes[lane] = [];
 							}
 							
-						case 4: // Inicio de roll (tratar como hold normal)
+						case 4: 
 							heldNotes[lane] = [rowTime, lane, 0];
 							
-						// Nota: El tipo 3 sirve tanto para finalizar holds (2) como rolls (4)
-						// Por eso no necesitamos un case separado para finalizar rolls
 					}
 				}
 				
@@ -343,16 +303,14 @@ class SMFile {
 			measureIndex++;
 		}
 		
-		// Agregar última sección
 		if (section.sectionNotes.length > 0) {
 			song.notes.push(section);
 		}
 		
-		// Agregar eventos de cambio de BPM si existen (convertir tiempo a milisegundos)
-		if (header.bpmChanges.length > 1) { // Solo si hay más de un BPM (el primero ya está en song.bpm)
+		if (header.bpmChanges.length > 1) { 
 			for (i in 1...header.bpmChanges.length) {
 				var change = header.bpmChanges[i];
-				var timeInMs = change.time * 1000; // Convertir a milisegundos
+				var timeInMs = change.time * 1000; 
 				song.events.push([
 					timeInMs,
 					[['Change BPM', Std.string(change.bpm), '']]
@@ -377,16 +335,12 @@ class SMFile {
 	}
 }
 
-// Typedef para almacenar información de cada dificultad
 typedef SMDifficulty = {
 	var name:String;
 	var isDouble:Bool;
 	var measures:Array<SMMeasure>;
 }
 
-/**
- * Clase auxiliar para manejar timings
- */
 class TimingStruct {
 	public static var allTimings:Array<TimingData> = [];
 	
@@ -410,7 +364,6 @@ class TimingStruct {
 				return timing;
 			}
 		}
-		// Retornar el primer timing si no se encuentra ninguno
 		return allTimings.length > 0 ? allTimings[0] : {
 			startBeat: 0,
 			bpm: 100,

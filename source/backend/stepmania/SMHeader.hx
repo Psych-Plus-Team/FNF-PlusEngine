@@ -2,10 +2,6 @@ package backend.stepmania;
 
 import backend.stepmania.SMFile.TimingStruct;
 
-/**
- * Parser para el header de archivos .sm
- * Extrae metadatos como título, artista, BPM, etc.
- */
 class SMHeader {
 	public var TITLE:String = "";
 	public var SUBTITLE:String = "";
@@ -16,7 +12,7 @@ class SMHeader {
 	public var BANNER:String = "";
 	public var BACKGROUND:String = "";
 	public var OFFSET:String = "0";
-	public var BPMS:String = "0=120"; // formato: beat=bpm,beat=bpm
+	public var BPMS:String = "0=120"; 
 	
 	public var bpmChanges:Array<BPMChange> = [];
 	
@@ -28,14 +24,12 @@ class SMHeader {
 	}
 	
 	function parseHeader():Void {
-		// Dividir por líneas y procesar cada una
 		var lines = headerData.split('\n');
 		
 		for (line in lines) {
 			line = line.trim();
 			if (line.length == 0 || line.startsWith('//')) continue;
 			
-			// Formato: #TAG:value;
 			if (line.startsWith('#')) {
 				var parts = line.substring(1).split(':');
 				if (parts.length < 2) continue;
@@ -43,7 +37,6 @@ class SMHeader {
 				var tag = parts[0].toUpperCase();
 				var value = parts.slice(1).join(':').split(';')[0].trim();
 				
-				// Limpiar caracteres problemáticos
 				value = StringTools.replace(value, '\r', '');
 				value = StringTools.replace(value, '\n', ' ');
 				value = StringTools.trim(value);
@@ -63,7 +56,6 @@ class SMHeader {
 			}
 		}
 		
-		// Parsear cambios de BPM
 		parseBPMChanges();
 	}
 	
@@ -78,10 +70,9 @@ class SMHeader {
 		var bpmPairs = BPMS.split(',');
 		var currentTime:Float = 0;
 		
-		// Validar offset
 		var offsetValue = Std.parseFloat(OFFSET);
 		if (Math.isNaN(offsetValue)) offsetValue = 0;
-		currentTime = -offsetValue; // Offset negativo
+		currentTime = -offsetValue;
 		
 		for (i in 0...bpmPairs.length) {
 			var pair = bpmPairs[i].trim();
@@ -93,13 +84,11 @@ class SMHeader {
 			var beat = Std.parseFloat(parts[0]);
 			var bpm = Std.parseFloat(parts[1]);
 			
-			// Validar que beat y bpm sean válidos
 			if (Math.isNaN(beat) || Math.isNaN(bpm) || bpm <= 0) {
 				trace('Invalid BPM data: beat=$beat, bpm=$bpm');
 				continue;
 			}
 			
-			// Calcular el tiempo en segundos
 			if (i > 0) {
 				var prevChange = bpmChanges[i - 1];
 				var beatDiff = beat - prevChange.beat;
@@ -113,7 +102,6 @@ class SMHeader {
 				time: currentTime
 			});
 			
-			// Inicializar timings
 			if (i == 0) {
 				TimingStruct.clearTimings();
 			}
@@ -122,13 +110,11 @@ class SMHeader {
 				Std.parseFloat(bpmPairs[i + 1].split('=')[0]) : 
 				Math.POSITIVE_INFINITY;
 				
-			// Validar endBeat
 			if (Math.isNaN(endBeat)) endBeat = Math.POSITIVE_INFINITY;
 				
 			TimingStruct.addTiming(beat, bpm, endBeat, currentTime);
 		}
 		
-		// Si no hay cambios válidos, agregar uno por defecto
 		if (bpmChanges.length == 0) {
 			bpmChanges.push({
 				beat: 0,
@@ -140,9 +126,6 @@ class SMHeader {
 		}
 	}
 	
-	/**
-	 * Obtiene el BPM en un beat específico
-	 */
 	public function getBPM(beat:Float):Float {
 		if (bpmChanges.length == 0) {
 			trace('No BPM changes found, returning default');
@@ -163,7 +146,6 @@ class SMHeader {
 			}
 		}
 		
-		// Validar que el BPM sea válido
 		if (Math.isNaN(currentBPM) || currentBPM <= 0) {
 			trace('Invalid BPM found, using default');
 			return 120;
@@ -172,9 +154,6 @@ class SMHeader {
 		return currentBPM;
 	}
 	
-	/**
-	 * Obtiene el beat donde ocurre un cambio de BPM específico por índice
-	 */
 	public function getBeatFromBPMIndex(index:Int):Float {
 		if (index < 0 || index >= bpmChanges.length) return 0;
 		return bpmChanges[index].beat;

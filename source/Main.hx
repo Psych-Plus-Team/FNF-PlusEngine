@@ -216,13 +216,17 @@ class Main extends Sprite
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, toggleFullScreen);
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);
 		#end
+		
+		// Listener para ajustar el volumen cuando se pierde/gana el foco
+		FlxG.stage.application.window.onFocusOut.add(onFocusLost);
+		FlxG.stage.application.window.onFocusIn.add(onFocusGained);
 
 		#if mobile
 		#if android FlxG.android.preventDefaultKeys = [BACK]; #end
 		LimeSystem.allowScreenTimeout = ClientPrefs.data.screensaver;
 		#end
 
-		// Application.current.window.vsync = ClientPrefs.data.vsync; This lime 8.2.2 not have vsync property
+		Application.current.window.vsync = ClientPrefs.data.vsync;
 
 		// shader coords fix
 		FlxG.signals.gameResized.add(function (w, h) {
@@ -274,15 +278,26 @@ class Main extends Sprite
 	}
 
 	function onKeyUp(event:KeyboardEvent) {
-		// Presionar tecla "1" para abrir el selector de mods con states
-		if (event.keyCode == 49) // 49 = tecla "1"
+		if (event.keyCode == 49) 
 		{
 			openStateModSubstate();
 		}
 	}
 
+	var originalVolume:Float = 1.0;
+	var volumeTween:flixel.tweens.FlxTween;
+	
+	function onFocusLost() {
+		if (volumeTween != null) volumeTween.cancel();
+		volumeTween = FlxTween.tween(FlxG.sound, {volume: 0.1}, 0.5, {ease: flixel.tweens.FlxEase.quadOut});
+	}
+	
+	function onFocusGained() {
+		if (volumeTween != null) volumeTween.cancel();
+		volumeTween = FlxTween.tween(FlxG.sound, {volume: originalVolume}, 0.5, {ease: flixel.tweens.FlxEase.quadIn});
+	}
+
 	function openStateModSubstate() {
-		// Lista de estados bloqueados donde no se puede abrir el substate
 		var blockedStates:Array<String> = [
 			'states.PlayState',
 			'states.LoadingState',
@@ -298,13 +313,10 @@ class Main extends Sprite
 			'states.editors.MasterEditorMenu'
 		];
 		
-		// Verificar que FlxG.state existe y es un MusicBeatState
 		if (FlxG.state != null && Std.isOfType(FlxG.state, backend.MusicBeatState))
 		{
-			// Obtener el nombre de la clase del estado actual
 			var currentStateClass:String = Type.getClassName(Type.getClass(FlxG.state));
 			
-			// Verificar si el estado actual está en la lista de bloqueados
 			if (blockedStates.contains(currentStateClass))
 			{
 				trace('Cannot open StateModSubstate: Currently in $currentStateClass (blocked state)');
@@ -313,7 +325,6 @@ class Main extends Sprite
 			
 			var state:backend.MusicBeatState = cast FlxG.state;
 			
-			// Pausar el estado actual
 			state.persistentUpdate = false;
 			
 			state.openSubState(new substates.StateModSubstate());
@@ -326,16 +337,13 @@ class Main extends Sprite
 
 	function positionWatermark():Void {
 		if (watermarkSprite != null && watermark != null) {
-			// Posición ajustada al tamaño de ventana, pero tamaño fijo
 			var marginX = 10;
 			var marginY = 10;
 			var stageW = openfl.Lib.current.stage.stageWidth;
-			// Usar el tamaño real del bitmap sin multiplicar por scale variable
 			watermarkSprite.x = stageW - watermark.width * Math.abs(watermark.scaleX) - marginX;
 			watermarkSprite.y = marginY;
 		}
 		if (watermark != null && watermark.parent == this) {
-			// Posición ajustada al tamaño de ventana, pero tamaño fijo
 			var stageW = Lib.current.stage.stageWidth;
 			var stageH = Lib.current.stage.stageHeight;
 			watermark.x = stageW - watermark.width * Math.abs(watermark.scaleX) + 110;
@@ -345,13 +353,10 @@ class Main extends Sprite
 
 	private function setupGame():Void
 	{
-		// Initialize shader compatibility system
 		shaders.ShaderCompatibility.init();
 		
-		// Display simplified system information
 		trace('\n\n' + backend.Native.buildSystemInfo());
 		
-		// Initialize hxvlc for video playback
 		#if hxvlc
 		try {
 			hxvlc.util.Handle.init();
@@ -361,7 +366,6 @@ class Main extends Sprite
 		}
 		#end
 		
-		// --- Marca de agua global ---
 		var flxGraphic = backend.Paths.image("marca");
 		if (flxGraphic != null) {
 			var bmpData:openfl.display.BitmapData = flxGraphic.bitmap;
@@ -372,11 +376,9 @@ class Main extends Sprite
 			watermark.smoothing = true;
 			watermarkSprite = new openfl.display.Sprite();
 			watermarkSprite.addChild(watermark);
-			// Tamaño fijo sin escalado dinámico
 			var scale:Float = 0.85;
 			watermark.scaleX = scale;
 			watermark.scaleY = scale;
-			// Posicionamiento inicial
 			positionWatermark();
 			watermarkSprite.alpha = 0.5;
 			watermarkSprite.visible = ClientPrefs.data.showWatermark;
@@ -384,27 +386,23 @@ class Main extends Sprite
 		} else {
 			trace('No se pudo cargar la marca de agua con backend.Paths.image("marca").');
 		}
-		// --- Fin marca de agua ---
-		// --- Marca de agua global estilo ejemplo ---
+
 		var imagePath = backend.Paths.getPath('images/marca.png', IMAGE);
 		if (sys.FileSystem.exists(imagePath)) {
 		    if (watermark != null && watermark.parent != null)
 		        removeChild(watermark);
 			var bmpData = openfl.display.BitmapData.fromFile(imagePath);
 			watermark = new openfl.display.Bitmap(bmpData);
-			// Tamaño fijo sin escalado dinámico
 			var scale = 0.85;
-			watermark.scaleX = -scale; // Flip horizontal
+			watermark.scaleX = -scale;
 			watermark.scaleY = scale;
 			watermark.alpha = 0.5;
 			addChild(watermark);
-			// Posicionamiento inicial
 			positionWatermark();
 			Lib.current.stage.addEventListener(openfl.events.Event.RESIZE, function(_) positionWatermark());
 		}
 		if (watermark != null) {
 		    watermark.visible = ClientPrefs.data.showWatermark;
 		}
-		// --- Fin marca de agua ---
 	}
 }

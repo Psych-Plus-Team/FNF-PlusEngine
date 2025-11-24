@@ -2,7 +2,7 @@ package backend.languages;
 
 class IdID 
 {
-    public static var languageName:String = "Indonesian (Bahasa Indonesia)";
+    public static var languageName:String = "Indonesian (Bahasa Ind.)";
     public static var languageCode:String = "id-ID";
     
     public static var translations:Map<String, String> = [
@@ -12,6 +12,7 @@ class IdID
         "update_controls" => "Tekan ENTER untuk perbarui ke versi terkini\nTekan ESCAPE jika anda berada di versi engine benar\nAnda dapat mematikan peringatan ini di menu Pengaturan",
         "changelog_title" => "Apa yang Baru:\n{1}",
         "changelog_error" => "Kesalahan memuat changelog: {1}",
+        "update_controls_mobile" => "Tekan {1} untuk mengunduh versi terbaru\nTekan {2} jika Anda berada di versi engine yang benar\nAnda dapat mematikan peringatan ini di menu Pengaturan",
 
         // Gameplay
         "score_text" => "Skor: {1} | {2}: {3} | Rating: {4} | TPS: {5}/{6}",
@@ -139,8 +140,10 @@ class IdID
         "gameplay_menu" => "Pengaturan Gameplay",
         "modchart_menu" => "Pengaturan Modchart",
         "language_menu" => "Pengaturan Bahasa",
+        "mobile_controls_tip" => "Tekan {1} untuk pergi ke Menu Kontrol Seluler",
 
         // Note Colors Menu
+        "note_colors_notitg" => "Shader RGB Dinonaktifkan - Skin NotITG mempertahankan warna asli",
         "note_colors_tip" => "Tekan RESET untuk mereset Bagian Note dipilih.",
         "note_colors_hold_tip" => "Tahan {1} + Tekan RESET key untuk mereset Note dipilih sepenuhnya.",
         "note_colors_shift" => "Shift",
@@ -150,6 +153,7 @@ class IdID
         "delay_beat_hit" => "Beat Hit!",
         "delay_current_offset" => "Offset terkini: {1} ms",
         "combo_rating_offset" => "Rating Offset:",
+        "combo_numbers_offset" => "Posisi Angka:",
         "combo_number_offset" => "Angka Offset:",
         "keyviewer_offset" => "KeyViewer Offset",
         "keyviewer_position_offset" => "Posisi KeyViewer:",
@@ -181,6 +185,7 @@ class IdID
         "key_volume_down" => "Bawah",
         "key_debug_1" => "Key 1",
         "key_debug_2" => "Key 2",
+        "key_fullscreen" => "Layar Penuh",
         "controls_rebinding" => "Perekat ulang {1}",
         "controls_rebinding2" => "Tahan ESC untuk Batalkan\nTahan Backspace untuk Hapus",
         "reset_to_default_keys" => "Kembalikan ke\nDefault Keys",
@@ -213,8 +218,16 @@ class IdID
 
         // Visuals Settings
         "setting_note_skins" => "Note Skins:",
+        "setting_note_skins-default" => "Default",
+        "setting_note_skins-future" => "Masa Depan",
+        "setting_note_skins-chip" => "Chip",
         "description_note_skins" => "Pilih Note skin yang Anda sukai",
         "setting_note_splashes" => "Note Splashes:",
+        "setting_note_splashes-psych" => "Psych",
+        "setting_note_splashes-diamond" => "Berlian",
+        "setting_note_splashes-electric" => "Listrik",
+        "setting_note_splashes-sparkles" => "Kilauan",
+        "setting_note_splashes-vanilla" => "Vanila",
         "description_note_splashes" => "Pilih variasi Note Splash yang Anda sukai atau matikan saja",
         "setting_note_splash_opacity" => "Note Splash Opacity",
         "description_note_splash_opacity" => "Seberapa transparan seharusnya Note Splashes?",
@@ -244,9 +257,12 @@ class IdID
         "description_health_bar_opacity" => "Seberapa transparan seharusnya bar kesehatan dan ikon-ikon tersebut.",
         "setting_fps_counter" => "Penghitung FPS",
         "description_fps_counter" => "Jika tidak dicentang, akan menyebunyikan Penghitung FPS.",
+        "setting_show_watermark" => "Tampilkan Watermark",
+        "description_show_watermark" => "Jika dicentang, menampilkan watermark engine di pojok kanan bawah.",
         "setting_vsync" => "VSync",
         "description_vsync" => "Jika dicentang, mengaktifkan VSync dengan memperbaiki tearing layar dengan mengorbankan pembatasan FPS sesuai dengan kecepatan refresh monitor Anda.\n(Anda perlu menrestart game agar perubahan berlaku)",
         "setting_pause_music" => "Jeda Lagu Layar:",
+        "setting_pause_music-none" => "Tidak ada",
         "description_pause_music" => "Lagu apa yang Anda sukai untuk layar jeda?",
         "setting_check_for_updates" => "Periksa Pembaruan",
         "description_check_for_updates" => "Pada versi rilis, aktifkan opsi ini untuk memeriksa pembaruan saat Anda memulai game.",
@@ -268,12 +284,16 @@ class IdID
         "description_opponent_notes" => "Jika tidak dicentang, notes lawan akan tersembunyi.",
         "setting_ghost_tapping" => "Ketukan Hantu",
         "description_ghost_tapping" => "Jika dicentang, Anda tidak akan mendapatkan misses saat menekan tombol\nsaat tidak ada note yang dapat dimainkan.",
+        "setting_bad_and_shit_break_combo" => "Bad dan Shit Memecah Kombo",
+        "description_bad_and_shit_break_combo" => "Jika dicentang, kombo akan pecah saat mendapatkan Bad atau Shit.",
         "setting_auto_pause" => "Jeda Otomatis",
         "description_auto_pause" => "Jika dicentang, game akan otomatis jeda jika layar tidak berada dalam fokus.",
         "setting_pop_up_score" => "Pop-up Kombo dan Rating",
         "description_pop_up_score" => "Jika dicentang, akan menampilkan pop-up kombo dan rating saat Anda menekan note.",
         "setting_disable_reset_button" => "Nonaktifkan Tombol Reset",
         "description_disable_reset_button" => "Jika dicentang, menekan tombol Reset tidak akan melakukan apa-apa.",
+        "setting_game_over_vibration" => "Getar Game Over",
+        "description_game_over_vibration" => "Jika dicentang, perangkat Anda akan bergetar saat kalah.",
         "setting_hitsound_volume" => "Hitsound Volume",
         "description_hitsound_volume" => "Notes lucu berbunyi \"Tick!\" saat Anda hit.",
         "setting_rating_offset" => "Penyesuaian Rating",
@@ -296,11 +316,50 @@ class IdID
         "description_show_end_countdown" => "Jika dicentang, akan menampilkan sebuah countdown di akhir lagu.",
         "setting_end_countdown_seconds" => "Akhir Countdown Detik:",
         "description_end_countdown_seconds" => "Berapa detik durasi countdown di akhir lagu.\n(10 - 30)",
+        "setting_accuracy_system" => "Sistem Akurasi:",
+        "description_accuracy_system" => "Sistem perhitungan akurasi mana yang Anda sukai?\nWife3 - Akurasi ms StepMania\nPsych - Berbasis Rating Mod\nSimple - Hit dasar/total\nosu!mania - Sistem penilaian berbobot\nDJMAX - Sistem bonus kombo\nITG - Sistem poin tari\n\n",
 
         // Modchart Settings
-        // Note: Modchart Manager is now automatically enabled when onInitModchart() function is detected
         "setting_hold_subdivisions" => "Tahan Subdivisi",
-        "description_hold_subdivisions" => "Membagi ekor hold/menyusut untuk tampilan yang lebih halus.\nNilai yang lebih tinggi meningkatkan kualitas tetapi dapat mengurangi kinerja.\n(Disarankan: 4-8)",
+        "description_hold_subdivisions" => "Membagi ekor hold/menyusut untuk tampilan yang lebih halus.\nNilai yang lebih tinggi meningkatkan kualitas tetapi dapat mengurangi kinerja.",
+        "setting_enable_3d_cameras" => "Kamera 3D",
+        "description_enable_3d_cameras" => "Aktifkan atau nonaktifkan fitur kamera 3D\nNonaktifkan jika Anda mengalami masalah kinerja.",
+        "setting_optimize_hold_rendering" => "Optimalkan Rendering Hold",
+        "description_optimize_hold_rendering" => "Mengoptimalkan rendering hold notes untuk meningkatkan kinerja.\nDapat mempengaruhi visual hold notes.",
+        "setting_z-axis_scale" => "Skala Sumbu Z:",
+        "description_z-axis_scale" => "Menyesuaikan nilai sumbu Z untuk mengontrol kedalaman yang dirasakan.\nNilai lebih tinggi meningkatkan kedalaman, nilai lebih rendah menguranginya.",
+        "setting_render_arrow_paths" => "Render Jalur Panah",
+        "description_render_arrow_paths" => "Menghasilkan garis jalur untuk panah notes.\nPERINGATAN: Ini mempengaruhi kinerja karena perhitungan jalur.",
+        "setting_styled_arrow_paths" => "Jalur Panah Bergaya",
+        "description_styled_arrow_paths" => "Menerapkan gaya visual pada jalur panah.\nMemerlukan 'Render Jalur Panah' diaktifkan.",
+        "setting_arrow_path_quality" => "Kualitas Jalur Panah",
+        "description_arrow_path_quality" => "Menyesuaikan frekuensi rendering jalur panah.\nRendah = Jalur halus (Kualitas lebih baik, fps rendah)\nTinggi = Jalur bergerigi (Kualitas lebih buruk, fps tinggi)",
+        "setting_arrow_path_boundary" => "Batas Jalur Panah",
+        "description_arrow_path_boundary" => "Menentukan jarak maksimum jalur panah dirender.\nNilai lebih tinggi meningkatkan jangkauan, tetapi dapat mempengaruhi kinerja.\n(Disarankan: 300)",
+        "setting_hold_end_scale" => "Skala Akhir Hold",
+        "description_hold_end_scale" => "Menyesuaikan ukuran ujung hold notes.\nSesuaikan dengan preferensi visual Anda.",
+        "setting_prevent_scaled_hold_ends" => "Cegah Skala Akhir Hold",
+        "description_prevent_scaled_hold_ends" => "Jika dicentang, ukuran ujung hold tidak akan terpengaruh oleh skala hold.\nPERINGATAN: Dapat mempengaruhi kinerja jika banyak hold di layar.",
+        "setting_column_specific_modifiers" => "Modifier Spesifik Kolom",
+        "description_column_specific_modifiers" => "Jika dicentang, memungkinkan menerapkan modifier khusus ke kolom individual.\nMenonaktifkan dapat meningkatkan kinerja dengan mengurangi perhitungan.",
+        "setting_holds_behind_strums" => "Hold Di Belakang Strum",
+        "description_holds_behind_strums" => "Menampilkan hold di belakang reseptor, sederhana :)",
+
+        // Mobile Options
+        "setting_extra_controls" => "Kontrol Ekstra",
+        "description_extra_controls" => "Pilih berapa banyak kontrol ekstra yang Anda inginkan di layar.\nDapat digunakan untuk mekanik dengan LUA atau HSCRIPT.",
+        "setting_mobile_controls_opacity" => "Opasitas Kontrol",
+        "description_mobile_controls_opacity" => "Menyesuaikan opasitas kontrol di layar. (Usahakan tidak di 0% atau Anda mungkin kehilangan mereka dari pandangan)",
+        "setting_allow_phone_screensaver" => "Screensaver",
+        "description_allow_phone_screensaver" => "Jika dicentang, screensaver ponsel akan aktif secara normal.\n(Waktunya tergantung pada pengaturan sistem)",
+        "setting_wide_screen_mode" => "Mode Layar Lebar",
+        "description_wide_screen_mode" => "Jika dicentang, menyesuaikan aspek rasio game untuk layar yang lebih lebar.\nDapat menyebabkan kesalahan dan crash di beberapa perangkat.",
+        "setting_hitbox_design" => "Desain Hitbox:",
+        "description_hitbox_design" => "Pilih desain hitbox yang Anda sukai.",
+        "setting_hitbox_position" => "Posisi Hitbox",
+        "description_hitbox_position" => "Jika dicentang, hitbox akan berada di bawah.\nJika tidak, akan berada di atas.",
+        "setting_dynamic_controls_color" => "Warna Kontrol Dinamis",
+        "description_dynamic_controls_color" => "Jika dicentang, warna kontrol akan berubah secara dinamis berdasarkan warna note dari pengaturan Anda.",
 
         // Loading Screen
         "now_loading" => "Memuat{1}",
@@ -309,6 +368,8 @@ class IdID
         "difficulty_easy" => "Mudah",
         "difficulty_normal" => "Biasa",
         "difficulty_hard" => "Susah",
+        "difficulty_erect" => "Erekt",
+        "difficulty_nightmare" => "Mimpi Buruk",
 
         // Debug and Time
         "debug_speed" => "Kecepatan",

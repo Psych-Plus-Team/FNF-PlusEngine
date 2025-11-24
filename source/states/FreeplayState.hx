@@ -1250,25 +1250,32 @@ class DifficultySelector
 	{
 		var lowerName = diffName.toLowerCase();
 		
-		if (lowerName == 'easy')
-			return 0x40C057;
-		else if (lowerName == 'normal')
-			return 0xFFD43B;
-		else if (lowerName == 'hard')
-			return 0xFF6B6B;
-		else if (lowerName == 'erect')
-			return 0xFF6BCE; // Pink/magenta color for Erect
-		else if (lowerName == 'nightmare')
-			return 0x9D00FF; // Purple color for Nightmare
+		// Normalizar nombres traducidos a inglés para detección consistente
+		var normalizedName = normalizeDifficultyName(lowerName);
+		
+		// Colores pastel correspondientes a cada dificultad
+		if (normalizedName == 'easy')
+			return 0x8FD9A8; // Verde pastel
+		else if (normalizedName == 'normal')
+			return 0xFFE69C; // Amarillo pastel
+		else if (normalizedName == 'hard')
+			return 0xFFB3BA; // Rojo pastel
+		else if (normalizedName == 'erect')
+			return 0xFFB5E8; // Rosa/magenta pastel
+		else if (normalizedName == 'nightmare')
+			return 0xC7A3FF; // Púrpura pastel
 		else
 		{
+			// Para dificultades personalizadas, generar colores pastel únicos
 			var pastelColors:Array<Int> = [
-				0xA78BFA,
-				0xFBB6CE,
-				0x99E9F2,
-				0xB8E994,
-				0xFFD8A8,
-				0xE0BBE4
+				0xA78BFA, // Lavanda pastel
+				0xFBB6CE, // Rosa claro pastel
+				0x99E9F2, // Cyan pastel
+				0xB8E994, // Verde lima pastel
+				0xFFD8A8, // Naranja pastel
+				0xE0BBE4, // Lila pastel
+				0xBAE1FF, // Azul cielo pastel
+				0xFFDAB9  // Durazno pastel
 			];
 			var hash = 0;
 			for (i in 0...diffName.length)
@@ -1276,6 +1283,41 @@ class DifficultySelector
 			var index = (hash < 0 ? -hash : hash) % pastelColors.length;
 			return pastelColors[index];
 		}
+	}
+	
+	/**
+	 * Normaliza nombres de dificultades traducidas a sus equivalentes en inglés
+	 * para detección consistente de colores en diferentes idiomas
+	 */
+	private function normalizeDifficultyName(diffName:String):String
+	{
+		var lower = diffName.toLowerCase();
+		
+		// Obtener las traducciones de las dificultades estándar
+		var easyTranslated = Language.getPhrase('difficulty_Easy', 'Easy').toLowerCase();
+		var normalTranslated = Language.getPhrase('difficulty_Normal', 'Normal').toLowerCase();
+		var hardTranslated = Language.getPhrase('difficulty_Hard', 'Hard').toLowerCase();
+		var erectTranslated = Language.getPhrase('difficulty_Erect', 'Erect').toLowerCase();
+		var nightmareTranslated = Language.getPhrase('difficulty_Nightmare', 'Nightmare').toLowerCase();
+		
+		// Comparar con traducciones
+		if (lower == easyTranslated || lower == 'easy')
+			return 'easy';
+		
+		if (lower == normalTranslated || lower == 'normal')
+			return 'normal';
+		
+		if (lower == hardTranslated || lower == 'hard')
+			return 'hard';
+		
+		if (lower == erectTranslated || lower == 'erect')
+			return 'erect';
+		
+		if (lower == nightmareTranslated || lower == 'nightmare')
+			return 'nightmare';
+		
+		// Si no coincide con ninguno, devolver el original
+		return lower;
 	}
 	
 	public function changeSelection(change:Int = 0):Void

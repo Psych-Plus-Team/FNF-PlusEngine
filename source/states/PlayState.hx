@@ -2798,6 +2798,18 @@ class PlayState extends MusicBeatState
 		var newPercent:Null<Float> = FlxMath.remapToRange(FlxMath.bound(healthBar.valueFunction(), healthBar.bounds.min, healthBar.bounds.max), healthBar.bounds.min, healthBar.bounds.max, 0, 100);
 		healthBar.percent = (newPercent != null ? newPercent : 0);
 
+		updateIconAnimations();
+		return health;
+	}
+	
+	/**
+	 * Actualiza las animaciones de los iconos basándose en el porcentaje actual de salud.
+	 * Útil para forzar la actualización cuando se cambian personajes.
+	 */
+	public function updateIconAnimations():Void
+	{
+		if (!iconsAnimations || healthBar == null || !healthBar.enabled) return;
+		
 		// Opponent Mode: Invertir lógica de íconos cuando la barra va de izquierda a derecha
 		if (playOpponent) {
 			iconP1.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0; // Dad pierde cuando la barra está llena
@@ -2806,7 +2818,6 @@ class PlayState extends MusicBeatState
 			iconP1.animation.curAnim.curFrame = (healthBar.percent < 20) ? 1 : 0; //If health is under 20%, change player icon to frame 1 (losing icon), otherwise, frame 0 (normal)
 			iconP2.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0; //If health is over 80%, change opponent icon to frame 1 (losing icon), otherwise, frame 0 (normal)
 		}
-		return health;
 	}
 
 	function openPauseMenu()
@@ -3114,6 +3125,7 @@ class PlayState extends MusicBeatState
 							boyfriend = boyfriendMap.get(value2);
 							boyfriend.alpha = lastAlpha;
 							iconP1.changeIcon(boyfriend.healthIcon);
+							updateIconAnimations(); // Forzar actualización de animaciones de iconos
 						}
 						setOnScripts('boyfriendName', boyfriend.curCharacter);
 
@@ -3136,6 +3148,7 @@ class PlayState extends MusicBeatState
 							}
 							dad.alpha = lastAlpha;
 							iconP2.changeIcon(dad.healthIcon);
+							updateIconAnimations(); // Forzar actualización de animaciones de iconos
 						}
 						setOnScripts('dadName', dad.curCharacter);
 
@@ -3753,6 +3766,19 @@ class PlayState extends MusicBeatState
 			rating.velocity.y -= FlxG.random.int(140, 175) * playbackRate;
 			rating.velocity.x -= FlxG.random.int(0, 10) * playbackRate;
 			
+			// Configurar tamaño del rating
+			if (!isPixelStage)
+			{
+				rating.setGraphicSize(Std.int(rating.width * 0.7));
+				rating.antialiasing = antialias;
+			}
+			else
+			{
+				rating.setGraphicSize(Std.int(rating.width * daPixelZoom * 0.85));
+				rating.antialiasing = false;
+			}
+			rating.updateHitbox();
+			
 			// En charts StepMania, hacer invisible el rating por defecto
 			if (isStepManiaChart) {
 				rating.visible = false;
@@ -3764,49 +3790,32 @@ class PlayState extends MusicBeatState
 			
 			rating.x += ClientPrefs.data.comboOffset[0];
 			rating.y -= ClientPrefs.data.comboOffset[1];
-			rating.antialiasing = antialias;
 
 			var comboSpr:FlxSprite = new FlxSprite().loadGraphic(Paths.image(uiFolder + 'combo' + uiPostfix));
 			comboSpr.screenCenter();
 			comboSpr.x = placement;
 			comboSpr.acceleration.y = FlxG.random.int(200, 300) * playbackRate * playbackRate;
 			comboSpr.velocity.y -= FlxG.random.int(140, 160) * playbackRate;
-			comboSpr.visible = (!ClientPrefs.data.hideHud && showCombo);
-			comboSpr.x += ClientPrefs.data.comboOffset[0];
-			comboSpr.y -= ClientPrefs.data.comboOffset[1];
-			comboSpr.antialiasing = antialias;
-			comboSpr.y += 60;
-			comboSpr.velocity.x += FlxG.random.int(1, 10) * playbackRate;
-			comboGroup.add(rating);
-
-			if (!PlayState.isPixelStage)
+			
+			// Configurar tamaño del combo
+			if (!isPixelStage)
 			{
-				rating.setGraphicSize(Std.int(rating.width * 0.7));
 				comboSpr.setGraphicSize(Std.int(comboSpr.width * 0.7));
+				comboSpr.antialiasing = antialias;
 			}
 			else
 			{
-				rating.setGraphicSize(Std.int(rating.width * daPixelZoom * 0.85));
 				comboSpr.setGraphicSize(Std.int(comboSpr.width * daPixelZoom * 0.85));
+				comboSpr.antialiasing = false;
 			}
-
 			comboSpr.updateHitbox();
-			rating.updateHitbox();
-
-		if (!PlayState.isPixelStage)
-		{
-			rating.scale.set(0.3, 0.3);
-			FlxTween.tween(rating.scale, {x: 0.7, y: 0.7}, 0.08, {
-				ease: FlxEase.circOut
-			});
-		}
-		else
-		{
-			rating.scale.set(1, 1);
-			FlxTween.tween(rating.scale, {x: 4.5, y: 4.5}, 0.08, {
-				ease: FlxEase.circOut
-			});
-		}
+			
+			comboSpr.visible = (!ClientPrefs.data.hideHud && showCombo);
+			comboSpr.x += ClientPrefs.data.comboOffset[0];
+			comboSpr.y -= ClientPrefs.data.comboOffset[1];
+			comboSpr.y += 60;
+			comboSpr.velocity.x += FlxG.random.int(1, 10) * playbackRate;
+			comboGroup.add(rating);
 
 			var daLoop:Int = 0;
 			var xThing:Float = 0;
@@ -4535,7 +4544,7 @@ class PlayState extends MusicBeatState
 			}
 		});
 		
-		splash.setupSusSplash((note.mustPress ? playerStrums : opponentStrums).members[note.noteData], note, playbackRate, linkedSplash);
+		splash.setupSusSplash((note.mustPress ? playerStrums : opponentStrums).members[note.noteData], note, playbackRate);
 		grpHoldSplashes.add(end.noteHoldSplash = splash);
 	}
 

@@ -252,6 +252,8 @@ class EsLA
         "description_health_bar_opacity" => "¿Qué tan transparentes deben ser la barra y los iconos?",
         "setting_fps_counter" => "Contador de FPS",
         "description_fps_counter" => "Si no está marcado, oculta el contador FPS",
+        "setting_show_watermark" => "Mostrar marca de agua",
+        "description_show_watermark" => "Si está marcado, muestra la marca de agua del motor en la esquina inferior derecha.",
         "setting_vsync" => "VSync",
         "description_vsync" => "Si está marcado, Habilita VSync corrigiendo cualquier desgarro de pantalla a costa de limitar los FPS a la tasa de refresco de la pantalla.\n(Debe reiniciar el juego para que tenga efecto)",
         "setting_pause_music" => "Canción de Pausa:",
@@ -325,8 +327,20 @@ class EsLA
         "description_render_arrow_paths" => "Genera líneas de trayectoria de las notas.\nADVERTENCIA: Esto afecta al rendimiento debido al cálculo de la ruta.",
         "setting_styled_arrow_paths" => "Estilo de ruta de las notas",
         "description_styled_arrow_paths" => "Aplica estilos visuales a las rutas de las notas.\nRequiere que 'Crear ruta de las notas' esté activado.",
+        "setting_arrow_path_quality" => "Renderizado de ruta de las notas",
+        "description_arrow_path_quality" => "Ajusta la frecuencia del renderizado de las rutas de las notas.\nBajos = Suaves rutas (Mejor calidad, bajo fps)\nAltos = Rutas entrecortadas (Peor calidad, alto fps)",
+        "setting_arrow_path_boundary" => "Límite de ruta de las notas",
+        "description_arrow_path_boundary" => "Define la distancia máxima a la que se renderizan las rutas de las notas.\nValores más altos aumentan el alcance, pero pueden afectar el rendimiento.\n(Recomendado: 300)",
         "setting_hold_end_scale" => "Tamaño del fin de notas largas",
         "description_hold_end_scale" => "Ajusta el tamaño del fin de las notas largas.\nAjusta según tus preferencias visuales.",
+        "setting_prevent_scaled_hold_ends" => "Prevenir escalado del fin de notas largas",
+        "description_prevent_scaled_hold_ends" => "Si está marcado, el tamaño del fin de las notas largas no se verá afectado por la escala de las notas largas.\nADVERTENCIA: Puede afectar el rendimiento si hay muchas notas largas en pantalla.",
+        "setting_column_specific_modifiers" => "Modificadores específicos de columna",
+        "description_column_specific_modifiers" => "Si está marcado, permite aplicar modificadores específicos a columnas individuales.\nDesabilitarlo puede mejorar el rendimiento reduciendo calculos.",
+        "setting_holds_behind_strums" => "Notas largas detrás de las barras",
+        "description_holds_behind_strums" => "Muestra las holds detras de los receptores, simple :)",
+
+
 
         // Mobile Options
         "setting_extra_controls" => "Controles extra",
@@ -351,6 +365,8 @@ class EsLA
         "difficulty_easy" => "Fácil",
         "difficulty_normal" => "Normal",
         "difficulty_hard" => "Difícil",
+        "difficulty_erect" => "Erecto",
+        "difficulty_nightmare" => "Pesadilla",
 
         // Tiempo y Debug
         "debug_speed" => "Velo.",
@@ -448,6 +464,7 @@ class EsLA
         "images/set" => "images/es-LA/set",
         "images/shit" => "images/es-LA/shit",
         "images/sick" => "images/es-LA/sick",
+        "images/epic" => "images/es-LA/epic",
 
         // UI Pixel
         "images/pixelUI/comboBroken-pixel" => "images/es-LA/pixelUI/comboBroken-pixel",

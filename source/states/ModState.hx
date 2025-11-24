@@ -25,26 +25,21 @@ class ModState extends MusicBeatState
     public var hscriptArray:Array<HScript> = [];
     #end
     
-    // Variables para cambiar de estado
     public static var nextState:FlxState = null;
     public var stateName:String = '';
     
-    // Texto de error para mostrar cuando algo falla
     public var errorText:FlxText;
     public var hasError:Bool = false;
     public var bgSprite:FlxSprite;
     
-    // Sistema de variables compartidas entre ModStates
     public static var sharedVars:Map<String, Dynamic> = new Map<String, Dynamic>();
     
-    // Limpia sharedVars (útil al cambiar de mod o resetear)
     public static function clearAllSharedVars():Void
     {
         sharedVars.clear();
         trace('ModState: All shared vars cleared globally');
     }
     
-    // Limpia solo variables de un mod específico (prefix-based)
     public static function clearModSharedVars(modName:String):Void
     {
         var keysToRemove:Array<String> = [];
@@ -69,11 +64,8 @@ class ModState extends MusicBeatState
 
     override function create()
     {
-        // Permitir que los scripts individuales controlen persistentUpdate
-        // Solo establecer persistentDraw en true por defecto
         persistentDraw = true;
 
-        // Crear texto de error (inicialmente oculto)
         var ohnou = new FlxText(0, 0, FlxG.width, "It appears the ModState did not load, due to an error or a previous incorrect configuration between States. Just press 1 and choose NONE.", 16);
         ohnou.color = 0xFF6C6C;
         ohnou.setBorderStyle(OUTLINE, FlxColor.BLACK, 2);
@@ -81,14 +73,12 @@ class ModState extends MusicBeatState
         ohnou.visible = true;
         add(ohnou);
         
-        // Crear texto de error (inicialmente oculto)
         errorText = new FlxText(10, 50, FlxG.width - 20, "ERROR!", 16);
         errorText.color = FlxColor.RED;
         errorText.setBorderStyle(OUTLINE, FlxColor.BLACK, 2);
         errorText.visible = false;
         add(errorText);
         
-        // Cargar scripts automáticamente si se proporciona un stateName
         if(stateName != null && stateName.length > 0)
             loadStateScripts(stateName);
             
@@ -108,7 +98,6 @@ class ModState extends MusicBeatState
         super.update(elapsed);
         callOnScripts('onUpdatePost', [elapsed]);
         
-        // Cambiar de estado si se estableció uno nuevo
         if(nextState != null)
         {
             MusicBeatState.switchState(nextState);
@@ -121,7 +110,6 @@ class ModState extends MusicBeatState
         callOnScripts('onDestroy');
         
         #if HSCRIPT_ALLOWED
-        // Limpiar scripts
         for(script in hscriptArray)
         {
             if(script != null)
@@ -134,24 +122,21 @@ class ModState extends MusicBeatState
         callOnScripts('onDestroyPost');
     }
     
-    // Carga scripts desde mods/nombredelmod/states/
     public function loadStateScripts(stateName:String)
     {
         #if (HSCRIPT_ALLOWED && sys)
-        // Obtener el mod activo actual
         #if MODS_ALLOWED
-        Mods.loadTopMod(); // Carga el mod activo
+        Mods.loadTopMod(); 
         var currentMod:String = Mods.currentModDirectory;
         #else
         var currentMod:String = '';
         #end
         
-        // Limpiar sharedVars si cambió el mod
         var savedModDir:String = sharedVars.exists('currentModDirectory') ? sharedVars.get('currentModDirectory') : null;
         if(savedModDir != null && savedModDir != currentMod)
         {
             trace('ModState: Mod changed from "$savedModDir" to "$currentMod" - Clearing shared vars');
-            sharedVars.clear(); // ✅ Limpia datos del mod anterior
+            sharedVars.clear(); 
         }
         
         var scriptPath:String = Paths.hx(stateName);
@@ -160,7 +145,6 @@ class ModState extends MusicBeatState
         {
             initHScript(scriptPath);
             
-            // Guardar el mod directory actual en sharedVars para futuros usos
             #if MODS_ALLOWED
             if(currentMod != null && currentMod.length > 0)
             {
@@ -178,7 +162,6 @@ class ModState extends MusicBeatState
         #end
     }
 
-    // Script management functions
     #if HSCRIPT_ALLOWED
     public function initHScript(file:String)
     {
@@ -187,7 +170,6 @@ class ModState extends MusicBeatState
         {
             newScript = new HScript(null, file);
             
-            // Exponer funciones para manejar variables compartidas entre ModStates
             newScript.set('setSharedVar', function(name:String, value:Dynamic) {
                 sharedVars.set(name, value);
                 trace('ModState: Shared var set - $name = $value');
@@ -230,10 +212,8 @@ class ModState extends MusicBeatState
             var pos:HScriptInfos = cast {fileName: file, showLine: false};
             var errorMsg = Printer.errorToString(e, false);
             
-            // Mostrar error en el ModState
             showError('HScript Error in ${extractFileName(file)}:\n$errorMsg');
             
-            // Enviar error al TraceDisplay
             TraceDisplay.addHScriptError(errorMsg, file);
             
             Iris.error(errorMsg, pos);
@@ -262,33 +242,24 @@ class ModState extends MusicBeatState
     }
     #end
     
-    /**
-     * Mostrar un error en pantalla y hacer el fondo negro
-     */
     public function showError(text:String):Void
     {
         hasError = true;
         
-        // Hacer el fondo negro
         if (bgSprite == null) {
             bgSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
             add(bgSprite);
         }
         
-        // Mostrar texto de error
         errorText.text = text;
         errorText.visible = true;
         
-        // Asegurar que el texto esté encima del fondo
         remove(errorText);
         add(errorText);
         
         trace('ModState Error: $text');
     }
     
-    /**
-     * Extraer nombre de archivo sin path ni extensión
-     */
     private function extractFileName(fileName:String):String
     {
         if (fileName == null) return "unknown";
@@ -306,7 +277,6 @@ class ModState extends MusicBeatState
         return fileName;
     }
 
-    // Call functions on all scripts
     public function callOnScripts(funcToCall:String, args:Array<Dynamic> = null, ignoreStops = false, exclusions:Array<String> = null, excludeValues:Array<Dynamic> = null):Dynamic
     {
         return callOnHScript(funcToCall, args, ignoreStops, exclusions, excludeValues);
@@ -352,10 +322,8 @@ class ModState extends MusicBeatState
                 var fileName = script.origin != null ? script.origin : "unknown";
                 var errorMsg = 'Error calling function "$funcToCall": $e';
                 
-                // Mostrar error en el ModState
                 showError('HScript Runtime Error in ${extractFileName(fileName)}:\nFunction: $funcToCall\nError: $e');
                 
-                // Enviar error al TraceDisplay
                 TraceDisplay.addHScriptError('Runtime error in $funcToCall: $e', fileName);
                 
                 trace('HScript Runtime Error in $fileName: $e');
