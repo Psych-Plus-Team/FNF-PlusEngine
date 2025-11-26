@@ -216,10 +216,6 @@ class Main extends Sprite
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, toggleFullScreen);
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyUp);
 		#end
-		
-		// Listener para ajustar el volumen cuando se pierde/gana el foco
-		FlxG.stage.application.window.onFocusOut.add(onFocusLost);
-		FlxG.stage.application.window.onFocusIn.add(onFocusGained);
 
 		#if mobile
 		#if android FlxG.android.preventDefaultKeys = [BACK]; #end
@@ -284,19 +280,6 @@ class Main extends Sprite
 		}
 	}
 
-	var originalVolume:Float = 1.0;
-	var volumeTween:flixel.tweens.FlxTween;
-	
-	function onFocusLost() {
-		if (volumeTween != null) volumeTween.cancel();
-		volumeTween = FlxTween.tween(FlxG.sound, {volume: 0.1}, 0.5, {ease: flixel.tweens.FlxEase.quadOut});
-	}
-	
-	function onFocusGained() {
-		if (volumeTween != null) volumeTween.cancel();
-		volumeTween = FlxTween.tween(FlxG.sound, {volume: originalVolume}, 0.5, {ease: flixel.tweens.FlxEase.quadIn});
-	}
-
 	function openStateModSubstate() {
 		var blockedStates:Array<String> = [
 			'states.PlayState',
@@ -319,7 +302,6 @@ class Main extends Sprite
 			
 			if (blockedStates.contains(currentStateClass))
 			{
-				trace('Cannot open StateModSubstate: Currently in $currentStateClass (blocked state)');
 				return;
 			}
 			

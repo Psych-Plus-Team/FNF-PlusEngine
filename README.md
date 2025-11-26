@@ -1,4 +1,4 @@
-![Logo Off](docs/img/PsychEngineLogoTweak.png)
+![Logo Off](docs/img/PlusEngineLogo.png)
 
 [![Build](https://github.com/LeninAsto/FNF-PlusEngine/actions/workflows/main.yml/badge.svg)](https://github.com/LeninAsto/FNF-PlusEngine/actions/workflows/main.yml)
 [![VirusTotal Scan](https://github.com/LeninAsto/FNF-PlusEngine/actions/workflows/virustotal.yml/badge.svg)](https://github.com/LeninAsto/FNF-PlusEngine/actions/workflows/virustotal.yml)
@@ -14,9 +14,9 @@
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/LeninAsto/FNF-PlusEngine)](https://github.com/LeninAsto/FNF-PlusEngine/pulls)
 [![GitHub contributors](https://img.shields.io/github/contributors/LeninAsto/FNF-PlusEngine)](https://github.com/LeninAsto/FNF-PlusEngine/graphs/contributors)
 
-Engine originally used on [Mind Games Mod](https://gamebanana.com/mods/301107), intended to be a fix for the vanilla version's many issues while keeping the casual play aspect of it. Also aiming to be an easier alternative to newbie coders with modcharts like NotITG and compatible with hxcodec videos from Psych mods 0.6.3 and 0.7.3.
+Engine based in Psych 1.0.4 with modcharts like NotITG and compatible with hxcodec videos from Psych mods 0.6.3 and 0.7.3.
 
-Follow the [Psych Engine notices on WhatsApp](https://whatsapp.com/channel/0029Vb6hfI9LdQeeQhhm5L1U) for updates, tips, and more.
+Follow the [Plus Engine notices on WhatsApp](https://whatsapp.com/channel/0029Vb6hfI9LdQeeQhhm5L1U) for updates, tips, and more.
 
 ## Contributors
 
@@ -48,7 +48,7 @@ Contributions are welcome! If you have ideas, improvements, or fixes, feel free 
 > This project is subject to bugs, fixes, improvements and changes.
 
 ## Developer Credits:
-* Lenin Asto - Main Support of Psych Engine
+* Lenin Asto - Main Programmer for Plus Engine
 
 ## Original Credits:
 * Shadow Mario - Main Programmer and Head of Psych Engine.
