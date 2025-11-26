@@ -14,37 +14,9 @@
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/LeninAsto/FNF-PlusEngine)](https://github.com/LeninAsto/FNF-PlusEngine/pulls)
 [![GitHub contributors](https://img.shields.io/github/contributors/LeninAsto/FNF-PlusEngine)](https://github.com/LeninAsto/FNF-PlusEngine/graphs/contributors)
 
-Engine based on Psych Engine 1.0.4, with modcharts like NotITG, ModStates and compatible with hxcodec videos from Psych mods 0.6.3 and 0.7.3.
+Engine originally used on [Mind Games Mod](https://gamebanana.com/mods/301107), intended to be a fix for the vanilla version's many issues while keeping the casual play aspect of it. Also aiming to be an easier alternative to newbie coders with modcharts like NotITG and compatible with hxcodec videos from Psych mods 0.6.3 and 0.7.3.
 
-Follow the [Plus Engine channel on WhatsApp](https://whatsapp.com/channel/0029Vb6hfI9LdQeeQhhm5L1U) for updates, tips, and more.
-
-### Features
-- Variables for window and system management in Lua: Many variables were added, whether to hide the taskbar or window borders, etc.
-- Support ModState
-- Key Viewer
-- Modchart settings.
-- New Gameplay Changers (Opponent Mode, No Drop Penalty, Perfect Only).
-- You can choose your default accuracy system. ITG, Psych, DJMax, Wife3, osu!, Simple
-- Added the songs "erect" and "nightmare," BUT without stages and events, only levels
-- Support for NotITG levels (without modifiers) and Stepmania, includes UI
-- Android support
-- Added the "miss" and "combo broken" sprites
-- Added the option for "bad" and "shit" to break the combo
-- New VideoSprite functionality with optimized hxvlc
-- New shader compatibility depending on your graphics card
-- Judgement Counter.
-- Advanced variables in Lua for the craziest Modcharts.
-- New results State and really cool.
-- Compatible wth hxcodec videos from Psych mods 0.6.3 and 0.7.3.
-- Smooth Health Bar
-- +5 Languages availables
-- New cool transicioning
-- If you are in Charting Mode the step, beat, and section will be displayed in gameplay.
-- FPS Counter rework
-- Trace in Game
-- Rework the OutdatedSubstate.hx
-- Rework the FreeplayState.hx
-- More things will continue to be added in the future...
+Follow the [Psych Engine notices on WhatsApp](https://whatsapp.com/channel/0029Vb6hfI9LdQeeQhhm5L1U) for updates, tips, and more.
 
 ## Contributors
 
@@ -73,36 +45,19 @@ Follow the [Plus Engine channel on WhatsApp](https://whatsapp.com/channel/0029Vb
 
 Contributions are welcome! If you have ideas, improvements, or fixes, feel free to fork the repo and open a pull request.
 
-**Thanks for checking out FNF-PlusEngine! If you enjoy the project, leave a ⭐ and share it with other FNF fans.**
-
 > This project is subject to bugs, fixes, improvements and changes.
 
-To learn about Custom States, click [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/TemplateState.hx).
-To learn about new Lua scripts, click [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/TemplatePlusScript.lua).
-To learn about variables Lua for Modcharts, clic [here](https://github.com/LeninAsto/FNF-PlusEngine/blob/main/docs/scripts/DocLuaModchart.md)
+## Developer Credits:
+* Lenin Asto - Main Support of Psych Engine
+
+## Original Credits:
+* Shadow Mario - Main Programmer and Head of Psych Engine.
+* Riveren - Main Artist/Animator of Psych Engine.
 
 ## Mobile Credits:
 * Homura - Head Porter of Psych Engine Mobile.
 * Karim - Second Porter of Psych Engine Mobile.
 * Moxie - Helper of Psych Engine Mobile.
-
-### Build Mobile:
-You need to have:
-
-- Android Build Tools / Android Command Line Tools
-- Android SDK 35
-- Android NDK r27d
-- Java JDK 17
-
-# Psych Team
-
-Psych Engine by ShadowMario
-
-Engine originally used on [Mind Games Mod](https://gamebanana.com/mods/301107), intended to be a fix for the vanilla version's many issues while keeping the casual play aspect of it. Also aiming to be an easier alternative to newbie coders.
-
-## Credits:
-* Shadow Mario - Main Programmer and Head of Psych Engine.
-* Riveren - Main Artist/Animator of Psych Engine.
 
 ## Special Thanks
 * bbpanzu - Ex-Team Member (Programmer).
@@ -122,7 +77,43 @@ Engine originally used on [Mind Games Mod](https://gamebanana.com/mods/301107), 
 
 ***
 
-# Features
+# Build Mobile:
+You need to have:
+
+- Android Build Tools / Android Command Line Tools
+- Android SDK 35
+- Android NDK r27d
+- Java JDK 17
+
+# Features before 1.0.4
+
+- Variables for window and system management in Lua: Many variables were added, whether to hide the taskbar or window borders, etc.
+- Key Viewer
+- Modchart settings.
+- New Gameplay Changers (Opponent Mode, No Drop Penalty, Perfect Only).
+- You can choose your default accuracy system. ITG, Psych, DJMax, Wife3, osu!, Simple
+- Added the songs "erect" and "nightmare," BUT without stages and events, only levels
+- Support for NotITG levels (without modifiers) and Stepmania, includes UI
+- Android support
+- Added the "miss" and "combo broken" sprites
+- Added the option for "bad" and "shit" to break the combo
+- New VideoSprite functionality with optimized hxvlc
+- New shader compatibility depending on your graphics card
+- Judgement Counter.
+- Advanced variables in Lua for the craziest Modcharts.
+- New results State and really cool.
+- Compatible wth hxcodec videos from Psych mods 0.6.3 and 0.7.3.
+- Smooth Health Bar
+- +5 Languages availables
+- New cool transicioning
+- If you are in Charting Mode the step, beat, and section will be displayed in gameplay.
+- FPS Counter rework
+- Trace in Game
+- Rework the OutdatedSubstate.hx
+- Rework the FreeplayState.hx
+- More things will continue to be added in the future...
+
+# Main Features
 
 ## Attractive animated dialogue boxes:
 
