@@ -1,4 +1,4 @@
-![Logo Off](docs/img/PlusEngineLogo.png)
+![Logo Off](docs/img/PsychEngineLogoTweak.png)
 
 [![Build](https://github.com/LeninAsto/FNF-PlusEngine/actions/workflows/main.yml/badge.svg)](https://github.com/LeninAsto/FNF-PlusEngine/actions/workflows/main.yml)
 [![VirusTotal Scan](https://github.com/LeninAsto/FNF-PlusEngine/actions/workflows/virustotal.yml/badge.svg)](https://github.com/LeninAsto/FNF-PlusEngine/actions/workflows/virustotal.yml)
@@ -93,7 +93,8 @@ You need to have:
 - New Gameplay Changers (Opponent Mode, No Drop Penalty, Perfect Only).
 - You can choose your default accuracy system. ITG, Psych, DJMax, Wife3, osu!, Simple
 - Added the songs "erect" and "nightmare," BUT without stages and events, only levels
-- Support for NotITG levels (without modifiers) and Stepmania, includes UI
+* Support for NotITG levels (without modifiers) and Stepmania, includes UI
+![Stepmania](docs/img/Stepmania.png)
 - Android support
 - Added the "miss" and "combo broken" sprites
 - Added the option for "bad" and "shit" to break the combo
@@ -104,13 +105,16 @@ You need to have:
 - New results State and really cool.
 - Compatible wth hxcodec videos from Psych mods 0.6.3 and 0.7.3.
 - Smooth Health Bar
-- +5 Languages availables
+* +5 Languages availables
+![Languages](docs/img/Languages.png)
 - New cool transicioning
 - If you are in Charting Mode the step, beat, and section will be displayed in gameplay.
 - FPS Counter rework
 - Trace in Game
 - Rework the OutdatedSubstate.hx
-- Rework the FreeplayState.hx
+* Rework the FreeplayState.hx
+![Freeplay](docs/img/Freeplay.png)
+![Freeplay Diff](docs/img/FreeplayDiff.png)
 - More things will continue to be added in the future...
 
 # Main Features
