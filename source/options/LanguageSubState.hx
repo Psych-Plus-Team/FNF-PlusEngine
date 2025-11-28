@@ -222,7 +222,7 @@ class LanguageSubState extends MusicBeatSubstate
 			'nl-NL' => 'Dit is een voorbeeldtekst in de Nederlandse taal Nederland',
 			'zh-CN' => '这是中文（简体）语言的示例文本',
 			'zh-HK' => '這是中文（香港）語言的示例文本',
-			"id-ID" => 'Ini adalah teks contoh dalam bahasa Indonesia Indonesia'
+			"id-ID" => 'Ini adalah teks contoh dalam bahasa Indonesia Nusantara'
 		];
 		
 		// Buscar por código de idioma exacto primero
