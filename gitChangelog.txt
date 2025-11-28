@@ -1,13 +1,11 @@
-- Meh, viva Peru crj!!!!!!
-- Added support for Stepmania charts on Android
-- Fixed bugs and broken charts when using opponent mode
-- The modchart system was updated to version 1.2.4 (Funkin Modchart - Theo Dev)
-- New language: Indonesian (thanks to sirthegamercoder for the translation)
-- New 3D shader and Lua functions
-- Fixed a bug that prevented switching to a mod state in a mod
-- New touchpad back image for Android
-- Fixed GPU detection for Android
-- Some default icons were improved (thanks again to sirthegamercoder)
-- A new warning appears if a level has modcharts
-- The version and song text will be more discreet
-- A touchpad for Android was added to LoadingState.hx to allow you to exit if the chart fails to load and you get stuck.
+- Added support for scripts that generate "invalid access to field *" in hscript.
+- For Psych 0.6.3 mods, class verification has been added for get/setPropertyFromClass().
+- You can now disable the watermark from the visual options.
+- BPM changes in Stepmania graphics have been fixed thanks to Moonchart.
+- The transition between states has been improved.
+- Missing images have been added to some translations.
+- You can now toggle the health bar movement between smooth and the default Psych movement.
+- ModStates is no longer included (we will implement it in future updates).
+- The sl-windows-api library has been updated to version 1.2.0 (introducing GDI "beta" functions).
+- The introduction text now has a text array for each language; you can add them yourself and then submit a pull request.
+- and More
