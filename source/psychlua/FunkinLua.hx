@@ -64,6 +64,8 @@ class FunkinLua {
 
 	#if HSCRIPT_ALLOWED
 	public var hscript:HScript = null;
+	#end
+	#if SSCRIPT_ALLOWED
 	public var sscript:SScriptCompat = null; // Para compatibilidad con mods antiguos
 	#end
 
@@ -1582,7 +1584,7 @@ class FunkinLua {
 		#if ACHIEVEMENTS_ALLOWED Achievements.addLuaCallbacks(lua); #end
 		#if TRANSLATIONS_ALLOWED Language.addLuaCallbacks(lua); #end
 		HScript.implement(this);
-		SScriptCompat.implement(this); // Compatibilidad con mods antiguos 0.6.x - 0.7.3
+		#if SSCRIPT_ALLOWED SScriptCompat.implement(this); #end // Compatibilidad con mods antiguos 0.6.x - 0.7.3
 		#if flxanimate FlxAnimateFunctions.implement(this); #end
 		ReflectionFunctions.implement(this);
 		TextFunctions.implement(this);

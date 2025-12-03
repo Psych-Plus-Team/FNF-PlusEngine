@@ -15,7 +15,6 @@ haxelib install flixel-addons 3.3.2 --quiet
 haxelib install flixel-ui 2.6.2 --quiet
 haxelib install sl-windows-api 1.2.0 --quiet
 haxelib install moonchart --quiet
-haxelib git funkin-modchart https://github.com/LeninAsto/FunkinModchart.git --quiet
 haxelib install flixel-tools 1.5.1 --quiet
 haxelib install hscript-iris 1.1.3 --quiet
 haxelib install sscript 7.7.0 --quiet

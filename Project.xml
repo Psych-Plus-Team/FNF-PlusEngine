@@ -24,6 +24,7 @@
 	<define name="MODS_ALLOWED" if="desktop || mobile" />
 	<define name="MODCHARTS_NOTITG_ALLOWED" if="desktop || mobile" />
 	<define name="HSCRIPT_ALLOWED" if="desktop || mobile" />
+	<define name="SSCRIPT_ALLOWED" if="desktop || mobile" unless="android" />
 	<define name="LUA_ALLOWED" if="cpp" />
 	<define name="ACHIEVEMENTS_ALLOWED" />
 	<define name="DISCORD_ALLOWED" if="desktop" />
@@ -126,7 +127,7 @@
 	<haxelib name="linc_luajit" if="LUA_ALLOWED"/>
 	<haxelib name="hscript-iris" if="HSCRIPT_ALLOWED"/>
 	<!--Compatibility with older mods-->
-	<haxelib name="SScript" if="HSCRIPT_ALLOWED"/>
+	<haxelib name="SScript" if="SSCRIPT_ALLOWED"/>
 	<!--end-->
 	<haxelib name="hxvlc" if="VIDEOS_ALLOWED"/>
 	<haxelib name="hxdiscord_rpc" if="DISCORD_ALLOWED"/>
@@ -135,6 +136,10 @@
 	<!-- Disable Discord IO Thread -->
 	<haxedef name="DISCORD_DISABLE_IO_THREAD" if="hxdiscord_rpc" />
 	<haxedef name="NO_PRECOMPILED_HEADERS" if="linux" />
+
+	<!-- Suppress C23 deprecation warnings for function definitions without prototypes (Android zlib) -->
+	<haxedef name="HXCPP_CFLAGS" value="-Wno-deprecated-non-prototype" if="android" />
+	<haxeflag name="-Wno-deprecated-non-prototype" if="android" />
 
 	<!-- Enables a terminal log prompt on debug builds -->
 	<haxelib name="hxcpp-debug-server" if="debug"/>

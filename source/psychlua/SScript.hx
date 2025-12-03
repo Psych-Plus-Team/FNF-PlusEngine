@@ -15,7 +15,7 @@ import sys.io.File;
 #end
 
 // Wrapper de compatibilidad para mods de Psych Engine 0.6.x - 0.7.3 que usan tea.SScript
-#if HSCRIPT_ALLOWED
+#if SSCRIPT_ALLOWED
 import tea.SScript;
 import tea.SScript.TeaCall;
 

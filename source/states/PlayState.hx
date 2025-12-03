@@ -436,7 +436,9 @@ class PlayState extends MusicBeatState
 		// Resetear contador de errores de scripts
 		#if LUA_ALLOWED
 		FunkinLua.lua_Errors = 0;
+		#if SSCRIPT_ALLOWED
 		psychlua.SScript.SScriptCompat.sscript_Errors = 0;
+		#end
 		#end
 		
 		//trace('Playback Rate: ' + playbackRate);
