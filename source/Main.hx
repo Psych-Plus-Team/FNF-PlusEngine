@@ -154,7 +154,7 @@ class Main extends Sprite
 		}
 		#end
 
-		#if HSCRIPT_ALLOWED
+		#if SSCRIPT_ALLOWED
 		// Handlers para SScript (Psych 0.7.3)
 		SScriptCompat.sscriptWarnHandler = function(message:String, origin:String) {
 			if (PlayState.instance != null)

@@ -1704,6 +1704,8 @@ class FunkinLua {
 			hscript.destroy();
 			hscript = null;
 		}
+		#end
+		#if SSCRIPT_ALLOWED
 		if(sscript != null)
 		{
 			sscript.destroy();

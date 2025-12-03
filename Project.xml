@@ -137,9 +137,8 @@
 	<haxedef name="DISCORD_DISABLE_IO_THREAD" if="hxdiscord_rpc" />
 	<haxedef name="NO_PRECOMPILED_HEADERS" if="linux" />
 
-	<!-- Suppress C23 deprecation warnings for function definitions without prototypes (Android zlib) -->
-	<haxedef name="HXCPP_CFLAGS" value="-Wno-deprecated-non-prototype" if="android" />
-	<haxeflag name="-Wno-deprecated-non-prototype" if="android" />
+	<!-- Suppress warnings for Android compilation -->
+	<haxedef name="HXCPP_CFLAGS" value="-Wno-all -w" if="android" />
 
 	<!-- Enables a terminal log prompt on debug builds -->
 	<haxelib name="hxcpp-debug-server" if="debug"/>
