@@ -135,9 +135,9 @@ jobs:
       
       - name: Install Android SDK 35 and NDK r27d
         run: |
-          sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "cmdline-tools;latest"
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
-          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
+          sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-35" "build-tools;35.0.0" "ndk;26.3.11579264" "cmdline-tools;latest"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> $GITHUB_ENV
       
       # Runs a set of commands using the runners shell
       - name: Install Haxelib
@@ -151,7 +151,7 @@ jobs:
         run: |
           haxelib run lime setup android
           haxelib run lime config ANDROID_SDK $ANDROID_SDK_ROOT
-          haxelib run lime config ANDROID_NDK_ROOT $ANDROID_SDK_ROOT/ndk/27.2.12479018
+          haxelib run lime config ANDROID_NDK_ROOT $ANDROID_SDK_ROOT/ndk/26.3.11579264
           haxelib run lime config JAVA_HOME $JAVA_HOME
       
       - name: Skip SScript setup mode
@@ -162,14 +162,22 @@ jobs:
       - name: Create Version Tag
         run: echo "${{github.run_id}}" > VERSION
       
-      - name: Clean build artifacts
+      - name: Clean build artifacts and cache
         run: |
           rm -rf export
           rm -rf obj
           rm -rf .gradle
+          rm -rf build
+          rm -rf ~/.hxcpp_cache
+          rm -rf ~/.gradle
+          find . -name "*.o" -delete
+          find . -name "*.a" -delete
+          find . -name "*.so" -delete
+          find . -name "*.obj" -delete
+          find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
       
       - name: Compile
-        run: haxelib run lime build android --app-version="4.0.0-${{ github.run_id}}" -D officialBuild -D HXCPP_IGNORE_WARNINGS
+        run: haxelib run lime build android --app-version="4.0.0-${{ github.run_id}}" -D officialBuild -D HXCPP_IGNORE_WARNINGS -D HXCPP_VERBOSE -D HXCPP_NO_PRECOMPILED_HEADERS
       
       - name: Publish Artifact
         uses: actions/upload-artifact@v4.3.4

@@ -17,6 +17,7 @@ import states.TitleState;
 #if HSCRIPT_ALLOWED
 import crowplexus.iris.Iris;
 import psychlua.HScript.HScriptInfos;
+import psychlua.SScript.SScriptCompat;
 #end
 import mobile.backend.MobileScaleMode;
 import openfl.events.KeyboardEvent;
@@ -151,6 +152,21 @@ class Main extends Sprite
 			if (PlayState.instance != null)
 				PlayState.instance.addTextToDebug('FATAL: $msgInfo', 0xFFBB0000);
 		}
+		#end
+
+		#if HSCRIPT_ALLOWED
+		// Handlers para SScript (Psych 0.7.3)
+		SScriptCompat.sscriptWarnHandler = function(message:String, origin:String) {
+			if (PlayState.instance != null)
+				PlayState.instance.addTextToDebug('SSCRIPT WARNING ($origin): $message', FlxColor.YELLOW);
+			debug.TraceDisplay.addWarning('SSCRIPT WARNING ($origin): $message');
+		};
+		
+		SScriptCompat.sscriptErrorHandler = function(message:String, origin:String) {
+			if (PlayState.instance != null)
+				PlayState.instance.addTextToDebug('SSCRIPT ERROR ($origin): $message', FlxColor.RED);
+			debug.TraceDisplay.addSScriptError(message, origin);
+		};
 		#end
 
 		#if LUA_ALLOWED Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(psychlua.CallbackHandler.call)); #end

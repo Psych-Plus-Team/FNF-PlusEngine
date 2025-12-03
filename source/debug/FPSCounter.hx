@@ -94,6 +94,12 @@ class FPSCounter extends TextField
 	public var luaScriptsFailed:Int = 0;
 	public var hscriptsLoaded:Int = 0;
 	public var hscriptsFailed:Int = 0;
+	public var sscriptsErrors:Int = 0;
+
+	/**
+		Instancia singleton para acceso global
+	**/
+	public static var instance:FPSCounter;
 
 	/**
 		CPU and GPU usage tracking - ELIMINADO para optimización
@@ -142,6 +148,9 @@ class FPSCounter extends TextField
 	public function new(x:Float = 10, y:Float = 10, color:Int = 0x000000)
 	{
 		super();
+
+		// Asignar singleton
+		instance = this;
 
 		#if officialBuild
 		if (LimeSystem.platformName == LimeSystem.platformVersion || LimeSystem.platformVersion == null)
@@ -312,6 +321,9 @@ class FPSCounter extends TextField
 					cachedStaticText += '\n\n<font face="' + Paths.font("aller.ttf") + '" size="14" color="#00FF00">Scripts: ' + totalScripts + '</font>';
 					if (totalFailed > 0) {
 						cachedStaticText += ' <font face="' + Paths.font("aller.ttf") + '" size="14" color="#FF8800">(Failed: ' + totalFailed + ')</font>';
+					}
+					if (sscriptsErrors > 0) {
+						cachedStaticText += ' <font face="' + Paths.font("aller.ttf") + '" size="14" color="#FF4444">(SScript Errors: ' + sscriptsErrors + ')</font>';
 					}
 					if (totalScripts > 0) {
 						cachedStaticText += '\n<font face="' + Paths.font("aller.ttf") + '" size="12" color="#888888">  Lua: ' + luaScriptsLoaded + ' | HScript: ' + hscriptsLoaded + '</font>';

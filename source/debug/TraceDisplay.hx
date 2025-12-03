@@ -259,6 +259,30 @@ class TraceDisplay extends TextField
     }
     
     /**
+     * Función pública para agregar errores de SScript
+     */
+    public static function addSScriptError(text:String, ?origin:String):Void
+    {
+        if (instance != null) {
+            var errorText = 'SSCRIPT ERROR: $text';
+            if (origin != null && origin.length > 0) {
+                var name = instance.extractFileName(origin);
+                errorText = 'SSCRIPT ERROR in $name: $text';
+            }
+            instance.addTraceDirectly(errorText, ERROR, 0xFF4444);
+        }
+        
+        // Incrementar contador en FPSCounter
+        #if !flash
+        try {
+            if (debug.FPSCounter.instance != null) {
+                debug.FPSCounter.instance.sscriptsErrors++;
+            }
+        } catch(e) {}
+        #end
+    }
+    
+    /**
      * Función pública para agregar warnings
      */
     public static function addWarning(text:String):Void

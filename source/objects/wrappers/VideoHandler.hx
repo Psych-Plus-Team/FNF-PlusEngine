@@ -35,6 +35,7 @@ class VideoHandler extends FlxSprite
 	private var isDestroyed:Bool = false; // Bandera para evitar múltiples destrucciones
 	private var endReachedCalled:Bool = false; // Prevenir múltiples llamadas a onVLCEndReached
 	private static var instanceCounter:Int = 0;
+	private static var activeInstances:Map<Int, VideoHandler> = new Map(); // Rastrear todas las instancias activas
 	private var instanceId:Int;
 	private var videoStartTime:Float = 0;
 
@@ -52,6 +53,7 @@ class VideoHandler extends FlxSprite
 		super();
 		
 		instanceId = ++instanceCounter;
+		activeInstances.set(instanceId, this); // Registrar esta instancia
 		
 		// Hacer invisible este sprite base, el video se renderiza en videoSprite
 		makeGraphic(1, 1, 0x00FFFFFF);
@@ -453,6 +455,9 @@ class VideoHandler extends FlxSprite
 	{
 		trace('VideoHandler[${instanceId}]: destroy() called, allowDestroy=$allowDestroy, isDestroyed=$isDestroyed');
 		
+		// Remover de instancias activas
+		activeInstances.remove(instanceId);
+		
 		// Bloquear destrucción si no está permitida o ya fue destruido
 		if (!allowDestroy || isDestroyed) {
 			trace('VideoHandler[${instanceId}]: Destroy blocked');
@@ -517,5 +522,57 @@ class VideoHandler extends FlxSprite
 		
 		// Actualizar volumen
 		updateVolumeInternal();
+	}
+
+	/**
+	 * Pausar todos los VideoHandlers activos
+	 */
+	public static function pauseAll():Void 
+	{
+		for (id => handler in activeInstances) {
+			if (handler != null && !handler.isDestroyed && handler.isCurrentlyPlaying) {
+				try {
+					handler.pause();
+				} catch (e:Dynamic) {
+					trace('VideoHandler[$id]: Error pausing: $e');
+				}
+			}
+		}
+	}
+
+	/**
+	 * Reanudar todos los VideoHandlers activos
+	 */
+	public static function resumeAll():Void 
+	{
+		for (id => handler in activeInstances) {
+			if (handler != null && !handler.isDestroyed && handler.isCurrentlyPlaying) {
+				try {
+					handler.resume();
+				} catch (e:Dynamic) {
+					trace('VideoHandler[$id]: Error resuming: $e');
+				}
+			}
+		}
+	}
+
+	/**
+	 * Limpiar todos los VideoHandlers
+	 */
+	public static function clearAll():Void 
+	{
+		var ids = [];
+		for (id => handler in activeInstances) {
+			ids.push(id);
+		}
+		
+		for (id in ids) {
+			var handler = activeInstances.get(id);
+			if (handler != null) {
+				handler.forceCleanup();
+			}
+		}
+		
+		activeInstances.clear();
 	}
 }

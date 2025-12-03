@@ -28,6 +28,12 @@ class SScriptCompat extends SScript
 	public var modFolder:String;
 	public var origin:String;
 
+	// Handlers globales para warnings y errores de SScript
+	public static var sscriptWarnHandler:Dynamic = null;
+	public static var sscriptErrorHandler:Dynamic = null;
+	// Contador de errores de SScript para estadísticas
+	public static var sscript_Errors:Int = 0;
+
 	#if LUA_ALLOWED
 	public var parentLua:FunkinLua;
 	
@@ -35,7 +41,7 @@ class SScriptCompat extends SScript
 	{
 		if(parent.sscript == null)
 		{
-			trace('initializing SScript (legacy) interp for: ${parent.scriptName}');
+			trace('initializing SScript (Psych 0.7.3) interp for: ${parent.scriptName}');
 			parent.sscript = new SScriptCompat(parent);
 		}
 	}
@@ -45,7 +51,7 @@ class SScriptCompat extends SScript
 		var ss:SScriptCompat = try parent.sscript catch (e) null;
 		if(ss == null)
 		{
-			trace('initializing SScript (legacy) interp for: ${parent.scriptName}');
+			trace('initializing SScript (Psych 0.7.3) interp for: ${parent.scriptName}');
 			parent.sscript = new SScriptCompat(parent, code, varsToBring);
 		}
 		else
@@ -54,7 +60,12 @@ class SScriptCompat extends SScript
 			@:privateAccess
 			if(ss.parsingException != null)
 			{
-				PlayState.instance.addTextToDebug('ERROR ON LOADING (${ss.origin}): ${ss.parsingException.message}', FlxColor.RED);
+				var errorMsg = ss.parsingException.message;
+				PlayState.instance.addTextToDebug('ERROR ON LOADING (${ss.origin}): $errorMsg', FlxColor.RED);
+				sscript_Errors++;
+				if(sscriptErrorHandler != null) {
+					sscriptErrorHandler(errorMsg, ss.origin);
+				}
 			}
 		}
 	}
@@ -390,11 +401,16 @@ class SScriptCompat extends SScript
 		if (funcToRun == null) return null;
 
 		if(!exists(funcToRun)) {
+			var errorMsg = 'No SScript function named: $funcToRun';
+			sscript_Errors++;
 			#if LUA_ALLOWED
-			FunkinLua.luaTrace(origin + ' - No SScript function named: $funcToRun', false, false, FlxColor.RED);
+			FunkinLua.luaTrace(origin + ' - $errorMsg', false, false, FlxColor.RED);
 			#else
-			PlayState.instance.addTextToDebug(origin + ' - No SScript function named: $funcToRun', FlxColor.RED);
+			PlayState.instance.addTextToDebug(origin + ' - $errorMsg', FlxColor.RED);
 			#end
+			if(sscriptErrorHandler != null) {
+				sscriptErrorHandler(errorMsg, origin);
+			}
 			return null;
 		}
 
@@ -404,14 +420,21 @@ class SScriptCompat extends SScript
 			final e = callValue.exceptions[0];
 			if (e != null) {
 				var msg:String = e.toString();
+				sscript_Errors++;
 				#if LUA_ALLOWED
 				if(parentLua != null)
 				{
 					FunkinLua.luaTrace('$origin: ${parentLua.lastCalledFunction} - $msg', false, false, FlxColor.RED);
+					if(sscriptErrorHandler != null) {
+						sscriptErrorHandler('${parentLua.lastCalledFunction} - $msg', origin);
+					}
 					return null;
 				}
 				#end
 				PlayState.instance.addTextToDebug('$origin - $msg', FlxColor.RED);
+				if(sscriptErrorHandler != null) {
+					sscriptErrorHandler(msg, origin);
+				}
 			}
 			return null;
 		}

@@ -436,6 +436,7 @@ class PlayState extends MusicBeatState
 		// Resetear contador de errores de scripts
 		#if LUA_ALLOWED
 		FunkinLua.lua_Errors = 0;
+		psychlua.SScript.SScriptCompat.sscript_Errors = 0;
 		#end
 		
 		//trace('Playback Rate: ' + playbackRate);
@@ -595,11 +596,6 @@ class PlayState extends MusicBeatState
 		}
 		if(isPixelStage) introSoundsSuffix = '-pixel';
 
-		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
-		luaDebugGroup = new FlxTypedGroup<psychlua.DebugLuaText>();
-		luaDebugGroup.cameras = [camOther];
-		add(luaDebugGroup);
-		#end
 
 		if (!isNotITG) {
 			if (!stageData.hide_girlfriend)
@@ -1021,6 +1017,13 @@ class PlayState extends MusicBeatState
 
 		cacheCountdown();
 		cachePopUpScore();
+
+		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
+		luaDebugGroup = new FlxTypedGroup<psychlua.DebugLuaText>();
+		luaDebugGroup.cameras = [camOther];
+		add(luaDebugGroup);
+		#end
+		
 		add(versionText);
 
 		if(eventNotes.length < 1) checkEventNote();
@@ -2404,6 +2407,9 @@ class PlayState extends MusicBeatState
 			psychlua.LuaVideo.resumeAll();
 			#end
 			
+			// Reanudar todos los VideoHandlers
+			objects.wrappers.VideoHandler.resumeAll();
+			
 			callOnScripts('onResume');
 			resetRPC(startTimer != null && startTimer.finished);
 			runSongSyncThread();
@@ -2881,6 +2887,9 @@ class PlayState extends MusicBeatState
 		#if LUA_ALLOWED
 		psychlua.LuaVideo.pauseAll();
 		#end
+		
+		// Pausar todos los VideoHandlers
+		objects.wrappers.VideoHandler.pauseAll();
 		
 		if(!cpuControlled)
 		{

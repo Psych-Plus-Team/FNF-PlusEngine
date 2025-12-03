@@ -137,7 +137,11 @@ class HScript extends Iris
 			} catch(e:IrisError) {
 				returnValue = null;
 				this.destroy();
-				throw e;
+				// Show error in debug text instead of throwing
+				if(PlayState.instance != null) {
+					var errorMsg = Printer.errorToString(e, false);
+					PlayState.instance.addTextToDebug(errorMsg, FlxColor.RED);
+				}
 			}
 		}
 	}
