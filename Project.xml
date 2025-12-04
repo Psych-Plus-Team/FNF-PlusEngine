@@ -224,8 +224,7 @@
 		<haxedef name="FM_ENGINE" value="PSYCH"/>
     	<haxedef name="FM_ENGINE_VERSION" value="1.0"/>
     	<haxeflag name="--macro" value="modchart.backend.macros.Macro.includeFiles()"/>
-		<haxeflag name="source/extraParams.hxml" unless="ios"/>
-		<haxeflag name="extraParams.hxml" if="ios"/>
+		<haxeflag name="source/extraParams.hxml"/>
 	</section>
 
 	<!-- _________________________________ Custom _______________________________ -->

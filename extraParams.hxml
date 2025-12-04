@@ -1,3 +1,0 @@
---macro addMetadata('@:build(modchart.backend.macros.Macro.buildFlxCamera())', 'flixel.FlxCamera')
---macro addMetadata('@:build(modchart.backend.macros.Macro.buildFlxDrawTrianglesItem())', 'flixel.graphics.tile.FlxDrawTrianglesItem')
---macro addMetadata('@:build(modchart.backend.macros.Macro.addModchartStorage())', 'flixel.FlxBasic')

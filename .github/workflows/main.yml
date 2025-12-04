@@ -84,7 +84,6 @@ jobs:
           name: windowsBuild
           path: export/release/windows/bin
 
-# Build macOS version (disabled for now for incompatibility issues)
   # buildMac:
     #runs-on: macos-15
 
@@ -176,45 +175,3 @@ jobs:
         with:
           name: androidBuild
           path: export/release/android/bin
-
-  buildiOS:
-    runs-on: macos-latest
-
-    steps:
-      - uses: actions/checkout@v4.1.7
-
-      - uses: krdlab/setup-haxe@master
-        with:
-          haxe-version: 4.3.4
-      
-      - name: Install Haxelib
-        run: |
-          haxelib setup ~/haxelib
-          haxelib install hxcpp > /dev/null --quiet
-          chmod +x ./setup/unish-lib.sh
-          sh ./setup/unish-lib.sh
-      
-      - name: Skip SScript setup mode
-        run: |
-          echo -n 'oy9:showMacroty8:loopCosti25y10:includeAllfg' > ~/settings.cocoa
-          cat ~/settings.cocoa
-      
-      - name: Create Version Tag
-        run: echo "${{github.run_id}}" > VERSION
-      
-      - name: Compile iOS (Generate Project)
-        run: haxelib run lime build ios -arm64 -nosign --app-version="4.0.0-${{ github.run_id}}" -D officialBuild -D HXCPP_IGNORE_WARNINGS -clean
-      
-      - name: Make IPA
-        run: |
-          cd export/release/ios/build/Release-iphoneos
-          rm -rf Payload
-          mkdir Payload
-          mv *.app Payload
-          zip -r PlusEngine.ipa Payload
-      
-      - name: Publish Artifact
-        uses: actions/upload-artifact@v4.3.4
-        with:
-          name: iOSBuild
-          path: export/release/ios/build/Release-iphoneos/*.ipa
