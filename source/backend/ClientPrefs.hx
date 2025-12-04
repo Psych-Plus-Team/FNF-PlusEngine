@@ -26,6 +26,8 @@ import states.TitleState;
 	
 	// Combo Break Settings
 	public var badShitBreakCombo:Bool = false; // Si está en true, Bad y Shit romperán el combo
+
+	public var systemScoreMultiplier:String = 'Psych'; // 'Psych', 'Codename'
 	
 	public var downScroll:Bool = false;
 	public var middleScroll:Bool = false;
