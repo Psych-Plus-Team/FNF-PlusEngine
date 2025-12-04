@@ -155,6 +155,13 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			['Wife3', 'Psych', 'Simple', 'osu!mania', 'DJMAX', 'ITG']);
 		addOption(option);
 
+		var option:Option = new Option('System Score Multiplier',
+			"Choose the scoring system for note hits",
+			'systemScoreMultiplier',
+			STRING,
+			['Psych', 'Codename']); // No V-Slice here :frowning_face:
+		addOption(option);
+
 		super();
 	}
 
