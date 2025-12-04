@@ -24,7 +24,7 @@
 	<define name="MODS_ALLOWED" if="desktop || mobile" />
 	<define name="MODCHARTS_NOTITG_ALLOWED" if="desktop || mobile" />
 	<define name="HSCRIPT_ALLOWED" if="desktop || mobile" />
-	<define name="SSCRIPT_ALLOWED" if="desktop || mobile" unless="android" />
+	<define name="SSCRIPT_ALLOWED" if="desktop || mobile" unless="android || ios" />
 	<define name="LUA_ALLOWED" if="cpp" />
 	<define name="ACHIEVEMENTS_ALLOWED" />
 	<define name="DISCORD_ALLOWED" if="desktop" />
