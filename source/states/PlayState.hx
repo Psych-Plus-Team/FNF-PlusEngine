@@ -38,6 +38,7 @@ import openfl.filters.ShaderFilter;
 
 import shaders.ErrorHandledShader;
 import flixel.util.FlxGradient;
+import openfl.geom.Rectangle;
 
 import objects.VideoSprite;
 import objects.JudCounter;
@@ -808,7 +809,7 @@ class PlayState extends MusicBeatState
 		iconP2.alpha = ClientPrefs.data.healthBarAlpha;
 		if (!isNotITG) uiGroup.add(iconP2);
 
-		public function reloadHealthBarColors() {
+		function reloadHealthBarColors() {
 			healthBar.setColors(FlxColor.fromRGB(dad.healthColorArray[0], dad.healthColorArray[1], dad.healthColorArray[2]),
 				FlxColor.fromRGB(boyfriend.healthColorArray[0], boyfriend.healthColorArray[1], boyfriend.healthColorArray[2]));
 
@@ -1016,8 +1017,10 @@ class PlayState extends MusicBeatState
 		initModchart();
 		
 		// Initialize gradient time bar
-		reloadGradientColors();
-		gradientTimebar();
+		if (ClientPrefs.data.shadedTimeBar) {
+			reloadGradientColors();
+			gradientTimebar();
+		}
 		
 		var splash:NoteSplash = new NoteSplash();
 		grpNoteSplashes.add(splash);
@@ -2897,7 +2900,8 @@ class PlayState extends MusicBeatState
 		if (gf != null)
 			setOnScripts('gfHealthColor', gfHealthColor);
 
-		gradientTimebar();
+		if (ClientPrefs.data.shadedTimeBar)
+			gradientTimebar();
 	}
 
 	public function gradientObject(object:FlxSprite, colors:Array<FlxColor>, ?rotate:Int = 90) {
@@ -3436,8 +3440,8 @@ class PlayState extends MusicBeatState
 	}
 
 	public function applyTimebarGradient(?color1:Dynamic = null, ?color2:Dynamic = null):Void {
-		var bfColor:FlxColor = null;
-		var dadColor:FlxColor = null;
+		var bfColor:Null<FlxColor> = null;
+		var dadColor:Null<FlxColor> = null;
 		
 		if (color1 != null) {
 			if (Std.isOfType(color1, String)) {
@@ -3457,7 +3461,8 @@ class PlayState extends MusicBeatState
 			}
 		}
 		
-		gradientTimebar(dadColor, bfColor);
+		if (ClientPrefs.data.shadedTimeBar)
+			gradientTimebar(dadColor, bfColor);
 	}
 
 	public function tweenCamIn() {

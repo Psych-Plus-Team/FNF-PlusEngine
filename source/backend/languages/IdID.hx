@@ -83,7 +83,6 @@ class IdID
         "pause_options" => "Pengaturan",
         "pause_exit_to_menu" => "Keluar ke menu",
         "pause_back" => "Kembali",
-        "practice_mode" => "Mode Latihan",
         "charting_mode" => "Mode Charting",
         "blueballed" => "Blueballed: {1}",
 
