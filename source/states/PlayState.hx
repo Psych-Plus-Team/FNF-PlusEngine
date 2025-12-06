@@ -870,11 +870,11 @@ class PlayState extends MusicBeatState
 		if (cpuControlled)
 			botplayTxt.text = Language.getPhrase("Botplay").toUpperCase();
 		else if (practiceMode)
-			botplayTxt.text = "PRACTICE MODE";
+			botplayTxt.text = Language.getPhrase("Practice Mode").toUpperCase();
 		else if (perfectMode)
-			botplayTxt.text = "PERFECT MODE";
+			botplayTxt.text = Language.getPhrase("Perfect Mode").toUpperCase();
 		else if (playOpponent)
-			botplayTxt.text = "OPPONENT MODE";
+			botplayTxt.text = Language.getPhrase("Opponent Mode").toUpperCase();
 		
 		botplayTxt.visible = (cpuControlled || practiceMode || perfectMode || playOpponent);
 		uiGroup.add(botplayTxt);
