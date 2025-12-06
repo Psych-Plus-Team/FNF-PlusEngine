@@ -85,6 +85,12 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		var option:Option = new Option('Hide Sustain Splash',
+			'If checked, hides Sustain Splash',
+			'hideSustainSplash',
+			BOOL);
+		addOption(option);
+
 		var option:Option = new Option('Show Key Viewer',
 			'If checked, shows a key viewer displaying which keys are being pressed.',
 			'showKeyViewer',
@@ -104,6 +110,12 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'timeBarType',
 			STRING,
 			['Time Left', 'Time Elapsed', 'Song Name', 'Disabled']);
+		addOption(option);
+
+		var option:Option = new Option('Gradient Time Bar',
+		    "If checked, the time bar will be shaded according to the color of the character icon.",
+		    'shadedTimeBar',
+		    BOOL);
 		addOption(option);
 
 		var option:Option = new Option('Flashing Lights',

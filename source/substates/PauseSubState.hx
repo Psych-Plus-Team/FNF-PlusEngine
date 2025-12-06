@@ -28,6 +28,9 @@ class PauseSubState extends MusicBeatSubstate
 	var missingTextBG:FlxSprite;
 	var missingText:FlxText;
 
+	static var use24HourFormat:Bool = true;
+	static var dateFormat:String = "MM/DD/YYYY";
+
 	//Mmm, this may be very important... or not...
 	var dateTimeText:FlxText;
 
@@ -35,6 +38,8 @@ class PauseSubState extends MusicBeatSubstate
 
 	override function create()
 	{
+		loadDeviceDateTimeSettings();
+		
 		if(Difficulty.list.length < 2) menuItemsOG.remove('Change Difficulty'); //No need to change difficulty if there is only one!
 		if(PlayState.chartingMode)
 		{
@@ -78,7 +83,7 @@ class PauseSubState extends MusicBeatSubstate
 		add(bg);
 
 		var now:Date = Date.now();
-		var dateTimeStr:String = now.toString();
+		var dateTimeStr:String = formatDateTimeAccordingToDevice(now);
 		dateTimeText = new FlxText(0, 15 + 96, FlxG.width, dateTimeStr, 32);
 		dateTimeText.scrollFactor.set();
 		dateTimeText.setFormat(Paths.font('vcr.ttf'), 32, FlxColor.WHITE, CENTER);
@@ -188,43 +193,8 @@ class PauseSubState extends MusicBeatSubstate
 		}		//The time and date live yippee
 		if (dateTimeText != null) {
             var now:Date = Date.now();
-            
-            // ← USAR TRADUCCIONES PARA DÍAS Y MESES
-            var dayNames = [
-                Language.getPhrase("day_sunday", "Sunday"),
-                Language.getPhrase("day_monday", "Monday"), 
-                Language.getPhrase("day_tuesday", "Tuesday"),
-                Language.getPhrase("day_wednesday", "Wednesday"),
-                Language.getPhrase("day_thursday", "Thursday"),
-                Language.getPhrase("day_friday", "Friday"),
-                Language.getPhrase("day_saturday", "Saturday")
-            ];
-            var monthNames = [
-                Language.getPhrase("month_january", "January"),
-                Language.getPhrase("month_february", "February"),
-                Language.getPhrase("month_march", "March"),
-                Language.getPhrase("month_april", "April"),
-                Language.getPhrase("month_may", "May"),
-                Language.getPhrase("month_june", "June"),
-                Language.getPhrase("month_july", "July"),
-                Language.getPhrase("month_august", "August"),
-                Language.getPhrase("month_september", "September"),
-                Language.getPhrase("month_october", "October"),
-                Language.getPhrase("month_november", "November"),
-                Language.getPhrase("month_december", "December")
-            ];
-            
-            var dayName = dayNames[now.getDay()];
-            var monthName = monthNames[now.getMonth()];
-            var day = now.getDate();
-            var year = now.getFullYear();
-            var hours = now.getHours();
-            var minutes = now.getMinutes();
-            
-            // Formatear minutos con cero inicial si es necesario
-            var minutesStr = (minutes < 10) ? "0" + minutes : Std.string(minutes);
-            
-            dateTimeText.text = '$dayName, $monthName $day $year - $hours:${minutesStr}hrs';
+
+            dateTimeText.text = formatDateTimeAccordingToDevice(now);
         }
 
 		if(controls.BACK)
@@ -507,4 +477,109 @@ class PauseSubState extends MusicBeatSubstate
 
 	function updateSkipTimeText()
 		skipTimeText.text = FlxStringUtil.formatTime(Math.max(0, Math.floor(curTime / 1000)), false) + ' / ' + FlxStringUtil.formatTime(Math.max(0, Math.floor(FlxG.sound.music.length / 1000)), false);
+
+	function loadDeviceDateTimeSettings() {
+		#if windows
+		try {
+			var process = new sys.io.Process("reg", ["query", "HKCU\\Control Panel\\International", "/v", "sShortDate"]);
+			var output = process.stdout.readAll().toString();
+			if (output.indexOf("sShortDate") != -1) {
+				var lines = output.split("\n");
+				for (line in lines) {
+					if (line.indexOf("sShortDate") != -1) {
+						var parts = line.split("REG_SZ");
+						if (parts.length > 1) {
+							dateFormat = StringTools.trim(parts[1]);
+							break;
+						}
+					}
+				}
+			}
+			process.close();
+
+			var process2 = new sys.io.Process("reg", ["query", "HKCU\\Control Panel\\International", "/v", "iTime"]);
+			var output2 = process2.stdout.readAll().toString();
+			if (output2.indexOf("iTime") != -1) {
+				var lines = output2.split("\n");
+				for (line in lines) {
+					if (line.indexOf("iTime") != -1) {
+						var parts = line.split("REG_SZ");
+						if (parts.length > 1) {
+							use24HourFormat = (StringTools.trim(parts[1]) == "1");
+							break;
+						}
+					}
+				}
+			}
+			process2.close();
+		} catch(e:Dynamic) {
+			trace("Could not read Windows registry, using defaults: " + e);
+		}
+		#elseif android
+		dateFormat = "MM/DD/YYYY";
+		use24HourFormat = true;
+		#end
+	}
+
+	function formatDateTimeAccordingToDevice(date:Date):String {
+		var dayNames = [
+			Language.getPhrase("day_sunday", "Sunday"),
+			Language.getPhrase("day_monday", "Monday"), 
+			Language.getPhrase("day_tuesday", "Tuesday"),
+			Language.getPhrase("day_wednesday", "Wednesday"),
+			Language.getPhrase("day_thursday", "Thursday"),
+			Language.getPhrase("day_friday", "Friday"),
+			Language.getPhrase("day_saturday", "Saturday")
+		];
+		var monthNames = [
+			Language.getPhrase("month_january", "January"),
+			Language.getPhrase("month_february", "February"),
+			Language.getPhrase("month_march", "March"),
+			Language.getPhrase("month_april", "April"),
+			Language.getPhrase("month_may", "May"),
+			Language.getPhrase("month_june", "June"),
+			Language.getPhrase("month_july", "July"),
+			Language.getPhrase("month_august", "August"),
+			Language.getPhrase("month_september", "September"),
+			Language.getPhrase("month_october", "October"),
+			Language.getPhrase("month_november", "November"),
+			Language.getPhrase("month_december", "December")
+		];
+		
+		var dayName = dayNames[date.getDay()];
+		var monthName = monthNames[date.getMonth()];
+		var day = date.getDate();
+		var month = date.getMonth() + 1;
+		var year = date.getFullYear();
+		var hours = date.getHours();
+		var minutes = date.getMinutes();
+
+		var minutesStr = (minutes < 10) ? "0" + minutes : Std.string(minutes);
+
+		var timeStr = "";
+		if (use24HourFormat) {
+			timeStr = '$hours:$minutesStr';
+		} else {
+			var amPm = hours >= 12 ? "PM" : "AM";
+			var hour12 = hours % 12;
+			if (hour12 == 0) hour12 = 12;
+			timeStr = '$hour12:$minutesStr $amPm';
+		}
+
+		var dateStr = "";
+		switch (dateFormat.toUpperCase()) {
+			case "MM/DD/YYYY":
+				dateStr = '$dayName, $monthName $day $year';
+			case "DD/MM/YYYY":
+				dateStr = '$dayName, $day $monthName $year';
+			case "YYYY-MM-DD":
+				dateStr = '$dayName, $year-$month-$day';
+			case "DD.MM.YYYY":
+				dateStr = '$dayName, $day.$month.$year';
+			default:
+				dateStr = '$dayName, $monthName $day $year';
+		}
+		
+		return '$dateStr - $timeStr';
+	}
 }

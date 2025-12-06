@@ -37,6 +37,7 @@ import openfl.filters.ShaderFilter;
 #end
 
 import shaders.ErrorHandledShader;
+import flixel.util.FlxGradient;
 
 import objects.VideoSprite;
 import objects.JudCounter;
@@ -195,6 +196,10 @@ class PlayState extends MusicBeatState
 	public static var customAudioPath:String = null;
 
 	public var spawnTime:Float = 2000;
+
+	public var dadHealthColor:Array<Int> = [];
+	public var boyfriendHealthColor:Array<Int> = [];
+	public var gfHealthColor:Array<Int> = [];
 
 	public var inst:FlxSound;
 	public var vocals:FlxSound;
@@ -487,6 +492,11 @@ class PlayState extends MusicBeatState
 		noDropPenalty = ClientPrefs.getGameplaySetting('nodroppenalty');
 		cpuControlled = ClientPrefs.getGameplaySetting('botplay');
 		guitarHeroSustains = ClientPrefs.data.guitarHeroSustains;
+
+		if (ClientPrefs.data.shadedTimeBar) {
+			reloadGradientColors();
+			gradientTimebar();
+		}
 		
 		// Perfect Mode enables Instakill and disables Practice
 		if (perfectMode) {
@@ -797,6 +807,13 @@ class PlayState extends MusicBeatState
 		iconP2.visible = !ClientPrefs.data.hideHud && !isNotITG;
 		iconP2.alpha = ClientPrefs.data.healthBarAlpha;
 		if (!isNotITG) uiGroup.add(iconP2);
+
+		public function reloadHealthBarColors() {
+			healthBar.setColors(FlxColor.fromRGB(dad.healthColorArray[0], dad.healthColorArray[1], dad.healthColorArray[2]),
+				FlxColor.fromRGB(boyfriend.healthColorArray[0], boyfriend.healthColorArray[1], boyfriend.healthColorArray[2]));
+
+			reloadGradientColors();
+		}
 		
 		scoreTxt = new FlxText(0, healthBar.y + 40, FlxG.width, "", 20);
 		scoreTxt.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -853,11 +870,11 @@ class PlayState extends MusicBeatState
 		if (cpuControlled)
 			botplayTxt.text = Language.getPhrase("Botplay").toUpperCase();
 		else if (practiceMode)
-			botplayTxt.text = "PRACTICE MODE";
+			botplayTxt.text = Language.getPhrase("Practice Mode").toUpperCase();
 		else if (perfectMode)
-			botplayTxt.text = "PERFECT MODE";
+			botplayTxt.text = Language.getPhrase("Perfect Mode").toUpperCase();
 		else if (playOpponent)
-			botplayTxt.text = "OPPONENT MODE";
+			botplayTxt.text = Language.getPhrase("Opponent Mode").toUpperCase();
 		
 		botplayTxt.visible = (cpuControlled || practiceMode || perfectMode || playOpponent);
 		uiGroup.add(botplayTxt);
@@ -997,6 +1014,10 @@ class PlayState extends MusicBeatState
 		
 		// Initialize modcharts after all scripts are loaded
 		initModchart();
+		
+		// Initialize gradient time bar
+		reloadGradientColors();
+		gradientTimebar();
 		
 		var splash:NoteSplash = new NoteSplash();
 		grpNoteSplashes.add(splash);
@@ -2840,6 +2861,53 @@ class PlayState extends MusicBeatState
 		updateIconAnimations();
 		return health;
 	}
+
+	public function gradientTimebar(?dadColor:FlxColor = null, ?bfColor:FlxColor = null) {
+		if (timeBar == null || timeBar.leftBar == null) return;
+		
+		if (dadColor == null && dad != null)
+			dadColor = FlxColor.fromRGB(dad.healthColorArray[0], dad.healthColorArray[1], dad.healthColorArray[2]);
+		
+		if (bfColor == null && boyfriend != null)
+			bfColor = FlxColor.fromRGB(boyfriend.healthColorArray[0], boyfriend.healthColorArray[1], boyfriend.healthColorArray[2]);
+
+		if (bfColor != null && dadColor != null) {
+			timeBar.leftBar.pixels.fillRect(new Rectangle(0, 0, timeBar.leftBar.width, timeBar.leftBar.height), 0);
+
+			FlxGradient.overlayGradientOnFlxSprite(
+				timeBar.leftBar, 
+				Std.int(timeBar.leftBar.width), 
+				Std.int(timeBar.leftBar.height), 
+				[bfColor, dadColor], 
+				0, 0, 1, 180, true
+			);
+
+			timeBar.leftBar.dirty = true;
+		}
+	}
+
+	public function reloadGradientColors() {
+		dadHealthColor = (dad != null) ? dad.healthColorArray : [255, 0, 0];
+		boyfriendHealthColor = (boyfriend != null) ? boyfriend.healthColorArray : [0, 255, 0];
+		if (gf != null)
+			gfHealthColor = gf.healthColorArray;
+
+		setOnScripts('dadHealthColor', dadHealthColor);
+		setOnScripts('boyfriendHealthColor', boyfriendHealthColor);
+		if (gf != null)
+			setOnScripts('gfHealthColor', gfHealthColor);
+
+		gradientTimebar();
+	}
+
+	public function gradientObject(object:FlxSprite, colors:Array<FlxColor>, ?rotate:Int = 90) {
+		if (object == null) return;
+
+		object.pixels.fillRect(new Rectangle(0, 0, object.width, object.height), 0);
+
+		FlxGradient.overlayGradientOnFlxSprite(object, Std.int(object.width), Std.int(object.height), colors, 0, 0, 1, rotate, true);
+		object.dirty = true;
+	}
 	
 	/**
 	 * Actualiza las animaciones de los iconos basándose en el porcentaje actual de salud.
@@ -3164,8 +3232,9 @@ class PlayState extends MusicBeatState
 					case 'dad' | 'opponent':
 						charType = 1;
 					default:
-						charType = Std.parseInt(value1);
-						if(Math.isNaN(charType)) charType = 0;
+						var val1:Int = Std.parseInt(value1);
+						if(Math.isNaN(val1)) val1 = 0;
+						charType = val1;
 				}
 
 				switch(charType) {
@@ -3180,7 +3249,10 @@ class PlayState extends MusicBeatState
 							boyfriend = boyfriendMap.get(value2);
 							boyfriend.alpha = lastAlpha;
 							iconP1.changeIcon(boyfriend.healthIcon);
-							updateIconAnimations(); // Forzar actualización de animaciones de iconos
+							updateIconAnimations();
+
+							reloadHealthBarColors();
+							reloadGradientColors();
 						}
 						setOnScripts('boyfriendName', boyfriend.curCharacter);
 
@@ -3203,15 +3275,16 @@ class PlayState extends MusicBeatState
 							}
 							dad.alpha = lastAlpha;
 							iconP2.changeIcon(dad.healthIcon);
-							updateIconAnimations(); // Forzar actualización de animaciones de iconos
+							updateIconAnimations();
+
+							reloadHealthBarColors();
+							reloadGradientColors();
 						}
 						setOnScripts('dadName', dad.curCharacter);
 
 					case 2:
-						if(gf != null)
-						{
-							if(gf.curCharacter != value2)
-							{
+						if(gf != null) {
+							if(gf.curCharacter != value2) {
 								if(!gfMap.exists(value2)) {
 									addCharacterToList(value2, charType);
 								}
@@ -3220,11 +3293,14 @@ class PlayState extends MusicBeatState
 								gf.alpha = 0.00001;
 								gf = gfMap.get(value2);
 								gf.alpha = lastAlpha;
+								
+								reloadGradientColors();
 							}
 							setOnScripts('gfName', gf.curCharacter);
 						}
 				}
 				reloadHealthBarColors();
+				reloadGradientColors();
 
 			case 'Change Scroll Speed':
 				if (songSpeedType != "constant")
@@ -3357,6 +3433,31 @@ class PlayState extends MusicBeatState
 				});
 			}
 		}
+	}
+
+	public function applyTimebarGradient(?color1:Dynamic = null, ?color2:Dynamic = null):Void {
+		var bfColor:FlxColor = null;
+		var dadColor:FlxColor = null;
+		
+		if (color1 != null) {
+			if (Std.isOfType(color1, String)) {
+				bfColor = FlxColor.fromString(color1);
+			} else if (Std.isOfType(color1, Array)) {
+				var arr:Array<Int> = color1;
+				if (arr.length >= 3) bfColor = FlxColor.fromRGB(arr[0], arr[1], arr[2]);
+			}
+		}
+		
+		if (color2 != null) {
+			if (Std.isOfType(color2, String)) {
+				dadColor = FlxColor.fromString(color2);
+			} else if (Std.isOfType(color2, Array)) {
+				var arr:Array<Int> = color2;
+				if (arr.length >= 3) dadColor = FlxColor.fromRGB(arr[0], arr[1], arr[2]);
+			}
+		}
+		
+		gradientTimebar(dadColor, bfColor);
 	}
 
 	public function tweenCamIn() {
