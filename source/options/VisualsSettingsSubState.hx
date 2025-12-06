@@ -85,6 +85,12 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		var option:Option = new Option('Hide Sustain Splash',
+			'If checked, hides Sustain Splash',
+			'hideSustainSplash',
+			BOOL);
+		addOption(option);
+
 		var option:Option = new Option('Show Key Viewer',
 			'If checked, shows a key viewer displaying which keys are being pressed.',
 			'showKeyViewer',
