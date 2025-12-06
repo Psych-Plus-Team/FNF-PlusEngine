@@ -47,9 +47,6 @@ class MainMenuState extends MusicBeatState
 	{
 		super.create();
 
-		// TEST CRASH HANDLER - Descomentar para probar
-		throw "Test error from MainMenuState to test CrashHandler restart/exit functionality";
-
 		#if MODS_ALLOWED
 		Mods.pushGlobalMods();
 		#end
