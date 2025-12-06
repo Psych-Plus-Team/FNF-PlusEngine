@@ -1,5 +1,7 @@
 package objects;
 
+import backend.ClientPrefs;
+
 class SustainSplash extends FlxSprite
 {
 	public static var startCrochet:Float;
@@ -39,8 +41,14 @@ class SustainSplash extends FlxSprite
 		if (strumNote != null)
 		{
 			setPosition(strumNote.x, strumNote.y);
-			visible = strumNote.visible;
-			alpha = 1;
+
+			if (ClientPrefs.data.hideSustainSplash) {
+				visible = false;
+				alpha = 0;
+			} else {
+				visible = strumNote.visible;
+				alpha = 1;
+			}
 
 			if (animation.curAnim?.name == "hold" && strumNote.animation.curAnim?.name == "static")
 			{
@@ -52,6 +60,13 @@ class SustainSplash extends FlxSprite
 
 	public function setupSusSplash(strum:StrumNote, daNote:Note, ?playbackRate:Float = 1):Void
 	{
+		if (ClientPrefs.data.hideSustainSplash) {
+			visible = false;
+			alpha = 0;
+			kill();
+			return;
+		}
+
 		final lengthToGet:Int = !daNote.isSustainNote ? daNote.tail.length : daNote.parent.tail.length;
 		final timeToGet:Float = !daNote.isSustainNote ? daNote.strumTime : daNote.parent.strumTime;
 		final timeThingy:Float = (startCrochet * lengthToGet + (timeToGet - Conductor.songPosition + ClientPrefs.data.ratingOffset)) / playbackRate * .001;
@@ -82,7 +97,7 @@ class SustainSplash extends FlxSprite
 		if (timer != null)
 			timer.cancel();
 
-		if (!daNote.hitByOpponent && alpha != 0)
+		if (!daNote.hitByOpponent && alpha != 0 && !ClientPrefs.data.hideSustainSplash)
 			timer = new FlxTimer().start(timeThingy, (idk:FlxTimer) ->
 			{
 				if (!(daNote.isSustainNote ? daNote.parent.noteSplashData.disabled : daNote.noteSplashData.disabled) && animation != null)
