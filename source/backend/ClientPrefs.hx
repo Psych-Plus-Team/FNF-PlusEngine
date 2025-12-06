@@ -46,6 +46,7 @@ import states.TitleState;
 	public var framerate:Int = 60;
 	public var camZooms:Bool = true;
 	public var hideHud:Bool = false;
+	public var hideSustainSplash:Bool = false;
 	public var showKeyViewer:Bool = false;
 	public var judgementCounter:Bool = true;
 	public var comboInGame:Bool = false;
