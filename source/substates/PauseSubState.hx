@@ -1,408 +1,585 @@
-package states;
+package substates;
 
-import flixel.FlxG;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
-import flixel.FlxSprite;
+import backend.WeekData;
+import backend.Highscore;
+import backend.Song;
+
+import flixel.util.FlxStringUtil;
+
+import states.StoryMenuState;
 import states.FreeplayState;
-import backend.MusicBeatState;
-import backend.Paths; 
-import sys.io.File;
-import sys.FileSystem;
+import options.OptionsState;
 
-#if mobile
-import mobile.backend.TouchUtil;
-#end
-
-class ResultsState extends MusicBeatState
+class PauseSubState extends MusicBeatSubstate
 {
-    var menuBG:FlxSprite;
-    var backdropImage:FlxSprite;
-    var flxGroupImage:FlxSprite;
-    
-    var songInstrumental:String = "";
-    var canRetry:Bool = true;
+	var grpMenuShit:FlxTypedGroup<Alphabet>;
 
-    var params:Dynamic;
+	var menuItems:Array<String> = [];
+	var menuItemsOG:Array<String> = ['Resume', 'Restart Song', 'Chart Editor', 'Change Difficulty', 'Options', 'Exit to menu'];
+	var difficultyChoices = [];
+	var curSelected:Int = 0;
 
-    var animatedScore:Int = 0;
-    var animatedEpics:Int = 0;
-    var animatedSicks:Int = 0;
-    var animatedGoods:Int = 0;
-    var animatedBads:Int = 0;
-    var animatedShits:Int = 0;
-    var animatedMisses:Int = 0;
-    var animatedCombo:Int = 0;
-    var animatedAccuracy:Float = 0;
+	var pauseMusic:FlxSound;
+	var practiceText:FlxText;
+	var skipTimeText:FlxText;
+	var skipTimeTracker:Alphabet;
+	var curTime:Float = Math.max(0, Conductor.songPosition);
 
-    var scoreText:FlxText;
-    var epics:FlxText;
-    var sicks:FlxText;
-    var goods:FlxText;
-    var bads:FlxText;
-    var shits:FlxText;
-    var misses:FlxText;
-    var comboText:FlxText;
-    var accText:FlxText;
+	var missingTextBG:FlxSprite;
+	var missingText:FlxText;
 
-    static var use24HourFormat:Bool = true;
-    static var dateFormat:String = "MM/DD/YYYY";
-    static var timeFormat:String = "HH:mm";
+	static var use24HourFormat:Bool = true;
+	static var dateFormat:String = "MM/DD/YYYY";
 
-    public function new(params:Dynamic)
-    {
-        super();
-        this.params = params;
+	//Mmm, this may be very important... or not...
+	var dateTimeText:FlxText;
 
-        loadDeviceDateTimeSettings();
-    }
+	public static var songName:String = null;
 
-    override public function create()
-    {
-        super.create();
+	override function create()
+	{
+		loadDeviceDateTimeSettings();
+		
+		if(Difficulty.list.length < 2) menuItemsOG.remove('Change Difficulty'); //No need to change difficulty if there is only one!
+		if(PlayState.chartingMode)
+		{
+			menuItemsOG.insert(2, 'Leave Charting Mode');
+			var num:Int = 0;
+			if(!PlayState.instance.startingSong)
+			{
+				num = 1;
+				menuItemsOG.insert(3, 'Skip Time');
+			}
+			menuItemsOG.insert(3 + num, 'End Song');
+			menuItemsOG.insert(4 + num, 'Toggle Practice Mode');
+			menuItemsOG.insert(5 + num, 'Toggle Botplay');
+		} else if(PlayState.instance.practiceMode && !PlayState.instance.startingSong)
+			menuItemsOG.insert(3, 'Skip Time');
+		menuItems = menuItemsOG;
 
-        #if MODS_ALLOWED
-        if (params.isMod && params.modFolder != null && params.modFolder != "") {
-            backend.Mods.currentModDirectory = params.modFolder;
+		for (i in 0...Difficulty.list.length) {
+			var diff:String = Difficulty.getString(i);
+			difficultyChoices.push(diff);
+		}
+		difficultyChoices.push('BACK');
+
+		pauseMusic = new FlxSound();
+		try
+		{
+			var pauseSong:String = getPauseSong();
+			if(pauseSong != null) pauseMusic.loadEmbedded(Paths.music(pauseSong), true, true);
+		}
+		catch(e:Dynamic) {}
+		pauseMusic.volume = 0;
+		pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
+
+		FlxG.sound.list.add(pauseMusic);
+
+		var bg:FlxSprite = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
+		bg.scale.set(FlxG.width, FlxG.height);
+		bg.updateHitbox();
+		bg.alpha = 0;
+		bg.scrollFactor.set();
+		add(bg);
+
+		var now:Date = Date.now();
+		var dateTimeStr:String = formatDateTimeAccordingToDevice(now);
+		dateTimeText = new FlxText(0, 15 + 96, FlxG.width, dateTimeStr, 32);
+		dateTimeText.scrollFactor.set();
+		dateTimeText.setFormat(Paths.font('vcr.ttf'), 32, FlxColor.WHITE, CENTER);
+		dateTimeText.updateHitbox();
+		dateTimeText.alpha = 0;
+		add(dateTimeText);
+
+		var levelInfo:FlxText = new FlxText(0, 15, FlxG.width, PlayState.SONG.song, 32);
+		levelInfo.scrollFactor.set();
+		levelInfo.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER);
+		levelInfo.updateHitbox();
+		add(levelInfo);
+
+		var levelDifficulty:FlxText = new FlxText(0, 15 + 32, FlxG.width, Difficulty.getString().toUpperCase(), 32);
+		levelDifficulty.scrollFactor.set();
+		levelDifficulty.setFormat(Paths.font('vcr.ttf'), 32, FlxColor.WHITE, CENTER);
+		levelDifficulty.updateHitbox();
+		add(levelDifficulty);
+
+		var blueballedTxt:FlxText = new FlxText(0, 15 + 64, FlxG.width, Language.getPhrase("blueballed", "Blueballed: {1}", [PlayState.deathCounter]), 32);
+		blueballedTxt.scrollFactor.set();
+		blueballedTxt.setFormat(Paths.font('vcr.ttf'), 32, FlxColor.WHITE, CENTER);
+		blueballedTxt.updateHitbox();
+		add(blueballedTxt);		
+		
+		practiceText = new FlxText(20, 15 + 101, 0, Language.getPhrase("Practice Mode").toUpperCase(), 32);
+		practiceText.scrollFactor.set();
+		practiceText.setFormat(Paths.font('vcr.ttf'), 32);
+		practiceText.x = FlxG.width - (practiceText.width + 20);
+		practiceText.updateHitbox();
+		practiceText.visible = PlayState.instance.practiceMode;
+		add(practiceText);
+
+		var chartingText:FlxText = new FlxText(20, 15 + 101, 0, Language.getPhrase("Charting Mode").toUpperCase(), 32);
+		chartingText.scrollFactor.set();
+		chartingText.setFormat(Paths.font('vcr.ttf'), 32);
+		chartingText.x = FlxG.width - (chartingText.width + 20);
+		chartingText.y = FlxG.height - (chartingText.height + 20);
+		chartingText.updateHitbox();
+		chartingText.visible = PlayState.chartingMode;
+		add(chartingText);
+
+		blueballedTxt.alpha = 0;
+		levelDifficulty.alpha = 0;
+		levelInfo.alpha = 0;
+
+		FlxTween.tween(bg, {alpha: 0.6}, 0.4, {ease: FlxEase.quartInOut});
+		FlxTween.tween(levelInfo, {alpha: 1, y: 20}, 0.4, {ease: FlxEase.quartInOut, startDelay: 0.3});
+		FlxTween.tween(levelDifficulty, {alpha: 1, y: levelDifficulty.y + 5}, 0.4, {ease: FlxEase.quartInOut, startDelay: 0.5});
+		FlxTween.tween(blueballedTxt, {alpha: 1, y: blueballedTxt.y + 5}, 0.4, {ease: FlxEase.quartInOut, startDelay: 0.7});
+		FlxTween.tween(dateTimeText, {alpha: 1, y: dateTimeText.y + 5}, 0.4, {ease: FlxEase.quartInOut, startDelay: 0.9});		
+		
+		grpMenuShit = new FlxTypedGroup<Alphabet>();
+		add(grpMenuShit);
+
+		missingTextBG = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
+		missingTextBG.scale.set(FlxG.width, FlxG.height);
+		missingTextBG.updateHitbox();
+		missingTextBG.alpha = 0.6;
+		missingTextBG.visible = false;
+		add(missingTextBG);
+		
+		missingText = new FlxText(50, 0, FlxG.width - 100, '', 24);
+		missingText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		missingText.scrollFactor.set();
+		missingText.visible = false;
+		add(missingText);
+
+		regenMenu();
+		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+
+		addTouchPad(menuItems.contains('Skip Time') ? 'LEFT_FULL' : 'UP_DOWN', 'A');
+		addTouchPadCamera();
+
+		super.create();
+	}
+	
+	function getPauseSong()
+	{
+		var formattedSongName:String = (songName != null ? Paths.formatToSongPath(songName) : '');
+		var formattedPauseMusic:String = Paths.formatToSongPath(ClientPrefs.data.pauseMusic);
+		if(formattedSongName == 'none' || (formattedSongName != 'none' && formattedPauseMusic == 'none')) return null;
+
+		return (formattedSongName != '') ? formattedSongName : formattedPauseMusic;
+	}
+
+	var holdTime:Float = 0;
+	var cantUnpause:Float = 0.1;
+	override function update(elapsed:Float)
+	{
+		cantUnpause -= elapsed;
+		if (pauseMusic.volume < 0.5)
+			pauseMusic.volume += 0.01 * elapsed;
+
+		super.update(elapsed);
+		
+		// Mantener elementos del menú centrados en cada frame
+		for (item in grpMenuShit.members)
+		{
+			item.screenCenter(X);
+
+			// Mover elementos más de 2 posiciones arriba hacia arriba
+			if (item.targetY < -1)
+			{
+				item.y -= 50; // Offset adicional hacia arriba
+			}
+		}		//The time and date live yippee
+		if (dateTimeText != null) {
+            var now:Date = Date.now();
+
+            dateTimeText.text = formatDateTimeAccordingToDevice(now);
         }
-        #end
 
-        menuBG = new FlxSprite();
-        menuBG.loadGraphic(Paths.image('menuBG'));
-        menuBG.setGraphicSize(FlxG.width, FlxG.height);
-        menuBG.updateHitbox();
-        menuBG.alpha = 1.0;
-        add(menuBG);
+		if(controls.BACK)
+		{
+			close();
+			return;
+		}
 
-        backdropImage = new FlxSprite();
-        backdropImage.loadGraphic(Paths.image('ui/backdrop'));
-        backdropImage.setGraphicSize(FlxG.width, FlxG.height + 1);
-        backdropImage.updateHitbox();
-        backdropImage.alpha = 0.8;
-        add(backdropImage);
+		if(FlxG.keys.justPressed.F5)
+		{
+			FlxTransitionableState.skipNextTransIn = true;
+			FlxTransitionableState.skipNextTransOut = true;
+			PlayState.nextReloadAll = true;
+			MusicBeatState.resetState();
+		}
 
-        flxGroupImage = new FlxSprite();
-        flxGroupImage.loadGraphic(Paths.image('ui/flxgroup'));
-        flxGroupImage.setGraphicSize(FlxG.width, FlxG.height + 1);
-        flxGroupImage.updateHitbox();
-        flxGroupImage.alpha = 0.4;
-        add(flxGroupImage);
+		updateSkipTextStuff();
+		if (controls.UI_UP_P)
+		{
+			changeSelection(-1);
+		}
+		if (controls.UI_DOWN_P)
+		{
+			changeSelection(1);
+		}
 
-        if (!FlxG.sound.music.playing || FlxG.sound.music.length <= 0) {
-            FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7, true);
-        }
+		var daSelected:String = menuItems[curSelected];
+		switch (daSelected)
+		{
+			case 'Skip Time':
+				if (controls.UI_LEFT_P)
+				{
+					FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+					curTime -= 1000;
+					holdTime = 0;
+				}
+				if (controls.UI_RIGHT_P)
+				{
+					FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+					curTime += 1000;
+					holdTime = 0;
+				}
 
-        var infoWidth = 700;
-        var songAndDiff = '${params.songName} [${params.difficulty}]';
-        var modOrGame = params.isMod && params.modFolder != null && params.modFolder != "" ? params.modFolder : "Friday Night Funkin'";
-        var now = Date.now();
+				if(controls.UI_LEFT || controls.UI_RIGHT)
+				{
+					holdTime += elapsed;
+					if(holdTime > 0.5)
+					{
+						curTime += 45000 * elapsed * (controls.UI_LEFT ? -1 : 1);
+					}
 
-        var dateStr = formatDateTimeAccordingToDevice(now);
-        
-        var resulText = new FlxText(500, 12, infoWidth, Language.getPhrase('results_title', 'Results'), 60);
-        resulText.setFormat(Paths.font("aller.ttf"), 60, FlxColor.WHITE, "right");
-        add(resulText);
+					if(curTime >= FlxG.sound.music.length) curTime -= FlxG.sound.music.length;
+					else if(curTime < 0) curTime += FlxG.sound.music.length;
+					updateSkipTimeText();
+				}
+		}
 
-        var topText = new FlxText(10, 5, infoWidth, songAndDiff, 28);
-        topText.setFormat(Paths.font("aller.ttf"), 28, FlxColor.WHITE, "left");
-        add(topText);
+		if (controls.ACCEPT && (cantUnpause <= 0 || !controls.controllerMode))
+		{
+			if (menuItems == difficultyChoices)
+			{
+				var songLowercase:String = Paths.formatToSongPath(PlayState.SONG.song);
+				var poop:String = Highscore.formatSong(songLowercase, curSelected);
+				try
+				{
+					if(menuItems.length - 1 != curSelected && difficultyChoices.contains(daSelected))
+					{
+						Song.loadFromJson(poop, songLowercase);
+						PlayState.storyDifficulty = curSelected;
+						MusicBeatState.resetState();
+						FlxG.sound.music.volume = 0;
+						PlayState.changedDifficulty = true;
+						PlayState.chartingMode = false;
+						return;
+					}
+				}
+				catch(e:haxe.Exception)
+				{
+					trace('ERROR! ${e.message}');
+	
+					var errorStr:String = e.message;
+					if(errorStr.startsWith('[lime.utils.Assets] ERROR:')) errorStr = 'Missing file: ' + errorStr.substring(errorStr.indexOf(songLowercase), errorStr.length-1); //Missing chart
+					else errorStr += '\n\n' + e.stack;
 
-        var modText = new FlxText(10, 39, infoWidth, modOrGame, 22);
-        modText.setFormat(Paths.font("aller.ttf"), 22, FlxColor.WHITE, "left");
-        add(modText);
+					missingText.text = 'ERROR WHILE LOADING CHART:\n$errorStr';
+					missingText.screenCenter(Y);
+					missingText.visible = true;
+					missingTextBG.visible = true;
+					FlxG.sound.play(Paths.sound('cancelMenu'));
 
-        var playedText = new FlxText(10, 65, infoWidth, Language.getPhrase('results_played_on', 'Played on') + ' $dateStr', 18);
-        playedText.setFormat(Paths.font("aller.ttf"), 18, FlxColor.WHITE, "left");
-        add(playedText);
+					super.update(elapsed);
+					return;
+				}
 
-        var scoreY = 130;
-        var scoreStr = StringTools.lpad("0", "0", 8);
-        var scoreLabel = new FlxText(60, scoreY, 400, Language.getPhrase('results_score', 'Score') + ':', 34);
-        scoreLabel.setFormat(Paths.font("aller.ttf"), 34, FlxColor.WHITE, "left");
-        add(scoreLabel);
 
-        scoreText = new FlxText(240, scoreY - 10, 400, scoreStr, 44);
-        scoreText.setFormat(Paths.font("aller.ttf"), 44, FlxColor.WHITE, "left");
-        add(scoreText);
+				menuItems = menuItemsOG;
+				regenMenu();
+			}
 
-        var leftX = 30;
-        var rightX = 300;
-        var judgY = 235;
-        var judgSpacing = 90; // Más espacio
+			switch (daSelected)
+			{
+				case "Resume":
+					Paths.clearUnusedMemory();
+					close();
+				case 'Change Difficulty':
+					menuItems = difficultyChoices;
+					deleteSkipTimeText();
+					regenMenu();
+				case 'Toggle Practice Mode':
+					PlayState.instance.practiceMode = !PlayState.instance.practiceMode;
+					PlayState.changedDifficulty = true;
+					practiceText.visible = PlayState.instance.practiceMode;
+				case "Restart Song":
+					restartSong();
+				case 'Chart Editor':
+					PlayState.instance.openChartEditor();
+				case "Leave Charting Mode":
+					restartSong();
+					PlayState.chartingMode = false;
+				case 'Skip Time':
+					if(curTime < Conductor.songPosition)
+					{
+						PlayState.startOnTime = curTime;
+						restartSong(true);
+					}
+					else
+					{
+						if (curTime != Conductor.songPosition)
+						{
+							PlayState.instance.clearNotesBefore(curTime);
+							PlayState.instance.setSongTime(curTime);
+						}
+						close();
+					}
+				case 'End Song':
+					close();
+					PlayState.instance.notes.clear();
+					PlayState.instance.unspawnNotes = [];
+					PlayState.instance.finishSong(true);
+				case 'Toggle Botplay':
+					PlayState.instance.cpuControlled = !PlayState.instance.cpuControlled;
+					PlayState.changedDifficulty = true;
+					PlayState.instance.botplayTxt.visible = PlayState.instance.cpuControlled;
+					PlayState.instance.botplayTxt.alpha = 1;
+					PlayState.instance.botplaySine = 0;
+				case 'Options':
+					PlayState.instance.paused = true; // For lua
+					PlayState.instance.vocals.volume = 0;
+					PlayState.instance.canResync = false;
+					MusicBeatState.switchState(new OptionsState());
+					if(ClientPrefs.data.pauseMusic != 'None')
+					{
+						FlxG.sound.playMusic(Paths.music(Paths.formatToSongPath(ClientPrefs.data.pauseMusic)), pauseMusic.volume);
+						FlxTween.tween(FlxG.sound.music, {volume: 1}, 0.8);
+						FlxG.sound.music.time = pauseMusic.time;
+					}
+					OptionsState.onPlayState = true;
+				case "Exit to menu":
+					#if DISCORD_ALLOWED DiscordClient.resetClientID(); #end
+					PlayState.deathCounter = 0;
+					PlayState.seenCutscene = false;
 
-        epics = new FlxText(leftX, judgY, 340, Language.getPhrase('judgement_epics', 'Epics') + ': 0', 32);
-        epics.setFormat(Paths.font("aller.ttf"), 32, 0xFFA17FFF, "left");
-        add(epics);
+					PlayState.instance.canResync = false;
+					
+					Mods.loadTopMod();
+					if(PlayState.isStoryMode)
+						MusicBeatState.switchState(new StoryMenuState());
+					else
+						MusicBeatState.switchState(new FreeplayState());
+				    
+					FlxG.sound.playMusic(Paths.music('freakyMenu'));
+					PlayState.changedDifficulty = false;
+					PlayState.chartingMode = false;
+					FlxG.camera.followLerp = 0;
+			}
+		}
 
-        sicks = new FlxText(rightX, judgY, 340, Language.getPhrase('judgement_sicks', 'Sicks') + ': 0', 32);
-        sicks.setFormat(Paths.font("aller.ttf"), 32, 0xFF7FC9FF, "left");
-        add(sicks);
+		if (touchPad == null) //sometimes it dosent add the tpad, hopefully this fixes it
+		{
+			addTouchPad(PlayState.chartingMode ? 'LEFT_FULL' : 'UP_DOWN', 'A');
+			addTouchPadCamera();
+		}
+	}
 
-        goods = new FlxText(leftX, judgY + judgSpacing, 340, Language.getPhrase('judgement_goods', 'Goods') + ': 0', 32);
-        goods.setFormat(Paths.font("aller.ttf"), 32, 0xFF7FFF8E, "left");
-        add(goods);
+	function deleteSkipTimeText()
+	{
+		if(skipTimeText != null)
+		{
+			skipTimeText.kill();
+			remove(skipTimeText);
+			skipTimeText.destroy();
+		}
+		skipTimeText = null;
+		skipTimeTracker = null;
+	}
 
-        bads = new FlxText(rightX, judgY + judgSpacing, 340, Language.getPhrase('judgement_bads', 'Bads') + ': 0', 32);
-        bads.setFormat(Paths.font("aller.ttf"), 32, 0xFF888888, "left");
-        add(bads);
+	public static function restartSong(noTrans:Bool = false)
+	{
+		PlayState.instance.paused = true; // For lua
+		FlxG.sound.music.volume = 0;
+		PlayState.instance.vocals.volume = 0;
 
-        shits = new FlxText(leftX, judgY + judgSpacing * 2, 340, Language.getPhrase('judgement_shits', 'Shits') + ': 0', 32);
-        shits.setFormat(Paths.font("aller.ttf"), 32, 0xFFFF7F7F, "left");
-        add(shits);
+		if(noTrans)
+		{
+			FlxTransitionableState.skipNextTransIn = true;
+			FlxTransitionableState.skipNextTransOut = true;
+		}
+		MusicBeatState.resetState();
+	}
 
-        misses = new FlxText(rightX, judgY + judgSpacing * 2, 340, Language.getPhrase('judgement_misses', 'Misses') + ': 0', 32);
-        misses.setFormat(Paths.font("aller.ttf"), 32, FlxColor.RED, "left");
-        add(misses);
+	override function destroy()
+	{
+		pauseMusic.destroy();
+		super.destroy();
+	}
 
-        comboText = new FlxText(leftX, judgY + judgSpacing * 3 - 14, 700, Language.getPhrase('judgement_max_combo', 'Highest Combo') + ': 0', 26);
-        comboText.setFormat(Paths.font("aller.ttf"), 32, FlxColor.WHITE, "left");
-        add(comboText);
+	function changeSelection(change:Int = 0):Void
+	{
+		curSelected = FlxMath.wrap(curSelected + change, 0, menuItems.length - 1);
+		for (num => item in grpMenuShit.members)
+		{
+			item.targetY = num - curSelected;
+			item.alpha = 0.6;
+			if (item.targetY == 0)
+			{
+				item.alpha = 1;
+				if(item == skipTimeTracker)
+				{
+					curTime = Math.max(0, Conductor.songPosition);
+					updateSkipTimeText();
+				}
+			}
+		}
+		missingText.visible = false;
+		missingTextBG.visible = false;
+		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+	}
 
-        accText = new FlxText(leftX, judgY + judgSpacing * 3 + 20, 700, Language.getPhrase('results_accuracy', 'Accuracy') + ': 0%', 26);
-        accText.setFormat(Paths.font("aller.ttf"), 32, FlxColor.WHITE, "left");
-        add(accText);
+	function regenMenu():Void {
+		for (i in 0...grpMenuShit.members.length)
+		{
+			var obj:Alphabet = grpMenuShit.members[0];
+			obj.kill();
+			grpMenuShit.remove(obj, true);
+			obj.destroy();
+		}
 
-        var ratingLetter = params.ratingName != null ? params.ratingName : "";
-        var ratingFC = params.ratingFC != null ? params.ratingFC : "";
-        var ratingW = 400;
-        var ratingX = FlxG.width - 525; 
-        var ratingY = judgY + 25;
-        var ratingText = new FlxText(ratingX, ratingY, ratingW, ratingLetter, 70);
-        ratingText.setFormat(Paths.font("aller.ttf"), 70, FlxColor.YELLOW, "center");
-        add(ratingText);
+		for (num => str in menuItems) {
+			var item = new Alphabet(0, 320, Language.getPhrase('pause_$str', str), true);
+			item.isMenuItem = true;
+			item.targetY = num;
+			item.screenCenter(X); // Centrar horizontalmente
+			grpMenuShit.add(item);
 
-        var fcText = new FlxText(ratingX, ratingY + 90, ratingW, ratingFC, 54); 
-        fcText.setFormat(Paths.font("aller.ttf"), 54, FlxColor.CYAN, "center");
-        add(fcText);
+			if(str == 'Skip Time')
+			{
+				skipTimeText = new FlxText(0, 0, 0, '', 64);
+				skipTimeText.setFormat(Paths.font("vcr.ttf"), 64, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+				skipTimeText.scrollFactor.set();
+				skipTimeText.borderSize = 2;
+				skipTimeTracker = item;
+				add(skipTimeText);
 
-        var yBottom = FlxG.height - 110;
-        if (params.isPractice != null && params.isPractice) {
-            var practiceText = new FlxText(0, yBottom, FlxG.width, Language.getPhrase('results_practice_mode', 'Played in practice mode'), 22);
-            practiceText.setFormat(Paths.font("aller.ttf"), 22, FlxColor.YELLOW, "center");
-            add(practiceText);
-            yBottom += 28;
-        }
+				updateSkipTextStuff();
+				updateSkipTimeText();
+			}
+		}
+		curSelected = 0;
+		changeSelection();
+	}
+	
+	function updateSkipTextStuff()
+	{
+		if(skipTimeText == null || skipTimeTracker == null) return;
 
-        var engineInfo = Language.getPhrase('psych_engine_version', 'Psych Engine v') + MainMenuState.psychEngineVersion + "\n" + Language.getPhrase('fnf_version', 'Friday Night Funkin\' v') + "0.2.8";
-        var engineText = new FlxText(0, FlxG.height - 100, FlxG.width, engineInfo, 25);
-        engineText.setFormat(Paths.font("aller.ttf"), 25, FlxColor.CYAN, "center");
-        add(engineText);
+		skipTimeText.x = skipTimeTracker.x + skipTimeTracker.width + 60;
+		skipTimeText.y = skipTimeTracker.y;
+		skipTimeText.visible = (skipTimeTracker.alpha >= 1);
+	}
 
-        #if mobile
-        var continueText = new FlxText(50, FlxG.height - 75, 0, Language.getPhrase('results_press_enter_mobile', 'Press A\nto Continue'), 26);
-        #else
-        var continueText = new FlxText(50, FlxG.height - 75, 0, Language.getPhrase('results_press_enter', 'Press Enter\nto Continue'), 26);
-        #end
-        continueText.setFormat(Paths.font("aller.ttf"), 26, FlxColor.WHITE, "center");
-        add(continueText);
+	function updateSkipTimeText()
+		skipTimeText.text = FlxStringUtil.formatTime(Math.max(0, Math.floor(curTime / 1000)), false) + ' / ' + FlxStringUtil.formatTime(Math.max(0, Math.floor(FlxG.sound.music.length / 1000)), false);
 
-        #if mobile
-        addTouchPad('NONE', 'A');
-        #end
-    }
+	function loadDeviceDateTimeSettings() {
+		#if windows
+		try {
+			var process = new sys.io.Process("reg", ["query", "HKCU\\Control Panel\\International", "/v", "sShortDate"]);
+			var output = process.stdout.readAll().toString();
+			if (output.indexOf("sShortDate") != -1) {
+				var lines = output.split("\n");
+				for (line in lines) {
+					if (line.indexOf("sShortDate") != -1) {
+						var parts = line.split("REG_SZ");
+						if (parts.length > 1) {
+							dateFormat = StringTools.trim(parts[1]);
+							break;
+						}
+					}
+				}
+			}
+			process.close();
 
-    override public function update(elapsed:Float)
-    {
-        super.update(elapsed);
+			var process2 = new sys.io.Process("reg", ["query", "HKCU\\Control Panel\\International", "/v", "iTime"]);
+			var output2 = process2.stdout.readAll().toString();
+			if (output2.indexOf("iTime") != -1) {
+				var lines = output2.split("\n");
+				for (line in lines) {
+					if (line.indexOf("iTime") != -1) {
+						var parts = line.split("REG_SZ");
+						if (parts.length > 1) {
+							use24HourFormat = (StringTools.trim(parts[1]) == "1");
+							break;
+						}
+					}
+				}
+			}
+			process2.close();
+		} catch(e:Dynamic) {
+			trace("Could not read Windows registry, using defaults: " + e);
+		}
+		#elseif android
+		dateFormat = "MM/DD/YYYY";
+		use24HourFormat = true;
+		#end
+	}
 
-        if (animatedScore < params.score) {
-            animatedScore += Math.ceil((params.score - animatedScore) * 0.2 + 1);
-            if (animatedScore > params.score) animatedScore = params.score;
-            scoreText.text = StringTools.lpad(Std.string(animatedScore), "0", 8);
-            return;
-        }
-        scoreText.text = StringTools.lpad(Std.string(animatedScore), "0", 8);
+	function formatDateTimeAccordingToDevice(date:Date):String {
+		var dayNames = [
+			Language.getPhrase("day_sunday", "Sunday"),
+			Language.getPhrase("day_monday", "Monday"), 
+			Language.getPhrase("day_tuesday", "Tuesday"),
+			Language.getPhrase("day_wednesday", "Wednesday"),
+			Language.getPhrase("day_thursday", "Thursday"),
+			Language.getPhrase("day_friday", "Friday"),
+			Language.getPhrase("day_saturday", "Saturday")
+		];
+		var monthNames = [
+			Language.getPhrase("month_january", "January"),
+			Language.getPhrase("month_february", "February"),
+			Language.getPhrase("month_march", "March"),
+			Language.getPhrase("month_april", "April"),
+			Language.getPhrase("month_may", "May"),
+			Language.getPhrase("month_june", "June"),
+			Language.getPhrase("month_july", "July"),
+			Language.getPhrase("month_august", "August"),
+			Language.getPhrase("month_september", "September"),
+			Language.getPhrase("month_october", "October"),
+			Language.getPhrase("month_november", "November"),
+			Language.getPhrase("month_december", "December")
+		];
+		
+		var dayName = dayNames[date.getDay()];
+		var monthName = monthNames[date.getMonth()];
+		var day = date.getDate();
+		var month = date.getMonth() + 1;
+		var year = date.getFullYear();
+		var hours = date.getHours();
+		var minutes = date.getMinutes();
 
-        if (animatedEpics < params.epics) {
-            animatedEpics = animateInt(animatedEpics, params.epics);
-            epics.text = Language.getPhrase('judgement_epics', 'Epics') + ': $animatedEpics';
-            return;
-        }
-        epics.text = Language.getPhrase('judgement_epics', 'Epics') + ': $animatedEpics';
+		var minutesStr = (minutes < 10) ? "0" + minutes : Std.string(minutes);
 
-        if (animatedSicks < params.sicks) {
-            animatedSicks = animateInt(animatedSicks, params.sicks);
-            sicks.text = Language.getPhrase('judgement_sicks', 'Sicks') + ': $animatedSicks';
-            return;
-        }
-        sicks.text = Language.getPhrase('judgement_sicks', 'Sicks') + ': $animatedSicks';
+		var timeStr = "";
+		if (use24HourFormat) {
+			timeStr = '$hours:$minutesStr';
+		} else {
+			var amPm = hours >= 12 ? "PM" : "AM";
+			var hour12 = hours % 12;
+			if (hour12 == 0) hour12 = 12;
+			timeStr = '$hour12:$minutesStr $amPm';
+		}
 
-        if (animatedGoods < params.goods) {
-            animatedGoods = animateInt(animatedGoods, params.goods);
-            goods.text = Language.getPhrase('judgement_goods', 'Goods') + ': $animatedGoods';
-            return;
-        }
-        goods.text = Language.getPhrase('judgement_goods', 'Goods') + ': $animatedGoods';
-
-        if (animatedBads < params.bads) {
-            animatedBads = animateInt(animatedBads, params.bads);
-            bads.text = Language.getPhrase('judgement_bads', 'Bads') + ': $animatedBads';
-            return;
-        }
-        bads.text = Language.getPhrase('judgement_bads', 'Bads') + ': $animatedBads';
-
-        if (animatedShits < params.shits) {
-            animatedShits = animateInt(animatedShits, params.shits);
-            shits.text = Language.getPhrase('judgement_shits', 'Shits') + ': $animatedShits';
-            return;
-        }
-        shits.text = Language.getPhrase('judgement_shits', 'Shits') + ': $animatedShits';
-
-        if (animatedMisses < params.misses) {
-            animatedMisses = animateInt(animatedMisses, params.misses);
-            misses.text = Language.getPhrase('judgement_misses', 'Misses') + ': $animatedMisses';
-            return;
-        }
-        misses.text = Language.getPhrase('judgement_misses', 'Misses') + ': $animatedMisses';
-
-        if (animatedCombo < params.maxCombo) {
-            animatedCombo = animateInt(animatedCombo, params.maxCombo);
-            comboText.text = Language.getPhrase('judgement_max_combo', 'Highest Combo') + ': $animatedCombo';
-            return;
-        }
-        comboText.text = Language.getPhrase('judgement_max_combo', 'Highest Combo') + ': $animatedCombo';
-
-        if (animatedAccuracy < params.accuracy) {
-            animatedAccuracy += (params.accuracy - animatedAccuracy) * 0.2 + 0.1;
-            if (animatedAccuracy > params.accuracy) animatedAccuracy = params.accuracy;
-            
-            var accPercent:Float = Math.round(animatedAccuracy * 1000) / 10;
-            accText.text = Language.getPhrase('results_accuracy', 'Accuracy') + ': ' + Std.string(accPercent) + '%';
-            return;
-        }
-        
-        var accPercent:Float = Math.round(animatedAccuracy * 1000) / 10;
-        accText.text = Language.getPhrase('results_accuracy', 'Accuracy') + ': ' + Std.string(accPercent) + '%';
-
-        var shouldContinue:Bool = false;
-        
-        if (FlxG.keys.justPressed.ENTER) shouldContinue = true;
-        
-        if (controls.ACCEPT) shouldContinue = true;
-        
-        #if mobile
-        if (TouchUtil.justPressed) shouldContinue = true;
-        
-        if (FlxG.touches.getFirst() != null && FlxG.touches.getFirst().justPressed) shouldContinue = true;
-        #end
-        
-        if (shouldContinue)
-        {
-            #if MODS_ALLOWED
-            backend.Mods.currentModDirectory = '';
-            #end
-            MusicBeatState.switchState(new FreeplayState());
-        }
-    }
-
-    function animateInt(current:Int, target:Int):Int {
-        if (current < target)
-            return current + Math.ceil((target - current) * 0.2 + 1);
-        return target;
-    }
-
-    function loadDeviceDateTimeSettings() {
-        #if windows
-        try {
-            var process = new sys.io.Process("reg", ["query", "HKCU\\Control Panel\\International", "/v", "sShortDate"]);
-            var output = process.stdout.readAll().toString();
-            if (output.indexOf("sShortDate") != -1) {
-                var lines = output.split("\n");
-                for (line in lines) {
-                    if (line.indexOf("sShortDate") != -1) {
-                        var parts = line.split("REG_SZ");
-                        if (parts.length > 1) {
-                            dateFormat = StringTools.trim(parts[1]);
-                            break;
-                        }
-                    }
-                }
-            }
-            process.close();
-
-            var process2 = new sys.io.Process("reg", ["query", "HKCU\\Control Panel\\International", "/v", "iTime"]);
-            var output2 = process2.stdout.readAll().toString();
-            if (output2.indexOf("iTime") != -1) {
-                var lines = output2.split("\n");
-                for (line in lines) {
-                    if (line.indexOf("iTime") != -1) {
-                        var parts = line.split("REG_SZ");
-                        if (parts.length > 1) {
-                            use24HourFormat = (StringTools.trim(parts[1]) == "1");
-                            break;
-                        }
-                    }
-                }
-            }
-            process2.close();
-        } catch(e:Dynamic) {
-            trace("Could not read Windows registry, using defaults: " + e);
-        }
-        #elseif android
-        dateFormat = "MM/DD/YYYY";
-        use24HourFormat = true;
-        #end
-    }
-
-    function formatDateTimeAccordingToDevice(date:Date):String {
-        var dayNames = [
-            Language.getPhrase("day_sunday", "Sunday"),
-            Language.getPhrase("day_monday", "Monday"), 
-            Language.getPhrase("day_tuesday", "Tuesday"),
-            Language.getPhrase("day_wednesday", "Wednesday"),
-            Language.getPhrase("day_thursday", "Thursday"),
-            Language.getPhrase("day_friday", "Friday"),
-            Language.getPhrase("day_saturday", "Saturday")
-        ];
-        var monthNames = [
-            Language.getPhrase("month_january", "January"),
-            Language.getPhrase("month_february", "February"),
-            Language.getPhrase("month_march", "March"),
-            Language.getPhrase("month_april", "April"),
-            Language.getPhrase("month_may", "May"),
-            Language.getPhrase("month_june", "June"),
-            Language.getPhrase("month_july", "July"),
-            Language.getPhrase("month_august", "August"),
-            Language.getPhrase("month_september", "September"),
-            Language.getPhrase("month_october", "October"),
-            Language.getPhrase("month_november", "November"),
-            Language.getPhrase("month_december", "December")
-        ];
-        
-        var dayName = dayNames[date.getDay()];
-        var monthName = monthNames[date.getMonth()];
-        var day = date.getDate();
-        var month = date.getMonth() + 1;
-        var year = date.getFullYear();
-        var hours = date.getHours();
-        var minutes = date.getMinutes();
-
-        var minutesStr = (minutes < 10) ? "0" + minutes : Std.string(minutes);
-
-        var timeStr = "";
-        if (use24HourFormat) {
-            timeStr = '$hours:$minutesStr';
-        } else {
-            var amPm = hours >= 12 ? "PM" : "AM";
-            var hour12 = hours % 12;
-            if (hour12 == 0) hour12 = 12;
-            timeStr = '$hour12:$minutesStr $amPm';
-        }
-        
-        var dateStr = "";
-        switch (dateFormat.toUpperCase()) {
-            case "MM/DD/YYYY":
-                dateStr = '$monthName $day, $year';
-            case "DD/MM/YYYY":
-                dateStr = '$day $monthName $year';
-            case "YYYY-MM-DD":
-                dateStr = '$year-$month-$day';
-            case "DD.MM.YYYY":
-                dateStr = '$day.$month.$year';
-            default:
-                dateStr = '$dayName - $monthName $day, $year';
-        }
-        
-        return '$dateStr - $timeStr';
-    }
+		var dateStr = "";
+		switch (dateFormat.toUpperCase()) {
+			case "MM/DD/YYYY":
+				dateStr = '$dayName, $monthName $day $year';
+			case "DD/MM/YYYY":
+				dateStr = '$dayName, $day $monthName $year';
+			case "YYYY-MM-DD":
+				dateStr = '$dayName, $year-$month-$day';
+			case "DD.MM.YYYY":
+				dateStr = '$dayName, $day.$month.$year';
+			default:
+				dateStr = '$dayName, $monthName $day $year';
+		}
+		
+		return '$dateStr - $timeStr';
+	}
 }
