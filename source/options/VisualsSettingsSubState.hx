@@ -106,6 +106,12 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			['Time Left', 'Time Elapsed', 'Song Name', 'Disabled']);
 		addOption(option);
 
+		var option:Option = new Option('Gradient Time Bar',
+		    "If checked, the time bar will be shaded according to the color of the character icon.",
+		    'shadedTimeBar',
+		    BOOL);
+		addOption(option);
+
 		var option:Option = new Option('Flashing Lights',
 			"Uncheck this if you're sensitive to flashing lights!",
 			'flashing',
