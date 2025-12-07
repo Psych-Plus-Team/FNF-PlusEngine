@@ -224,8 +224,10 @@
 		<haxedef name="FM_ENGINE" value="PSYCH"/>
     	<haxedef name="FM_ENGINE_VERSION" value="1.0"/>
     	<haxeflag name="--macro" value="modchart.backend.macros.Macro.includeFiles()"/>
-		<haxeflag name="${haxelib:hxcpp}/../../../source/extraParams.hxml" unless="ios"/>
-		<haxeflag name="../../../source/extraParams.hxml" if="ios"/>
+		<haxeflag name="source/extraParams.hxml" unless="ios"/>
+		<haxeflag name="--macro" value="addMetadata('@:build(modchart.backend.macros.Macro.buildFlxCamera())', 'flixel.FlxCamera')" if="ios"/>
+		<haxeflag name="--macro" value="addMetadata('@:build(modchart.backend.macros.Macro.buildFlxDrawTrianglesItem())', 'flixel.graphics.tile.FlxDrawTrianglesItem')" if="ios"/>
+		<haxeflag name="--macro" value="addMetadata('@:build(modchart.backend.macros.Macro.addModchartStorage())', 'flixel.FlxBasic')" if="ios"/>
 	</section>
 
 	<!-- _________________________________ Custom _______________________________ -->
