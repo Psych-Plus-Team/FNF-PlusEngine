@@ -3522,7 +3522,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			loadMusic();
 		});
 		
-		animatedIconsCheckBox = new PsychUICheckBox(objX + 40, objY + 20, 'Animated Icons', 100, function()
+		animatedIconsCheckBox = new PsychUICheckBox(objX + 120, objY + 20, 'Animated Icons', 100, function()
 		{
 			PlayState.SONG.isAnimated = animatedIconsCheckBox.checked;
 			// Recargar íconos en el chart editor
