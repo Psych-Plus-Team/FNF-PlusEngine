@@ -103,8 +103,18 @@ jobs:
           haxelib setup ~/haxelib
           haxelib install hxcpp > /dev/null --quiet
           haxelib git hxcpp https://github.com/HaxeFoundation/hxcpp.git
-          chmod +x ./setup/unish-lib.sh
           haxelib set hxcpp git
+      
+      - name: Build hxcpp
+        run: |
+          cd ~/haxelib/hxcpp/git/tools/hxcpp
+          haxe compile.hxml
+          cd ~/haxelib/hxcpp/git/project
+          neko build.n
+      
+      - name: Setup Project
+        run: |
+          chmod +x ./setup/unish-lib.sh
           sh ./setup/unish-lib.sh
       - name: Skip SScript setup mode
         run: |
@@ -201,8 +211,18 @@ jobs:
           haxelib setup ~/haxelib
           haxelib install hxcpp > /dev/null --quiet
           haxelib git hxcpp https://github.com/HaxeFoundation/hxcpp.git
-          chmod +x ./setup/unish-lib.sh
           haxelib set hxcpp git
+      
+      - name: Build hxcpp
+        run: |
+          cd ~/haxelib/hxcpp/git/tools/hxcpp
+          haxe compile.hxml
+          cd ~/haxelib/hxcpp/git/project
+          neko build.n
+      
+      - name: Setup Project
+        run: |
+          chmod +x ./setup/unish-lib.sh
           sh ./setup/unish-lib.sh
       
       - name: Skip SScript setup mode
