@@ -681,7 +681,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		// SONG TAB
 		songNameInputText.text = PlayState.SONG.song;
 		allowVocalsCheckBox.checked = (PlayState.SONG.needsVoices != false); //If the song for some reason does not have this value, it will be set to true
-		animatedIconsCheckBox.checked = (PlayState.SONG.isAnimated == true); //Check if animated icons are enabled
+		animatedIconsCheckBox.checked = (PlayState.SONG.isAnimated == false);
 
 		bpmStepper.value = PlayState.SONG.bpm;
 		scrollSpeedStepper.value = PlayState.SONG.speed;
@@ -3496,7 +3496,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	var songNameInputText:PsychUIInputText;
 	var allowVocalsCheckBox:PsychUICheckBox;
-	var animatedIconsCheckBox:PsychUICheckBox; // Checkbox para íconos animados en el chart
 
 	var bpmStepper:PsychUINumericStepper;
 	var scrollSpeedStepper:PsychUINumericStepper;
@@ -3521,13 +3520,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			PlayState.SONG.needsVoices = allowVocalsCheckBox.checked;
 			loadMusic();
 		});
-		
-		animatedIconsCheckBox = new PsychUICheckBox(objX + 120, objY + 20, 'Animated Icons', 100, function()
-		{
-			PlayState.SONG.isAnimated = animatedIconsCheckBox.checked;
-			// Recargar íconos en el chart editor
-			updateHeads(true);
-		});		
+			
 		var reloadAudioButton:PsychUIButton = new PsychUIButton(objX + 120, objY, 'Reload Audio', function() loadMusic(true), 80);	
 		
 		#if (mac || mobile)
@@ -3587,7 +3580,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(new FlxText(songNameInputText.x, songNameInputText.y - 15, 80, 'Song Name:'));
 		tab_group.add(songNameInputText);
 		tab_group.add(allowVocalsCheckBox);
-		tab_group.add(animatedIconsCheckBox); // Agregar checkbox de íconos animados
 		tab_group.add(reloadAudioButton);
 		#if (mac || mobile)
 		tab_group.add(reloadJsonButton);
@@ -3612,6 +3604,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			StageData.loadDirectory(PlayState.SONG);
 			trace('selected $stage');
 		});
+
+		animatedIconsCheckBox = new PsychUICheckBox(objX + 140, objY + -100, 'Animated Icons', 100, function()
+		{
+			PlayState.SONG.isAnimated = animatedIconsCheckBox.checked;
+			updateHeads(true);
+		});	
 		
 		opponentDropDown = new PsychUIDropDownMenu(objX, objY + 40, [''], function(id:Int, character:String)
 		{
@@ -3641,6 +3639,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(new FlxText(opponentDropDown.x, opponentDropDown.y - 15, 80, 'Opponent:'));
 		tab_group.add(new FlxText(girlfriendDropDown.x, girlfriendDropDown.y - 15, 80, 'Girlfriend:'));
 		tab_group.add(stageDropDown);
+		tab_group.add(animatedIconsCheckBox);
 		tab_group.add(girlfriendDropDown);
 		tab_group.add(opponentDropDown);
 		tab_group.add(playerDropDown);
