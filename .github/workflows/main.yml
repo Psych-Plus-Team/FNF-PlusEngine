@@ -30,15 +30,6 @@ jobs:
         with:
           haxe-version: 4.3.4
       
-      - name: Cache Haxelib
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/haxelib
-            ~/.hxcpp_cache
-          key: linux-haxelib-${{ github.sha }}
-          restore-keys: |
-            linux-haxelib-
       # Runs a set of commands using the runners shell
       - name: Install Haxelib
         run: |
@@ -73,15 +64,6 @@ jobs:
         with:
           haxe-version: 4.3.4
       
-      - name: Cache Haxelib
-        uses: actions/cache@v4
-        with:
-          path: |
-            C:/haxelib
-            %USERPROFILE%\.hxcpp_cache
-          key: windows-haxelib-${{ github.sha }}
-          restore-keys: |
-            windows-haxelib-
       # Runs a set of commands using the runners shell
       - name: Install Haxelib
         run: |
@@ -115,15 +97,6 @@ jobs:
         with:
           haxe-version: 4.3.4
       
-      - name: Cache Haxelib
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/haxelib
-            ~/.hxcpp_cache
-          key: macos-haxelib-${{ github.sha }}
-          restore-keys: |
-            macos-haxelib-
       # Runs a set of commands using the runners shell
       - name: Install Haxelib
         run: |
@@ -155,18 +128,6 @@ jobs:
       - uses: krdlab/setup-haxe@master
         with:
           haxe-version: 4.3.4
-      
-      - name: Cache Haxelib
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/haxelib
-            ~/.hxcpp_cache
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: android-haxelib-${{ github.sha }}
-          restore-keys: |
-            android-haxelib-
       
       - name: Setup Java JDK 17
         uses: actions/setup-java@v4
@@ -231,17 +192,6 @@ jobs:
       - uses: krdlab/setup-haxe@master
         with:
           haxe-version: 4.3.4
-      
-      - name: Cache Haxelib
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/haxelib
-            ~/.hxcpp_cache
-            ~/Library/Caches/CocoaPods
-          key: macos-ios-${{ github.sha }}
-          restore-keys: |
-            macos-ios-
       
       # Runs a set of commands using the runners shell
       - name: Install Haxelib
