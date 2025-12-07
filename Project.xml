@@ -141,7 +141,7 @@
 	<haxedef name="HXCPP_CFLAGS" value="-Wno-all -w" if="android" />
 
 	<!-- Force C99 standard for macOS/iOS to fix zlib compilation with Xcode 16.4 -->
-	<haxedef name="HXCPP_CFLAGS" value="-std=c99" if="macos || ios" />
+	<haxedef name="HXCPP_CFLAGS" value="-std=c99 -Wno-error=deprecated-non-prototype" if="macos || ios" />
 
 	<!-- Enables a terminal log prompt on debug builds -->
 	<haxelib name="hxcpp-debug-server" if="debug"/>
@@ -212,6 +212,9 @@
 
 	<!-- Allow Access to Engine Files in iOS -->
 	<haxedef name="SHARE_MOBILE_FILES" if="ios" />
+
+	<!-- iOS Deployment Target -->
+	<ios deployment="13.6" />
 
 	<!--Macro fixes-->
 	<haxeflag name="--macro" value="allowPackage('flash')" />

@@ -107,6 +107,7 @@ jobs:
       - name: Skip SScript setup mode
         run: |
           echo -n 'oy9:showMacroty8:loopCosti25y10:includeAllfg' > ~/settings.cocoa
+          
           cat ~/settings.cocoa
           
           haxelib set hxcpp 4.3.2
