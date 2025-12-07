@@ -139,7 +139,6 @@ jobs:
         run: echo "${{github.run_id}}" > VERSION
       - name: Compile
         run: haxelib run lime build mac --app-version="4.0.0-${{ github.run_id}}" -D officialBuild -D HXCPP_IGNORE_WARNINGS
-        timeout-minutes: 60
       - name: Publish Artifact
         uses: actions/upload-artifact@v4.3.4
         with:
@@ -262,7 +261,6 @@ jobs:
       
       - name: Compile
         run: haxelib run lime build ios -nosign --app-version="4.0.0-${{ github.run_id}}" -D officialBuild -D HXCPP_IGNORE_WARNINGS
-        timeout-minutes: 60
       
       - name: Publish Artifact
         uses: actions/upload-artifact@v4.3.4
