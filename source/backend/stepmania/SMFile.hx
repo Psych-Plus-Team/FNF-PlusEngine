@@ -1,11 +1,13 @@
 package backend.stepmania;
 
 import backend.Song;
+#if !(mac || ios)
 import moonchart.formats.StepMania;
 import moonchart.formats.fnf.legacy.FNFPsych;
 import moonchart.formats.BasicFormat;
 import moonchart.backend.FormatData;
 import moonchart.backend.Timing;
+#end
 
 /**
  * Wrapper para cargar archivos StepMania usando la librería Moonchart
@@ -17,7 +19,9 @@ class SMFile {
 	public var isValid:Bool = true;
 	
 	// Moonchart objects
+	#if !(mac || ios)
 	private var moonchartSM:StepMania;
+	#end
 	private var smFilePath:String;
 	
 	public function new(data:String, ?filePath:String = null) {
@@ -41,6 +45,7 @@ class SMFile {
 	}
 	
 	function parseFile(data:String):Void {
+		#if !(mac || ios)
 		try {
 			// Inicializar Moonchart si no está inicializado
 			moonchart.Moonchart.init();
@@ -122,6 +127,10 @@ class SMFile {
 			trace(haxe.CallStack.toString(haxe.CallStack.exceptionStack()));
 			isValid = false;
 		}
+		#else
+		trace('StepMania files not supported on macOS/iOS');
+		isValid = false;
+		#end
 	}
 	
 	/**

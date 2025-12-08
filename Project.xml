@@ -121,7 +121,7 @@
 	<haxelib name="flixel-ui" version="2.6.2"/>
 	<haxelib name="flixel-addons" version="3.3.2"/>
 	<haxelib name="tjson" version="1.4.0"/>
-	<haxelib name="moonchart"/>
+	<haxelib name="moonchart" unless="mac | ios"/>
 
 	<!--Psych stuff needed-->
 	<haxelib name="linc_luajit" if="LUA_ALLOWED"/>
