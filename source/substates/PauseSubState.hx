@@ -28,7 +28,7 @@ class PauseSubState extends MusicBeatSubstate
 	var missingTextBG:FlxSprite;
 	var missingText:FlxText;
 
-	static var use24HourFormat:Bool = true;
+	static var use24HourFormat:Null<Bool> = true;
 	static var dateFormat:String = "MM/DD/YYYY";
 
 	//Mmm, this may be very important... or not...

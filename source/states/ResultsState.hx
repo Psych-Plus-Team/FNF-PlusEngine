@@ -45,7 +45,7 @@ class ResultsState extends MusicBeatState
     var comboText:FlxText;
     var accText:FlxText;
 
-    static var use24HourFormat:Bool = true;
+    static var use24HourFormat:Null<Bool> = true;
     static var dateFormat:String = "MM/DD/YYYY";
     static var timeFormat:String = "HH:mm";
 
