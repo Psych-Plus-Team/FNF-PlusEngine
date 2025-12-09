@@ -14,12 +14,6 @@ import sys.FileSystem;
 import mobile.backend.TouchUtil;
 #end
 
-#if android
-import android.PrimaryLocale;
-import android.text.format.DateFormat;
-import android.content.Context;
-#end
-
 class ResultsState extends MusicBeatState
 {
     var menuBG:FlxSprite;
@@ -206,7 +200,6 @@ class ResultsState extends MusicBeatState
         addTouchPad('NONE', 'A');
         #end
     }
-}
 
     override public function update(elapsed:Float)
     {
@@ -509,57 +502,63 @@ class ResultsState extends MusicBeatState
         }
         #elseif android
         try {
-            var locale = android.PrimaryLocale.getDefault();
-            if (locale != null) {
-                var country = locale.getCountry();
-                var language = locale.getLanguage();
-                var localeStr = language + "_" + country;
+            var lang = Sys.getEnv("LANG");
+            if (lang == null || lang == "") {
+                lang = Sys.getEnv("LC_ALL");
+            }
+            if (lang == null || lang == "") {
+                lang = Sys.getEnv("LC_TIME");
+            }
+            if (lang == null || lang == "") {
+                lang = Sys.getEnv("LC_MESSAGES");
+            }
+            
+            if (lang != null && lang != "") {
+                var localeParts = lang.split(".");
+                var localeStr = localeParts[0];
 
-                var dateFormatStr = android.text.format.DateFormat.getDateFormat(android.content.Context.getApplicationContext());
-                var timeFormatStr = android.text.format.DateFormat.getTimeFormat(android.content.Context.getApplicationContext());
+                trace("Android locale detected via env: " + localeStr);
 
-                dateFormat = convertAndroidDateFormat(dateFormatStr);
-                use24HourFormat = is24HourFormat(timeFormatStr);
-                
-                trace("Android locale detected: " + localeStr + ", date format: " + dateFormat + ", 24h: " + use24HourFormat);
-
-                if (dateFormat == null) {
-                    if (localeStr.indexOf("en_US") != -1 || localeStr.indexOf("en_PH") != -1 || 
-                        localeStr.indexOf("en_CA") != -1) {
-                        dateFormat = "MM/DD/YYYY";
-                        use24HourFormat = false;
-                    } else if (localeStr.indexOf("en_GB") != -1 || localeStr.indexOf("en_AU") != -1 || 
-                            localeStr.indexOf("en_NZ") != -1 || localeStr.indexOf("en_IE") != -1) {
-                        dateFormat = "DD/MM/YYYY";
-                        use24HourFormat = true;
-                    } else if (localeStr.indexOf("fr_") != -1 || localeStr.indexOf("de_") != -1 || 
-                            localeStr.indexOf("it_") != -1 || localeStr.indexOf("es_") != -1 || 
-                            localeStr.indexOf("pt_") != -1 || localeStr.indexOf("id_") != -1) {
-                        dateFormat = "DD/MM/YYYY";
-                        use24HourFormat = true;
-                    } else if (localeStr.indexOf("ja_") != -1 || localeStr.indexOf("ko_") != -1 || 
-                            localeStr.indexOf("zh_") != -1) {
-                        dateFormat = "YYYY-MM-DD";
-                        use24HourFormat = true;
-                    } else if (localeStr.indexOf("ru_") != -1 || localeStr.indexOf("pl_") != -1 || 
-                            localeStr.indexOf("cs_") != -1 || localeStr.indexOf("hu_") != -1) {
-                        dateFormat = "DD.MM.YYYY";
-                        use24HourFormat = true;
-                    } else if (localeStr.indexOf("ar_") != -1 || localeStr.indexOf("fa_") != -1 || 
-                            localeStr.indexOf("he_") != -1) {
-                        dateFormat = "DD/MM/YYYY";
-                        use24HourFormat = true;
-                    } else {
-                        dateFormat = "MM/DD/YYYY";
-                        use24HourFormat = true;
-                    }
+                if (localeStr.indexOf("en_US") != -1 || localeStr.indexOf("en_PH") != -1 || 
+                    localeStr.indexOf("en_CA") != -1 || localeStr.indexOf("en_IN") != -1) {
+                    dateFormat = "MM/DD/YYYY";
+                    use24HourFormat = false;
+                } else if (localeStr.indexOf("en_GB") != -1 || localeStr.indexOf("en_AU") != -1 || 
+                        localeStr.indexOf("en_NZ") != -1 || localeStr.indexOf("en_IE") != -1 ||
+                        localeStr.indexOf("en_ZA") != -1) {
+                    dateFormat = "DD/MM/YYYY";
+                    use24HourFormat = true;
+                } else if (localeStr.indexOf("fr_") != -1 || localeStr.indexOf("de_") != -1 || 
+                        localeStr.indexOf("it_") != -1 || localeStr.indexOf("es_") != -1 || 
+                        localeStr.indexOf("pt_") != -1 || localeStr.indexOf("nl_") != -1 ||
+                        localeStr.indexOf("sv_") != -1 || localeStr.indexOf("no_") != -1 ||
+                        localeStr.indexOf("da_") != -1 || localeStr.indexOf("fi_") != -1 || 
+                        localeStr.indexOf("id_") != -1) {
+                    dateFormat = "DD/MM/YYYY";
+                    use24HourFormat = true;
+                } else if (localeStr.indexOf("ja_") != -1 || localeStr.indexOf("ko_") != -1 || 
+                        localeStr.indexOf("zh_") != -1) {
+                    dateFormat = "YYYY-MM-DD";
+                    use24HourFormat = true;
+                } else if (localeStr.indexOf("ru_") != -1 || localeStr.indexOf("pl_") != -1 || 
+                        localeStr.indexOf("cs_") != -1 || localeStr.indexOf("hu_") != -1 ||
+                        localeStr.indexOf("sk_") != -1 || localeStr.indexOf("sl_") != -1) {
+                    dateFormat = "DD.MM.YYYY";
+                    use24HourFormat = true;
+                } else if (localeStr.indexOf("ar_") != -1 || localeStr.indexOf("fa_") != -1 || 
+                        localeStr.indexOf("he_") != -1 || localeStr.indexOf("tr_") != -1) {
+                    dateFormat = "DD/MM/YYYY";
+                    use24HourFormat = true;
+                } else {
+                    dateFormat = "MM/DD/YYYY";
+                    use24HourFormat = true;
                 }
             } else {
                 dateFormat = "MM/DD/YYYY";
                 use24HourFormat = true;
             }
         } catch(e:Dynamic) {
-            trace("Could not read Android locale settings, using defaults: " + e);
+            trace("Could not detect Android locale via env, using defaults: " + e);
             dateFormat = "MM/DD/YYYY";
             use24HourFormat = true;
         }
@@ -726,3 +725,4 @@ class ResultsState extends MusicBeatState
         
         return '$dateStr - $timeStr';
     }
+}
