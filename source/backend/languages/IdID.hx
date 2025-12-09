@@ -176,7 +176,7 @@ class IdID
         "modchart_menu" => "Pengaturan Modchart",
         "language_menu" => "Pengaturan Bahasa",
         "options_mobile_menu" => "Pengaturan Ponsel",
-        "mobile_controls_tip" => "Tekan {1} untuk pergi ke Menu Kontrol Seluler",
+        "mobile_controls_tip" => "Tekan {1} untuk pergi ke Menu Kontrol Ponsel",
 
         // Note Colors Menu
         "note_colors_notitg" => "Shader RGB Dinonaktifkan - Skin NotITG mempertahankan warna asli",
@@ -392,21 +392,41 @@ class IdID
         "setting_holds_behind_strums" => "Hold Di Belakang Strum",
         "description_holds_behind_strums" => "Menampilkan hold di belakang reseptor, sederhana :)",
 
+        // Mobile
+        "mobile_notice" => "Pemberitahuan!",
+        "mobile_success" => "Sukses!",
+        "mobile_error" => "Kesalahan!",
+        "touchpad_dpadmode_missing" => "touchPad dpadMode \"{1}\" tidak ada.",
+        "touchpad_actionmode_missing" => "touchPad actionMode \"{1}\" tidak ada.",
+        "file_save_success" => "{1} telah disimpan.",
+        "file_save_fail" => "{1} tidak dapat disimpan.\n({2})",
+        "permissions_message" => "Jika Anda telah menerima izin, semuanya baik-baik saja!\nJika tidak, bersiaplah untuk mengalami crash\nTekan OK untuk melihat apa yang terjadi",
+        "create_directory_error" => "Silakan buat direktori ke\n{1}\nTekan OK untuk menutup permainan",
+
         // Mobile Options
         "setting_extra_controls" => "Kontrol Ekstra",
         "description_extra_controls" => "Pilih berapa banyak kontrol ekstra yang Anda inginkan di layar.\nDapat digunakan untuk mekanik dengan LUA atau HSCRIPT.",
-        "setting_mobile_controls_opacity" => "Opasitas Kontrol",
-        "description_mobile_controls_opacity" => "Menyesuaikan opasitas kontrol di layar. (Usahakan tidak di 0% atau Anda mungkin kehilangan mereka dari pandangan)",
-        "setting_allow_phone_screensaver" => "Screensaver",
-        "description_allow_phone_screensaver" => "Jika dicentang, screensaver ponsel akan aktif secara normal.\n(Waktunya tergantung pada pengaturan sistem)",
+        "setting_mobile_controls_opacity" => "Opasitas Kontrol Ponsel",
+        "description_mobile_controls_opacity" => "Pilih tingkat opasitas untuk tombol-tombol pada perangkat ponsel (hati-hati jangan sampai mengaturnya ke 0 dan kehilangan jejak tombol-tombol Anda).",
+        "setting_allow_phone_screensaver" => "Izinkan Layar Pengaman Ponsel",
+        "description_allow_phone_screensaver" => "Jika dicentang, ponsel akan masuk ke mode tidur setelah tidak aktif selama beberapa detik.\n(Waktu yang dibutuhkan tergantung pada pengaturan ponsel Anda)",
         "setting_wide_screen_mode" => "Mode Layar Lebar",
-        "description_wide_screen_mode" => "Jika dicentang, menyesuaikan aspek rasio game untuk layar yang lebih lebar.\nDapat menyebabkan kesalahan dan crash di beberapa perangkat.",
+        "description_wide_screen_mode" => "Jika dicentang, permainan akan diperluas untuk mengisi seluruh layar Anda. (PERINGATAN: Dapat menyebabkan tampilan yang buruk dan merusak beberapa mod yang mengubah ukuran permainan/kamera)",
         "setting_hitbox_design" => "Desain Hitbox:",
-        "description_hitbox_design" => "Pilih desain hitbox yang Anda sukai.",
+        "description_hitbox_design" => "Pilih bagaimana tampilan hitbox Anda.",
         "setting_hitbox_position" => "Posisi Hitbox",
-        "description_hitbox_position" => "Jika dicentang, hitbox akan berada di bawah.\nJika tidak, akan berada di atas.",
+        "description_hitbox_position" => "Jika dicentang, hitbox akan ditempatkan di bagian bawah layar, jika tidak, akan tetap di bagian atas.",
         "setting_dynamic_controls_color" => "Warna Kontrol Dinamis",
-        "description_dynamic_controls_color" => "Jika dicentang, warna kontrol akan berubah secara dinamis berdasarkan warna note dari pengaturan Anda.",
+        "description_dynamic_controls_color" => "Jika dicentang, warna kontrol ponsel akan disetel ke warna note di pengaturan Anda.\n(berlaku hanya selama bermain game)",
+
+        // Mobile Control Select Menu
+        "mobileC_exitandsave" => "Keluar & Simpan",
+        "pad-extra_save" => "Pad-Extra hanyalah opsi pengikatan.\nSilakan pilih opsi lain untuk keluar.",
+        "mobileC_reset" => "Atur ulang",
+        "mobileC_left" => "KIRI",
+        "mobileC_down" => "BAWAH",
+        "mobileC_up" => "ATAS",
+        "mobileC_right" => "KANAN",
 
         // Loading Screen
         "now_loading" => "Memuat{1}",
