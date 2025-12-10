@@ -429,7 +429,10 @@ class IdID
         "mobileC_right" => "KANAN",
 
         // Loading Screen
-        "now_loading" => "Memuat{1}",
+        "now_loading" => "Sekarang Memuat",
+        "now_loading" => "Sekarang Memuat{1}"
+        "loading_timeout" => "Pemuatan memakan waktu terlalu lama...\nTekan ESC untuk kembali",
+
 
         // Difficulties
         "difficulty_easy" => "Mudah",

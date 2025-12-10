@@ -162,7 +162,7 @@ class Achievements {
 		var time:Int = openfl.Lib.getTimer();
 		if(Math.abs(time - _lastUnlock) >= 100) //If last unlocked happened in less than 100 ms (0.1s) ago, then don't play sound
 		{
-			FlxG.sound.play(Paths.sound('confirmMenu'), 0.5);
+			FlxG.sound.play(Paths.sound('unlockAchievement'), 0.5);
 			_lastUnlock = time;
 		}
 
