@@ -244,4 +244,7 @@
 	<icon path="art/icons/icon32.png" size='32'/>
 	<icon path="art/icons/icon64.png" size='64'/>
 	<icon path="art/icons/iconOG.png" />
+	<icon path="art/icons/mobile/icon32.png" size='32' if="android" />
+	<icon path="art/icons/mobile/icon64.png" size='64' if="android" />
+	<icon path="art/icons/mobile/iconOG.png" if="android" />
 </project>
