@@ -5,6 +5,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.FlxSprite;
 import states.FreeplayState;
+import states.StoryMenuState;
 import backend.MusicBeatState;
 import backend.Paths; 
 import sys.io.File;
@@ -291,7 +292,13 @@ class ResultsState extends MusicBeatState
             #if MODS_ALLOWED
             backend.Mods.currentModDirectory = '';
             #end
-            MusicBeatState.switchState(new FreeplayState());
+            
+            // Si es una semana completa, regresar al Story Menu, sino al Freeplay
+            if (params.isWeek != null && params.isWeek == true) {
+                MusicBeatState.switchState(new StoryMenuState());
+            } else {
+                MusicBeatState.switchState(new FreeplayState());
+            }
         }
     }
 

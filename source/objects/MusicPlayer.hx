@@ -246,7 +246,7 @@ class MusicPlayer extends FlxGroup
 		FlxG.autoPause = (!playingMusic && ClientPrefs.data.autoPause);
 		active = visible = playingMusic;
 
-		instance.scoreText.visible = !playingMusic; //Hide Freeplay texts and boxes if playingMusic is true
+		// scoreText ya no existe, eliminado
 		songTxt.visible = timeTxt.visible = songBG.visible = playbackTxt.visible = playbackBG.visible = progressBar.visible = playingMusic; //Show Music Player texts and boxes if playingMusic is true
 
 		for (i in playbackSymbols)
@@ -279,7 +279,7 @@ class MusicPlayer extends FlxGroup
 			progressBar.numDivisions = 0;
 
 			instance.bottomText.text = instance.bottomString;
-			instance.positionHighscore();
+			// positionHighscore() ya no existe, eliminado
 		}
 		progressBar.updateBar();
 	}

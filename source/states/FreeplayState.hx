@@ -37,7 +37,7 @@ class FreeplayState extends MusicBeatState
 	var curDifficulty:Int = -1;
 	private static var lastDifficultyName:String = Difficulty.getDefault();
 
-	var scoreText:FlxText;
+	// scoreText eliminado - ahora se muestra debajo de cada dificultad
 	var lerpScore:Int = 0;
 	var lerpRating:Float = 0;
 	var intendedScore:Int = 0;
@@ -264,11 +264,8 @@ class FreeplayState extends MusicBeatState
 		}
 		WeekData.setDirectoryFromWeek();
 
-		scoreText = new FlxText(FlxG.width * 0.68, 5, 0, "", 32);
-		scoreText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER);
-		scoreText.visible = false;
-
-		add(scoreText);
+		// Eliminar scoreText de la esquina ya que ahora se mostrará debajo de cada dificultad
+		// scoreText ya no se usa
 
 		freeplayText = new FlxText(0, 0, 0, "FREEPLAY", 40);
 		freeplayText.setFormat(Paths.font("vcr.ttf"), 40, FlxColor.WHITE, CENTER);
@@ -321,6 +318,7 @@ class FreeplayState extends MusicBeatState
 		difficultySelector = new DifficultySelector();
 		add(difficultySelector.cards);
 		add(difficultySelector.items);
+		add(difficultySelector.scoreTexts);
 		
 		changeSelection();
 		updateTexts();
@@ -407,8 +405,7 @@ class FreeplayState extends MusicBeatState
 
 		if (!player.playingMusic)
 		{
-			scoreText.text = Language.getPhrase('personal_best', 'PERSONAL BEST:\n{1} ({2}%)', [lerpScore, ratingDisplay]);
-			positionHighscore();
+			// scoreText ya no se muestra, los scores se muestran debajo de cada dificultad
 			
 			if (!inDifficultySelect)
 			{
@@ -759,7 +756,6 @@ class FreeplayState extends MusicBeatState
 
 		lastDifficultyName = Difficulty.getString(curDifficulty, false);
 
-		positionHighscore();
 		missingText.visible = false;
 		missingTextBG.visible = false;
 	}
@@ -768,8 +764,6 @@ class FreeplayState extends MusicBeatState
 	{
 		inDifficultySelect = true;
 		FlxG.sound.play(Paths.sound('scrollMenu'));
-		
-		scoreText.visible = true;
 
 		difficultySelector.loadDifficulties();
 		difficultySelector.curSelected = curDifficulty;
@@ -783,8 +777,6 @@ class FreeplayState extends MusicBeatState
 	function exitDifficultySelect()
 	{
 		FlxG.sound.play(Paths.sound('cancelMenu'));
-
-		scoreText.visible = false;
 
 		FlxTween.tween(difficultySelector, {enterProgress: 0}, 0.25, {
 			ease: FlxEase.expoIn,
@@ -808,6 +800,9 @@ class FreeplayState extends MusicBeatState
 		intendedScore = Highscore.getScore(songs[curSelected].songName, difficultySelector.curSelected, viewingOpponentScores);
 		intendedRating = Highscore.getRating(songs[curSelected].songName, difficultySelector.curSelected, viewingOpponentScores);
 		#end
+		
+		// Actualizar textos de score cuando cambia la selección
+		difficultySelector.updateScoreTexts();
 	}
 
 	function changeSelection(change:Int = 0, playSound:Bool = true)
@@ -940,11 +935,6 @@ class FreeplayState extends MusicBeatState
 	inline private function _updateSongLastDifficulty()
 		songs[curSelected].lastDifficulty = Difficulty.getString(curDifficulty, false);
 
-	private function positionHighscore()
-	{
-		scoreText.x = FlxG.width - scoreText.width - 40;
-	}
-
 	var _drawDistance:Int = 4;
 	var _lastVisibles:Array<Int> = [];
 	public function updateTexts(elapsed:Float = 0.0)
@@ -1007,6 +997,15 @@ class FreeplayState extends MusicBeatState
 		if (inDifficultySelect || difficultySelector.enterProgress > 0)
 		{
 			difficultySelector.update(elapsed);
+		}
+		else
+		{
+			// Ocultar completamente los scoreTexts cuando no estamos en selector de dificultad
+			for (scoreText in difficultySelector.scoreTexts.members)
+			{
+				if (scoreText != null)
+					scoreText.alpha = 0;
+			}
 		}
 	}		
 	
@@ -1194,6 +1193,7 @@ class DifficultySelector
 {
 	public var items:FlxTypedGroup<FlxText>;
 	public var cards:FlxTypedGroup<FlxSprite>;
+	public var scoreTexts:FlxTypedGroup<FlxText>; // Textos de score/accuracy
 	public var curSelected:Int = 0;
 	public var lerpSelected:Float = 0;
 	public var enterProgress:Float = 0;
@@ -1206,12 +1206,14 @@ class DifficultySelector
 	{
 		items = new FlxTypedGroup<FlxText>();
 		cards = new FlxTypedGroup<FlxSprite>();
+		scoreTexts = new FlxTypedGroup<FlxText>();
 	}
 	
 	public function loadDifficulties():Void
 	{
 		items.clear();
 		cards.clear();
+		scoreTexts.clear();
 		
 		// Solo cargar dificultades desde semana si NO es StepMania
 		if (FreeplayState.instance != null && FreeplayState.instance.songs[FreeplayState.curSelected] != null)
@@ -1240,6 +1242,60 @@ class DifficultySelector
 			card.alpha = 0;
 			card.color = getDifficultyColor(Difficulty.getString(i));
 			cards.add(card);
+			
+			// Crear texto de score/accuracy debajo de la dificultad
+			var scoreInfoText:FlxText = new FlxText(0, 0, 450, "", 18);
+			scoreInfoText.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, CENTER);
+			scoreInfoText.ID = i;
+			scoreInfoText.alpha = 0;
+			scoreTexts.add(scoreInfoText);
+		}
+		
+		// Actualizar los textos de score/accuracy
+		updateScoreTexts();
+	}
+	
+	public function updateScoreTexts():Void
+	{
+		if (FreeplayState.instance == null) return;
+		
+		for (i in 0...scoreTexts.members.length)
+		{
+			var scoreText:FlxText = scoreTexts.members[i];
+			if (scoreText == null) continue;
+			
+			var diffIndex:Int = scoreText.ID;
+			var songName:String = FreeplayState.instance.songs[FreeplayState.curSelected].songName;
+			
+			#if !switch
+			var score:Int = Highscore.getScore(songName, diffIndex, FreeplayState.viewingOpponentScores);
+			var accuracy:Float = Highscore.getRating(songName, diffIndex, FreeplayState.viewingOpponentScores);
+			var accSystem:String = Highscore.getAccuracySystem(songName, diffIndex, FreeplayState.viewingOpponentScores);
+			
+			var accPercent:String = '';
+			if (accuracy > 0)
+			{
+				var ratingSplit:Array<String> = Std.string(CoolUtil.floorDecimal(accuracy * 100, 2)).split('.');
+				if(ratingSplit.length < 2) ratingSplit.push('');
+				while(ratingSplit[1].length < 2) ratingSplit[1] += '0';
+				accPercent = ratingSplit.join('.');
+			}
+			else
+			{
+				accPercent = '0.00';
+			}
+			
+			if (score > 0)
+			{
+				scoreText.text = 'Score: ' + score + '\nAccuracy: ' + accPercent + '% (' + accSystem + ')';
+			}
+			else
+			{
+				scoreText.text = Language.getPhrase('no_score', 'No score yet');
+			}
+			#else
+			scoreText.text = '';
+			#end
 		}
 	}
 	
@@ -1343,10 +1399,30 @@ class DifficultySelector
 			var baseX:Float = (FlxG.width * 0.5) - (card.width * 0.5) + baseXOffset;
 			var targetX:Float = FlxMath.lerp(baseX + slideDistance, baseX, enterProgress);
 			card.x = targetX;
-			card.y = item.y - 30;
+			card.y = item.y - 15;
 			
 			item.x = card.x + (card.width * 0.5) - (item.width * 0.5);
-			card.y = item.y - 30;
+			card.y = item.y - 15;
+			
+			// Posicionar texto de score/accuracy debajo de la dificultad
+			if (i < scoreTexts.members.length)
+			{
+				var scoreText:FlxText = scoreTexts.members[i];
+				if (scoreText != null)
+				{
+					scoreText.x = card.x + (card.width * 0.5) - (scoreText.width * 0.5);
+					scoreText.y = item.y + 50; // Más abajo del nombre de dificultad
+					
+					if (i == curSelected)
+					{
+						scoreText.alpha = 1.0 * enterProgress;
+					}
+					else
+					{
+						scoreText.alpha = 0.6 * enterProgress;
+					}
+				}
+			}
 			
 			if (i == curSelected)
 			{

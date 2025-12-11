@@ -328,8 +328,18 @@ class StoryMenuState extends MusicBeatState
 	
 				Song.loadFromJson(PlayState.storyPlaylist[0].toLowerCase() + diffic, PlayState.storyPlaylist[0].toLowerCase());
 				PlayState.campaignScore = 0;
-				PlayState.campaignMisses = 0;
-			}
+				PlayState.campaignMisses = 0;			
+			// Resetear estadísticas de la semana
+			PlayState.campaignEpics = 0;
+			PlayState.campaignSicks = 0;
+			PlayState.campaignGoods = 0;
+			PlayState.campaignBads = 0;
+			PlayState.campaignShits = 0;
+			PlayState.campaignMaxCombo = 0;
+			PlayState.campaignTotalNotes = 0;
+			PlayState.campaignSongsPlayed = [];
+			PlayState.campaignAccuracySum = 0;
+			PlayState.campaignSongsCount = 0;			}
 			catch(e:Dynamic)
 			{
 				trace('ERROR! $e');
