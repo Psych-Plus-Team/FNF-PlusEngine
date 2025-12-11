@@ -267,27 +267,27 @@ class ModsMenuState extends MusicBeatState
 		var startX = (FlxG.width - (buttonWidth * 7 + spacing * 6)) / 2;
 
 		buttonToggle = new MobileButton(startX, panel.y + 10, buttonWidth, buttonHeight, 
-			"", Paths.image('modIcons/toggle'), toggleCurrentMod);
+			"", Paths.image('ui/modIcons/toggle'), toggleCurrentMod);
 		controlButtons.push(buttonToggle);
 		add(buttonToggle);
 
 		buttonMoveUp = new MobileButton(startX + buttonWidth + spacing, panel.y + 10, buttonWidth, buttonHeight,
-			"", Paths.image('modIcons/up'), () -> moveMod(-1));
+			"", Paths.image('ui/modIcons/up'), () -> moveMod(-1));
 		controlButtons.push(buttonMoveUp);
 		add(buttonMoveUp);
 
 		buttonMoveDown = new MobileButton(startX + (buttonWidth + spacing) * 2, panel.y + 10, buttonWidth, buttonHeight,
-			"", Paths.image('modIcons/down'), () -> moveMod(1));
+			"", Paths.image('ui/modIcons/down'), () -> moveMod(1));
 		controlButtons.push(buttonMoveDown);
 		add(buttonMoveDown);
 
 		buttonMoveTop = new MobileButton(startX + (buttonWidth + spacing) * 3, panel.y + 10, buttonWidth, buttonHeight,
-			"", Paths.image('modIcons/top'), () -> moveModToPosition(0));
+			"", Paths.image('ui/modIcons/top'), () -> moveModToPosition(0));
 		controlButtons.push(buttonMoveTop);
 		add(buttonMoveTop);
 
 		buttonSettings = new MobileButton(startX + (buttonWidth + spacing) * 4, panel.y + 10, buttonWidth, buttonHeight,
-			"", Paths.image('modIcons/settings'), openSettings);
+			"", Paths.image('ui/modIcons/settings'), openSettings);
 		controlButtons.push(buttonSettings);
 		add(buttonSettings);
 
@@ -903,12 +903,12 @@ class MobileButton extends FlxSpriteGroup
 	override public function update(elapsed:Float)
 	{
 		super.update(elapsed);
-=
+
 		if (enabled && FlxG.mouse.justPressed && FlxG.mouse.overlaps(this)) {
 			if (onClick != null) onClick();
 			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
 		}
-=
+
 		if (Controls.instance.mobileC && enabled) {
 			for (touch in FlxG.touches.list) {
 				if (touch.justPressed && touch.overlaps(this)) {
