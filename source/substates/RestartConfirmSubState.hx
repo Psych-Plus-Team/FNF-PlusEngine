@@ -12,6 +12,7 @@ import flixel.util.FlxTimer;
 import backend.ClientPrefs;
 import backend.MusicBeatSubstate;
 import states.TitleState;
+import states.MainMenuState;
 
 class RestartConfirmSubState extends MusicBeatSubstate
 {
