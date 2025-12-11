@@ -74,6 +74,9 @@ class ModsMenuState extends MusicBeatState
 	var touchAreaMods:FlxSprite;
 	var touchAreaControls:FlxSprite;
 	
+	var lastTouchY:Float = 0;
+	var touchStartY:Float = 0;
+	
 	public function new(startMod:String = null)
 	{
 		this.startMod = startMod;
@@ -472,9 +475,18 @@ class ModsMenuState extends MusicBeatState
 
 		if (FlxG.touches.list.length > 0) {
 			var touch = FlxG.touches.list[0];
-			if (touchAreaMods != null && touch.overlaps(touchAreaMods) && Math.abs(touch.deltaY) > 10) {
-				var scrollAmount = Std.int(touch.deltaY / 10);
-				changeSelectedMod(scrollAmount);
+			if (touchAreaMods != null && touch.overlaps(touchAreaMods)) {
+				if (touch.justPressed) {
+					lastTouchY = touch.screenY;
+					touchStartY = touch.screenY;
+				} else if (touch.pressed) {
+					var deltaY = touch.screenY - lastTouchY;
+					if (Math.abs(deltaY) > 10) {
+						var scrollAmount = Std.int(deltaY / 10);
+						changeSelectedMod(scrollAmount);
+						lastTouchY = touch.screenY;
+					}
+				}
 			}
 		}
 	}
