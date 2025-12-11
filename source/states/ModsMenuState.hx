@@ -251,7 +251,7 @@ class ModsMenuState extends MusicBeatState
 		add(modDesc);
 
 		var statsBg = new FlxSprite(panel.x + padding, panel.y + 370);
-		sstatsBg.makeGraphic(Std.int(panel.width - padding * 2), 80, 0xFF1E3A5F);
+		statsBg.makeGraphic(Std.int(panel.width - padding * 2), 80, 0xFF1E3A5F);
 		FlxSpriteUtil.drawRoundRect(statsBg, 0, 0, statsBg.width, statsBg.height, 10, 10);
 		add(statsBg);
 		
@@ -737,100 +737,99 @@ class ModsMenuState extends MusicBeatState
 			#end
 		}
 		
-		var needsRestart:Bool = false;
-	}
+	var needsRestart:Bool = false;
+}
 
-	function getText(key:String, fallback:String):String {
-		#if LANG_ALLOWED
-		return Language.getPhrase(key, fallback);
-		#else
-		return fallback;
-		#end
-	}
+function getText(key:String, fallback:String):String {
+	#if LANG_ALLOWED
+	return Language.getPhrase(key, fallback);
+	#else
+	return fallback;
+	#end
+}
 
-	class ModCard extends FlxSpriteGroup
+class ModCard extends FlxSpriteGroup
+{
+	public var bg:FlxSprite;
+	public var icon:FlxSprite;
+	public var nameText:FlxText;
+	public var statusText:FlxText;
+	public var highlight:FlxSprite;
+	
+	public var folder:String;
+	public var name:String;
+	public var author:String;
+	public var version:String;
+	public var desc:String;
+	public var mustRestart:Bool;
+	public var settings:Array<Dynamic>;
+	public var isEnabled:Bool = true;
+	
+	public function new(modFolder:String, index:Int)
 	{
-		public var bg:FlxSprite;
-		public var icon:FlxSprite;
-		public var nameText:FlxText;
-		public var statusText:FlxText;
-		public var highlight:FlxSprite;
+		super();
 		
-		public var folder:String;
-		public var name:String;
-		public var author:String;
-		public var version:String;
-		public var desc:String;
-		public var mustRestart:Bool;
-		public var settings:Array<Dynamic>;
-		public var isEnabled:Bool = true;
+		this.folder = modFolder;
+
+		var pack = Mods.getPack(modFolder);
 		
-		public function new(modFolder:String, index:Int)
-		{
-			super();
-			
-			this.folder = modFolder;
+		this.name = modFolder;
+		this.desc = "No description provided.";
+		this.author = "Unknown";
+		this.version = "1.0.0";
+		this.mustRestart = false;
+		
+		if (pack != null) {
+			if (pack.name != null) this.name = pack.name;
+			if (pack.description != null) this.desc = pack.description;
+			if (pack.author != null) this.author = pack.author;
+			if (pack.version != null) this.version = pack.version;
+			if (pack.restart == true) this.mustRestart = true;
 
-			var pack = Mods.getPack(modFolder);
-			
-			this.name = modFolder;
-			this.desc = "No description provided.";
-			this.author = "Unknown";
-			this.version = "1.0.0";
-			this.mustRestart = false;
-			
-			if (pack != null) {
-				if (pack.name != null) this.name = pack.name;
-				if (pack.description != null) this.desc = pack.description;
-				if (pack.author != null) this.author = pack.author;
-				if (pack.version != null) this.version = pack.version;
-				if (pack.restart == true) this.mustRestart = true;
-
-				var settingsPath = Paths.mods('$modFolder/data/settings.json');
-				if (FileSystem.exists(settingsPath)) {
-					try {
-						settings = tjson.TJSON.parse(File.getContent(settingsPath));
-					} catch (e:Dynamic) {
-						trace('Failed to load settings for $modFolder: $e');
-					}
+			var settingsPath = Paths.mods('$modFolder/data/settings.json');
+			if (FileSystem.exists(settingsPath)) {
+				try {
+					settings = tjson.TJSON.parse(File.getContent(settingsPath));
+				} catch (e:Dynamic) {
+					trace('Failed to load settings for $modFolder: $e');
 				}
 			}
-
-			bg = new FlxSprite(0, 0);
-			bg.makeGraphic(380, 100, 0xFF1E3A5F);
-			FlxSpriteUtil.drawRoundRect(bg, 0, 0, 380, 100, 15, 15, 0xFF0F3460);
-			add(bg);
-
-			highlight = new FlxSprite(0, 0);
-			highlight.makeGraphic(384, 104, 0xFFFFFFFF);
-			highlight.alpha = 0;
-			highlight.x = -2;
-			highlight.y = -2;
-			add(highlight);
-
-			icon = new FlxSprite(10, 10);
-			var iconPath = Paths.mods('$modFolder/pack.png');
-			if (FileSystem.exists(iconPath)) {
-				icon.loadGraphic(iconPath);
-			} else {
-				icon.loadGraphic(Paths.image('unknownMod'));
-			}
-			icon.scale.set(0.5, 0.5);
-			icon.updateHitbox();
-			add(icon);
-
-			nameText = new FlxText(90, 15, 270, this.name, 22);
-			nameText.setFormat(Paths.font("vcr.ttf"), 22, FlxColor.WHITE, LEFT);
-			add(nameText);
-
-			statusText = new FlxText(90, 45, 270, "ENABLED", 16);
-			statusText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.GREEN, LEFT);
-			add(statusText);
-
-			var versionText = new FlxText(90, 65, 270, "v" + this.version, 14);
-			versionText.setFormat(Paths.font("vcr.ttf"), 14, 0xFFD3D3D3, LEFT);
-			add(versionText);
 		}
+
+		bg = new FlxSprite(0, 0);
+		bg.makeGraphic(380, 100, 0xFF1E3A5F);
+		FlxSpriteUtil.drawRoundRect(bg, 0, 0, 380, 100, 15, 15, 0xFF0F3460);
+		add(bg);
+
+		highlight = new FlxSprite(0, 0);
+		highlight.makeGraphic(384, 104, 0xFFFFFFFF);
+		highlight.alpha = 0;
+		highlight.x = -2;
+		highlight.y = -2;
+		add(highlight);
+
+		icon = new FlxSprite(10, 10);
+		var iconPath = Paths.mods('$modFolder/pack.png');
+		if (FileSystem.exists(iconPath)) {
+			icon.loadGraphic(iconPath);
+		} else {
+			icon.loadGraphic(Paths.image('unknownMod'));
+		}
+		icon.scale.set(0.5, 0.5);
+		icon.updateHitbox();
+		add(icon);
+
+		nameText = new FlxText(90, 15, 270, this.name, 22);
+		nameText.setFormat(Paths.font("vcr.ttf"), 22, FlxColor.WHITE, LEFT);
+		add(nameText);
+
+		statusText = new FlxText(90, 45, 270, "ENABLED", 16);
+		statusText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.GREEN, LEFT);
+		add(statusText);
+
+		var versionText = new FlxText(90, 65, 270, "v" + this.version, 14);
+		versionText.setFormat(Paths.font("vcr.ttf"), 14, 0xFFD3D3D3, LEFT);
+		add(versionText);
 	}
 	
 	public function setSelected(selected:Bool)
