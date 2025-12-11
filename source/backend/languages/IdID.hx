@@ -104,7 +104,7 @@ class IdID
         "musicplayer_playing" => "MEMAINKAN: {1}",
         "musicplayer_paused" => "MEMAINKAN: {1} (DIJEDA)",
         "musicplayer_tip" => "Tekan SPACE untuk jeda / Tekan ESCAPE untuk keluar / Tekan R untuk mereset lagu",
-        "no_score" => "Tidak ada skor."
+        "no_score" => "Tidak ada skor.",
 
         // Mods Menu
         "no_mods_installed" => "TIDAK ADA MODS TERINSTALL\nTEKAN BACK UNTUK KELUAR ATAU INSTALL SEBUAH MOD",
