@@ -477,6 +477,7 @@ class ModsMenuState extends MusicBeatState
 				changeSelectedMod(scrollAmount);
 			}
 		}
+	}
 	
 	function changeSelectedMod(change:Int = 0)
 	{
