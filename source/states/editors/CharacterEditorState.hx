@@ -4,7 +4,7 @@ import flixel.graphics.FlxGraphic;
 
 import flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;
 import flixel.util.FlxDestroyUtil;
-import flixel.addons.FlxAnimate;
+import flixel.flxanimate.PsychFlxAnimate;
 
 import openfl.net.FileReference;
 import openfl.events.Event;
