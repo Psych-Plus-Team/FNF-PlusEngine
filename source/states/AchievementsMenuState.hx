@@ -12,6 +12,7 @@ import flash.display.GradientType;
 import flash.geom.Matrix;
 #end
 import flixel.group.FlxSpriteGroup;
+import flixel.group.FlxTypedSpriteGroup;
 import flixel.group.FlxTypedGroup;
 import flixel.FlxSprite;
 import flixel.text.FlxText;
@@ -39,7 +40,7 @@ class AchievementsMenuState extends MusicBeatState
 
 	var camFollow:FlxObject;
 	var background:FlxSprite;
-	var particles:FlxTypedGroup<FlxSprite>;
+	var particles:FlxTypedSpriteGroup<FlxSprite> = new FlxTypedSpriteGroup<FlxSprite>();
 	var selectionGlow:FlxSprite;
 	var lockedOverlay:FlxSprite;
 	var unlockEffect:FlxSprite;
@@ -76,7 +77,7 @@ class AchievementsMenuState extends MusicBeatState
 		background.alpha = 0.8;
 		add(background);
 
-		particles = new FlxTypedGroup<FlxSprite>();
+		particles = new FlxTypedSpriteGroup<FlxSprite>();
 		add(particles);
 		createParticles();
 
@@ -476,7 +477,7 @@ class AchievementsMenuState extends MusicBeatState
 		});
 		
 		nameText.scale.set(1.1, 1.1);
-		FlxTween.tween(nameText.scale, {x: 1, y: 1}, 0.3, {ease: FlxEase.backOut});
+            FlxTween.tween(nameText.scale, {x: 1, y: 1}, 0.3, {ease: FlxEase.backOut});
 	}
 }
 
