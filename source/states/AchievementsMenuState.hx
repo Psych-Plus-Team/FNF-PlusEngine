@@ -11,6 +11,12 @@ import flixel.graphics.frames.FlxFrame;
 import flash.display.GradientType;
 import flash.geom.Matrix;
 #end
+import flixel.group.FlxSpriteGroup;
+import flixel.group.FlxTypedGroup;
+import flixel.FlxSprite;
+import flixel.text.FlxText;
+import flixel.FlxG;
+import flixel.util.FlxTimer;
 
 #if ACHIEVEMENTS_ALLOWED
 class AchievementsMenuState extends MusicBeatState
@@ -22,10 +28,14 @@ class AchievementsMenuState extends MusicBeatState
 	public var nameText:FlxText;
 	public var descText:FlxText;
 	public var progressTxt:FlxText;
-	public var progressBar:Bar;
+	public var progressBar:FlxSprite;
 	
 	public var totalText:FlxText;
 	public var hintText:FlxText;
+
+	public var canMove:Bool = true;
+	public var particlesActive:Bool = true;
+	public var barTween:FlxTween = null;
 
 	var camFollow:FlxObject;
 	var background:FlxSprite;
@@ -35,8 +45,6 @@ class AchievementsMenuState extends MusicBeatState
 	var unlockEffect:FlxSprite;
 
 	var MAX_PER_ROW:Int = 4;
-	var particlesActive:Bool = true;
-	var canMove:Bool = true;
 	var goingBack:Bool = false;
 
 	override function create()
@@ -150,6 +158,7 @@ class AchievementsMenuState extends MusicBeatState
 		matrix.createGradientBox(box.width, box.height, Math.PI/2, 0, 0);
 
 		#if flash
+		var gfx:FlxGraphic = gradient.graphic;
 		gfx.bitmap.lock();
 		var shape = new flash.display.Shape();
 		var g = shape.graphics;
@@ -159,6 +168,7 @@ class AchievementsMenuState extends MusicBeatState
 		gfx.bitmap.draw(shape);
 		gfx.bitmap.unlock();
 		#else
+		var gfx:FlxGraphic = gradient.graphic;
 		gfx.bitmap.fillRect(new openfl.geom.Rectangle(0, 0, box.width, box.height), 0x66000000);
 		#end
 		gradient.scrollFactor.x = 0;
@@ -217,11 +227,15 @@ class AchievementsMenuState extends MusicBeatState
 		descText.setFormat(Paths.font("vcr.ttf"), 22, 0xFFCCCCCC, CENTER);
 		descText.scrollFactor.set();
 
-		progressBar = new Bar(0, descText.y + 38);
+		progressBar = new FlxSprite(0, descText.y + 38);
+		progressBar.makeGraphic(400, 20, 0xFF2C3E50);
 		progressBar.screenCenter(X);
 		progressBar.scrollFactor.set();
-		progressBar.enabled = false;
-		progressBar.createGradientBar([0xFF2C3E50], [0xFF1ABC9C], 1, 90);
+		var progressBarFill = new FlxSprite(progressBar.x, progressBar.y);
+		progressBarFill.makeGraphic(1, 20, 0xFF1ABC9C);
+		progressBarFill.scrollFactor.set();
+		add(progressBar);
+		add(progressBarFill);
 		
 		progressTxt = new FlxText(50, progressBar.y - 8, FlxG.width - 100, "", 28);
 		progressTxt.setFormat(Paths.font("vcr.ttf"), 28, 0xFFFFFFFF, CENTER, FlxTextBorderStyle.OUTLINE, 0xFF000000);
@@ -236,7 +250,6 @@ class AchievementsMenuState extends MusicBeatState
 		hintText.scrollFactor.set();
 		add(hintText);
 
-		add(progressBar);
 		add(progressTxt);
 		add(descText);
 		add(nameText);
@@ -391,14 +404,13 @@ class AchievementsMenuState extends MusicBeatState
 		}
 	}
 
-	public var barTween:FlxTween = null;
 	public function changeSelection()
 	{
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
 		var hasProgress = options[curSelected].maxProgress > 0;
 		nameText.text = options[curSelected].displayName;
 		descText.text = options[curSelected].description;
-		progressTxt.visible = progressBar.visible = hasProgress;
+		progressTxt.visible = hasProgress;
 
 		if(options[curSelected].unlocked)
 			nameText.color = 0xFFFFFFFF;
@@ -413,16 +425,24 @@ class AchievementsMenuState extends MusicBeatState
 			var val2:Float = options[curSelected].maxProgress;
 			progressTxt.text = CoolUtil.floorDecimal(val1, options[curSelected].decProgress) + ' / ' + CoolUtil.floorDecimal(val2, options[curSelected].decProgress);
 
-			barTween = FlxTween.tween(progressBar, {percent: (val1 / val2) * 100}, 0.5, {
-				ease: FlxEase.quartOut,
-				onComplete: function(twn:FlxTween) progressBar.updateBar(),
-				onUpdate: function(twn:FlxTween) progressBar.updateBar()
-			});
+			var progressBarFill = members[members.indexOf(progressBar) + 1];
+			if(progressBarFill != null && Std.isOfType(progressBarFill, FlxSprite))
+			{
+				var targetWidth = (val1 / val2) * 400;
+				barTween = FlxTween.tween(progressBarFill, {"scale.x": targetWidth / 20}, 0.5, {
+					ease: FlxEase.quartOut
+				});
+			}
 			
 			progressTxt.scale.set(1.1, 1.1);
 			FlxTween.tween(progressTxt.scale, {x: 1, y: 1}, 0.3, {ease: FlxEase.backOut});
 		}
-		else progressBar.percent = 0;
+		else
+		{
+			var progressBarFill = members[members.indexOf(progressBar) + 1];
+			if(progressBarFill != null && Std.isOfType(progressBarFill, FlxSprite))
+				progressBarFill.scale.x = 0;
+		}
 
 		var maxRows = Math.floor(grpOptions.members.length / MAX_PER_ROW);
 		if(maxRows > 0)
@@ -611,13 +631,11 @@ class ResetAchievementSubstate extends MusicBeatSubstate
 				if(state.grpOptions.members[state.curSelected * 2] != null)
 					state.grpOptions.members[state.curSelected * 2].destroy();
 
-				if(state.progressBar.visible)
+				var progressBarFill = state.members[state.members.indexOf(state.progressBar) + 1];
+				if(progressBarFill != null && Std.isOfType(progressBarFill, FlxSprite))
 				{
 					if(state.barTween != null) state.barTween.cancel();
-					state.barTween = FlxTween.tween(state.progressBar, {percent: 0}, 0.5, {ease: FlxEase.quadOut,
-						onComplete: function(twn:FlxTween) state.progressBar.updateBar(),
-						onUpdate: function(twn:FlxTween) state.progressBar.updateBar()
-					});
+					state.barTween = FlxTween.tween(progressBarFill, {"scale.x": 0}, 0.5, {ease: FlxEase.quadOut});
 				}
 				
 				var totalUnlocked:Int = 0;
