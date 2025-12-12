@@ -12,9 +12,6 @@ import flash.display.GradientType;
 import flash.geom.Matrix;
 #end
 import flixel.group.FlxSpriteGroup;
-import flixel.group.FlxTypedSpriteGroup;
-import flixel.group.FlxTypedGroup;
-import flixel.FlxSprite;
 import flixel.text.FlxText;
 import flixel.FlxG;
 import flixel.util.FlxTimer;
@@ -440,8 +437,8 @@ class AchievementsMenuState extends MusicBeatState
 		}
 		else
 		{
-			var progressBarFill = members[members.indexOf(progressBar) + 1];
-			if(progressBarFill != null && Std.isOfType(progressBarFill, FlxSprite))
+			var progressBarFill = cast(members[members.indexOf(progressBar) + 1], FlxSprite);
+			if(progressBarFill != null)
 				progressBarFill.scale.x = 0;
 		}
 
