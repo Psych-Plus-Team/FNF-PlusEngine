@@ -4,7 +4,13 @@ import flixel.FlxObject;
 import flixel.util.FlxSort;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
-import objects.Bar;
+import flixel.util.FlxColor;
+import flixel.graphics.FlxGraphic;
+import flixel.graphics.frames.FlxFrame;
+#if flash
+import flash.display.GradientType;
+import flash.geom.Matrix;
+#end
 
 #if ACHIEVEMENTS_ALLOWED
 class AchievementsMenuState extends MusicBeatState
@@ -30,6 +36,8 @@ class AchievementsMenuState extends MusicBeatState
 
 	var MAX_PER_ROW:Int = 4;
 	var particlesActive:Bool = true;
+	var canMove:Bool = true;
+	var goingBack:Bool = false;
 
 	override function create()
 	{
@@ -111,12 +119,12 @@ class AchievementsMenuState extends MusicBeatState
 				var frame:FlxSprite = new FlxSprite(spr.x - 5, spr.y - 5);
 				frame.makeGraphic(Std.int(spr.width + 10), Std.int(spr.height + 10), 0x00000000);
 				frame.drawFrame();
-				var gfx = frame.graphic;
+				var gfx:FlxGraphic = frame.graphic;
 				var r = 2;
 				for(i in 0...2)
 				{
 					var col = isPixel ? 0xFFCCCCCC : 0xFFF1C40F;
-					gfx.drawRect(i, i, spr.width + 10 - i*2, spr.height + 10 - i*2, col);
+					gfx.bitmap.fillRect(new openfl.geom.Rectangle(i, i, spr.width + 10 - i*2, spr.height + 10 - i*2), col);
 				}
 				frame.antialiasing = hasAntialias;
 				frame.scrollFactor.x = 0;
@@ -137,10 +145,22 @@ class AchievementsMenuState extends MusicBeatState
 		
 		var gradient:FlxSprite = new FlxSprite(box.x, box.y);
 		gradient.makeGraphic(Std.int(box.width), Std.int(box.height), 0x00000000);
-		var matrix = new FlxMatrix();
-		matrix.createGradientBox(box.width, box.height, 90, 0, 0);
-		var gfx = gradient.graphic;
-		gfx.drawGradientRect(0, 0, box.width, box.height, [0x33000000, 0x66000000], [1, 1], matrix);
+
+		var matrix = new openfl.geom.Matrix();
+		matrix.createGradientBox(box.width, box.height, Math.PI/2, 0, 0);
+
+		#if flash
+		gfx.bitmap.lock();
+		var shape = new flash.display.Shape();
+		var g = shape.graphics;
+		g.beginGradientFill(GradientType.LINEAR, [0x33000000, 0x66000000], [1, 1], [0, 255], matrix);
+		g.drawRect(0, 0, box.width, box.height);
+		g.endFill();
+		gfx.bitmap.draw(shape);
+		gfx.bitmap.unlock();
+		#else
+		gfx.bitmap.fillRect(new openfl.geom.Rectangle(0, 0, box.width, box.height), 0x66000000);
+		#end
 		gradient.scrollFactor.x = 0;
 		gradient.alpha = 0.6;
 		
@@ -157,10 +177,22 @@ class AchievementsMenuState extends MusicBeatState
 		
 		var panelGradient:FlxSprite = new FlxSprite(box.x, box.y);
 		panelGradient.makeGraphic(FlxG.width, panelHeight, 0x00000000);
-		var panelMatrix = new FlxMatrix();
+
+		var panelMatrix = new openfl.geom.Matrix();
 		panelMatrix.createGradientBox(FlxG.width, panelHeight, 0, 0, 0);
-		panelGradient.graphic.drawGradientRect(0, 0, FlxG.width, panelHeight, 
-			[0xAA1a1a2e, 0xDD1a1a2e], [1, 1], panelMatrix);
+		var panelGfx:FlxGraphic = panelGradient.graphic;
+		#if flash
+		panelGfx.bitmap.lock();
+		var panelShape = new flash.display.Shape();
+		var pg = panelShape.graphics;
+		pg.beginGradientFill(GradientType.LINEAR, [0xAA1a1a2e, 0xDD1a1a2e], [1, 1], [0, 255], panelMatrix);
+		pg.drawRect(0, 0, FlxG.width, panelHeight);
+		pg.endFill();
+		panelGfx.bitmap.draw(panelShape);
+		panelGfx.bitmap.unlock();
+		#else
+		panelGfx.bitmap.fillRect(new openfl.geom.Rectangle(0, 0, FlxG.width, panelHeight), 0xDD1a1a2e);
+		#end
 		panelGradient.scrollFactor.set();
 		
 		add(box);
@@ -189,7 +221,7 @@ class AchievementsMenuState extends MusicBeatState
 		progressBar.screenCenter(X);
 		progressBar.scrollFactor.set();
 		progressBar.enabled = false;
-		progressBar.createFilledBar(0xFF2C3E50, 0xFF1ABC9C);
+		progressBar.createGradientBar([0xFF2C3E50], [0xFF1ABC9C], 1, 90);
 		
 		progressTxt = new FlxText(50, progressBar.y - 8, FlxG.width - 100, "", 28);
 		progressTxt.setFormat(Paths.font("vcr.ttf"), 28, 0xFFFFFFFF, CENTER, FlxTextBorderStyle.OUTLINE, 0xFF000000);
@@ -217,7 +249,7 @@ class AchievementsMenuState extends MusicBeatState
 		
 		FlxTween.tween(background, {alpha: 1}, 1, {ease: FlxEase.quartInOut});
 		
-		_changeSelection();
+		changeSelection();
 
 		addTouchPad('LEFT_FULL', 'B_C');
 
@@ -270,9 +302,6 @@ class AchievementsMenuState extends MusicBeatState
 
 	public static function sortByID(Obj1:Dynamic, Obj2:Dynamic):Int
 		return FlxSort.byValues(FlxSort.ASCENDING, Obj1.ID, Obj2.ID);
-
-	var goingBack:Bool = false;
-	var canMove:Bool = true;
 	
 	override function update(elapsed:Float) {
 		super.update(elapsed);
@@ -306,7 +335,7 @@ class AchievementsMenuState extends MusicBeatState
 					if(curRow < oldRow) curSelected += rowSize;
 					else curSelected = curSelected -= rowSize;
 				}
-				_changeSelection();
+				changeSelection();
 			}
 
 			if(options.length > MAX_PER_ROW)
@@ -329,7 +358,7 @@ class AchievementsMenuState extends MusicBeatState
 						curSelected = diff;
 					}
 
-					_changeSelection();
+					changeSelection();
 				}
 			}
 			
@@ -363,7 +392,7 @@ class AchievementsMenuState extends MusicBeatState
 	}
 
 	public var barTween:FlxTween = null;
-	function _changeSelection()
+	public function changeSelection()
 	{
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
 		var hasProgress = options[curSelected].maxProgress > 0;
@@ -465,10 +494,22 @@ class ResetAchievementSubstate extends MusicBeatSubstate
 		
 		var shine:FlxSprite = new FlxSprite(dialogBox.x, dialogBox.y);
 		shine.makeGraphic(Std.int(dialogBox.width), Std.int(dialogBox.height), 0x00000000);
-		var shineMatrix = new FlxMatrix();
-		shineMatrix.createGradientBox(dialogBox.width, dialogBox.height, 45, 0, 0);
-		shine.graphic.drawGradientRect(0, 0, dialogBox.width, dialogBox.height, 
-			[0x00FFFFFF, 0x22FFFFFF, 0x00FFFFFF], [0, 0.5, 1], shineMatrix);
+
+		var shineMatrix = new openfl.geom.Matrix();
+		shineMatrix.createGradientBox(dialogBox.width, dialogBox.height, Math.PI/4, 0, 0);
+		var shineGfx:FlxGraphic = shine.graphic;
+		#if flash
+		shineGfx.bitmap.lock();
+		var shineShape = new flash.display.Shape();
+		var sg = shineShape.graphics;
+		sg.beginGradientFill(GradientType.LINEAR, [0x00FFFFFF, 0x22FFFFFF, 0x00FFFFFF], [0, 0.5, 1], [0, 128, 255], shineMatrix);
+		sg.drawRect(0, 0, dialogBox.width, dialogBox.height);
+		sg.endFill();
+		shineGfx.bitmap.draw(shineShape);
+		shineGfx.bitmap.unlock();
+		#else
+		shineGfx.bitmap.fillRect(new openfl.geom.Rectangle(0, 0, dialogBox.width, dialogBox.height), 0x22FFFFFF);
+		#end
 		shine.scrollFactor.set();
 		
 		add(dialogBox);
@@ -597,7 +638,7 @@ class ResetAchievementSubstate extends MusicBeatSubstate
 			var state:AchievementsMenuState = cast FlxG.state;
 			state.canMove = true;
 			state.particlesActive = true;
-			state._changeSelection();
+			state.changeSelection();
 			close();
 			return;
 		}
