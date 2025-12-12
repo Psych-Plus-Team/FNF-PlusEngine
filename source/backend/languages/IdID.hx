@@ -141,7 +141,7 @@ class IdID
         "reset_achievement_warning" => "Ini akan mengatur ulang semua kemajuan untuk achievement ini"
         "yes_reset" => "Iya, Atur ulang",
         "no_reset" => "Gak, Batal",
-        "reset_controls" => "[<->]: Pilih  [A]: Konfirmasi  [B]: Batal"
+        "reset_controls" => "[<->]: Pilih  [A]: Konfirmasi  [B]: Batal",
 
         // Achievement Menu
         "achievements_unlocked" => "Terbuka: $totalUnlocked/${options.length}",
