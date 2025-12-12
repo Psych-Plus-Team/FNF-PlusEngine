@@ -138,7 +138,7 @@ class IdID
 
         // Reset Score/Achievement
         "reset_achievement_confirm" => "Atur ulang Achievement?",
-        "reset_achievement_warning" => "Ini akan mengatur ulang semua kemajuan untuk achievement ini"
+        "reset_achievement_warning" => "Ini akan mengatur ulang semua kemajuan untuk achievement ini",
         "yes_reset" => "Iya, Atur ulang",
         "no_reset" => "Gak, Batal",
         "reset_controls" => "[<->]: Pilih  [A]: Konfirmasi  [B]: Batal",
