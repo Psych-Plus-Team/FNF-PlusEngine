@@ -137,10 +137,16 @@ class IdID
         "link_hint" => "Tekan A/ENTER untuk buka tautan | B/ESC untuk kembali",
 
         // Reset Score/Achievement
-        "reset_score" => "Reset skor dari",
-        "reset_achievement" => "Reset Pencapaian:",
-        "yes" => "Iya",
-        "no" => "Gak",
+        "reset_achievement_confirm" => "Atur ulang Achievement?",
+        "reset_achievement_warning" => "Ini akan mengatur ulang semua kemajuan untuk achievement ini"
+        "yes_reset" => "Iya, Atur ulang",
+        "no_reset" => "Gak, Batal",
+        "reset_controls" => "[<->]: Pilih  [A]: Konfirmasi  [B]: Batal"
+
+        // Achievement Menu
+        "achievements_unlocked" => "Terbuka: $totalUnlocked/${options.length}",
+        "achievements_controls" => "[ARROWS]: Navigasi  [C]: Atur ulang Dipilih  [B]: Kembali",
+        "achievement_hidden_desc" => "Buka untuk ungkap deskripsi",
 
         // Achievements
         "achievement_friday_night_play" => "Freaky pada sebuah Jum'at Malam",
