@@ -4,6 +4,7 @@ import flixel.graphics.FlxGraphic;
 
 import flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;
 import flixel.util.FlxDestroyUtil;
+import flixel.addons.display.FlxAnimate;
 
 import openfl.net.FileReference;
 import openfl.events.Event;
@@ -326,7 +327,13 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 						animateGhost.active = false;
 					}
 
-					if(animateGhost == null || animateGhostImage != character.imageFile)
+					if(animateGhost == null) {
+						animateGhost = new FlxAnimate(ghost.x, ghost.y);
+						animateGhost.showPivot = false;
+						insert(members.indexOf(ghost), animateGhost);
+						animateGhost.active = false;
+					}
+					if(animateGhostImage != character.imageFile)
 						Paths.loadAnimateAtlas(animateGhost, character.imageFile);
 					
 					if(myAnim.indices != null && myAnim.indices.length > 0)
@@ -608,7 +615,8 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 				}
 		});
 		reloadAnimList();
-		animationDropDown.selectedLabel = anims[0] != null ? anims[0].anim : '';
+		if(anims.length > 0 && anims[0] != null)
+			animationDropDown.selectedLabel = anims[0].anim;
 
 		tab_group.add(new FlxText(animationDropDown.x, animationDropDown.y - 18, 100, 'Animations:'));
 		tab_group.add(new FlxText(animationInputText.x, animationInputText.y - 18, 100, 'Animation name:'));
@@ -671,7 +679,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		healthIconInputText = new PsychUIInputText(15, imageInputText.y + 35, 75, healthIcon.getCharacter(), 8);
 			
 		animatedIconCheckBox = new PsychUICheckBox(healthIconInputText.x + 85, healthIconInputText.y + 2, "Animated Icon", 120);
-		animatedIconCheckBox.checked = character.animatedIcon == true;
+		animatedIconCheckBox.checked = character.animatedIcon;
 		animatedIconCheckBox.onClick = function() {
 		character.animatedIcon = animatedIconCheckBox.checked;
 		// Recargar el ícono con el nuevo estado
@@ -950,8 +958,11 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			{
 				undoOffsets = null;
 				curAnim = FlxMath.wrap(curAnim, 0, anims.length-1);
-				character.playAnim(anims[curAnim].anim, true);
-				updateText();
+				if(anims.length > 0 && anims[curAnim] != null)
+				{
+					character.playAnim(anims[curAnim].anim, true);
+					updateText();
+				}
 			}
 		}
 
@@ -1028,8 +1039,8 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		var anim = anims[curAnim];
 		if(changedOffset && anim != null && anim.offsets != null)
 		{
-			anim.offsets[0] = Std.int(character.offset.x);
-			anim.offsets[1] = Std.int(character.offset.y);
+			anim.offsets[0] = Std.int(Math.round(character.offset.x));
+            anim.offsets[1] = Std.int(Math.round(character.offset.y));
 
 			character.addOffset(anim.anim, character.offset.x, character.offset.y);
 			updateText();
@@ -1245,6 +1256,8 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 	inline function updateText()
 	{
+		if(animsTxt == null) return;
+
 		animsTxt.removeFormat(selectedFormat);
 
 		var intendText:String = '';

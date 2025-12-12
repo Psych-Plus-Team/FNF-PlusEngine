@@ -3588,7 +3588,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		// Find characters
 		var characters:Array<String> = [];
-		//
 		
 		objY += 40;
 		playerDropDown = new PsychUIDropDownMenu(objX, objY, [''], function(id:Int, character:String)
@@ -3606,13 +3605,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			trace('selected $stage');
 		});
 
-		animatedIconsCheckBox = new PsychUICheckBox(objX + 140, objY + -100, 'Animated Icons', 100, function()
-		{
-			PlayState.SONG.isAnimated = animatedIconsCheckBox.checked;
-			updateHeads(true);
-		});	
-		
-		opponentDropDown = new PsychUIDropDownMenu(objX, objY + 40, [''], function(id:Int, character:String)
+		// animatedIconsCheckBox was here at wrong position
+
+		objY += 40;
+		opponentDropDown = new PsychUIDropDownMenu(objX, objY, [''], function(id:Int, character:String)
 		{
 			PlayState.SONG.player2 = character;
 			updateJsonData();
@@ -3620,11 +3616,19 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			loadMusic();
 			trace('selected $character');
 		});
-		
-		girlfriendDropDown = new PsychUIDropDownMenu(objX, objY + 80, [''], function(id:Int, character:String)
+
+		objY += 40;
+		girlfriendDropDown = new PsychUIDropDownMenu(objX, objY, [''], function(id:Int, character:String)
 		{
 			PlayState.SONG.gfVersion = character;
 			trace('selected $character');
+		});
+
+		objY += 40;
+		animatedIconsCheckBox = new PsychUICheckBox(objX, objY, 'Animated Icons', 100, function()
+		{
+			PlayState.SONG.isAnimated = animatedIconsCheckBox.checked;
+			updateHeads(true);
 		});
 		
 		tab_group.add(new FlxText(bpmStepper.x, bpmStepper.y - 15, 50, 'BPM:'));
@@ -3640,8 +3644,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		tab_group.add(new FlxText(opponentDropDown.x, opponentDropDown.y - 15, 80, 'Opponent:'));
 		tab_group.add(new FlxText(girlfriendDropDown.x, girlfriendDropDown.y - 15, 80, 'Girlfriend:'));
 		tab_group.add(stageDropDown);
-		tab_group.add(animatedIconsCheckBox);
 		tab_group.add(girlfriendDropDown);
+		tab_group.add(animatedIconsCheckBox);
 		tab_group.add(opponentDropDown);
 		tab_group.add(playerDropDown);
 	}
