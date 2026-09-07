@@ -79,6 +79,12 @@ relax — progress doesn’t wait.
 
 **Happy coding.**
 
+# More Information
+
+Really i think Deep Engine no be archived but i need because psych engine have limits and deep engine are based in this in this case i change to plus engine because is modern a better
+
+# Creddits
+
 ## Developer Credits:
 * Lenin Asto - Main Programmer for Plus Engine Fork
 * Legacy Odyssey - Co-Programmer for Plus Engine Fork
