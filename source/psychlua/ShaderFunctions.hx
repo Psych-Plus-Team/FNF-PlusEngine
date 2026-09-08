@@ -23,22 +23,32 @@ class ShaderFunctions
 			return false;
 		});
 		
+		funk.addLocalCallback("makeLuaShader", function(tag:String, shader:String) {
+			if(!ClientPrefs.data.shaders) return false;
+
+			#if (!flash && sys)
+			tag = tag.replace('.', '');
+			var runtimeShader:FlxRuntimeShader = resolveRuntimeShader(funk, shader);
+			if(runtimeShader == null)
+			{
+				FunkinLua.luaTrace('makeLuaShader: Shader $shader failed or is missing!', false, false, FlxColor.RED);
+				return false;
+			}
+
+			MusicBeatState.getVariables().set(tag, runtimeShader);
+			if(funk.context != null && funk.context.variables != null)
+				funk.context.variables.set(tag, runtimeShader);
+			return true;
+			#else
+			FunkinLua.luaTrace("makeLuaShader: Platform unsupported for Runtime Shaders!", false, false, FlxColor.RED);
+			return false;
+			#end
+		});
+
 		funk.addLocalCallback("setSpriteShader", function(obj:String, shader:String) {
 			if(!ClientPrefs.data.shaders) return false;
 
 			#if (!flash && sys)
-			if(shaders.ErrorHandledShader.isBroken(shader))
-			{
-				FunkinLua.luaTrace('setSpriteShader: Shader $shader failed before, skipping it for this session.', false, false, FlxColor.RED);
-				return false;
-			}
-
-			if(!funk.runtimeShaders.exists(shader) && !funk.initLuaShader(shader))
-			{
-				FunkinLua.luaTrace('setSpriteShader: Shader $shader is missing!', false, false, FlxColor.RED);
-				return false;
-			}
-
 			var split:Array<String> = obj.split('.');
 			var leObj:FlxSprite = LuaUtils.getObjectDirectly(split[0]);
 			if(split.length > 1) {
@@ -46,15 +56,14 @@ class ShaderFunctions
 			}
 
 			if(leObj != null) {
-				var arr:Array<String> = funk.runtimeShaders.get(shader);
-				var runtimeShader:shaders.ErrorHandledShader.ErrorHandledRuntimeShader = new shaders.ErrorHandledShader.ErrorHandledRuntimeShader(shader, arr[0], arr[1]);
-				runtimeShader.onError = function(error:Dynamic)
+				var runtimeShader:FlxRuntimeShader = null;
+				runtimeShader = resolveRuntimeShader(funk, shader, function(error:Dynamic)
 				{
-					if(leObj != null && leObj.shader == runtimeShader)
+					if(leObj != null)
 						leObj.shader = null;
-				};
+				});
 
-				if(runtimeShader.failed || shaders.ErrorHandledShader.isBroken(shader))
+				if(runtimeShader == null)
 				{
 					leObj.shader = null;
 					FunkinLua.luaTrace('setSpriteShader: Shader $shader failed to compile and was removed.', false, false, FlxColor.RED);
@@ -69,6 +78,49 @@ class ShaderFunctions
 			#end
 			return false;
 		});
+
+		funk.addLocalCallback("setCameraShader", function(cameraName:String, shader:String) {
+			if(!ClientPrefs.data.shaders) return false;
+
+			#if (!flash && sys)
+			var camera:FlxCamera = LuaUtils.cameraFromString(cameraName);
+			if(camera == null)
+				return false;
+
+			var runtimeShader:FlxRuntimeShader = resolveRuntimeShader(funk, shader, function(error:Dynamic)
+			{
+				removeCameraShaderFilter(camera, shader);
+			});
+			if(runtimeShader == null)
+			{
+				FunkinLua.luaTrace('setCameraShader: Shader $shader failed or is missing!', false, false, FlxColor.RED);
+				return false;
+			}
+
+			removeCameraShaderFilter(camera, shader);
+			var filters:Array<openfl.filters.BitmapFilter> = camera.filters != null ? camera.filters.copy() : [];
+			filters.push(new openfl.filters.ShaderFilter(runtimeShader));
+			camera.filters = filters;
+			camera.filtersEnabled = true;
+			return true;
+			#else
+			FunkinLua.luaTrace("setCameraShader: Platform unsupported for Runtime Shaders!", false, false, FlxColor.RED);
+			return false;
+			#end
+		});
+
+		Lua_helper.add_callback(lua, "removeCameraShader", function(cameraName:String, ?shader:String = null) {
+			#if (!flash && sys)
+			var camera:FlxCamera = LuaUtils.cameraFromString(cameraName);
+			if(camera == null)
+				return false;
+			return removeCameraShaderFilter(camera, shader);
+			#else
+			FunkinLua.luaTrace("removeCameraShader: Platform unsupported for Runtime Shaders!", false, false, FlxColor.RED);
+			return false;
+			#end
+		});
+
 		Lua_helper.add_callback(lua, "removeSpriteShader", function(obj:String) {
 			var split:Array<String> = obj.split('.');
 			var leObj:FlxSprite = LuaUtils.getObjectDirectly(split[0]);
@@ -309,6 +361,79 @@ class ShaderFunctions
 			return cast shaderValue;
 
 		return null;
+	}
+	#end
+
+	#if (!flash && sys)
+	static function resolveRuntimeShader(funk:FunkinLua, shader:String, ?onError:Dynamic):FlxRuntimeShader
+	{
+		var existing:Dynamic = LuaUtils.getObjectDirectly(shader);
+		if(existing != null && Std.isOfType(existing, FlxRuntimeShader))
+			return cast existing;
+
+		#if MODS_ALLOWED
+		if(shaders.ErrorHandledShader.isBroken(shader))
+		{
+			FunkinLua.luaTrace('Shader $shader failed before, skipping it for this session.', false, false, FlxColor.RED);
+			return null;
+		}
+
+		if(!funk.runtimeShaders.exists(shader) && !funk.initLuaShader(shader))
+			return null;
+
+		var arr:Array<String> = funk.runtimeShaders.get(shader);
+		var runtimeShader:shaders.ErrorHandledShader.ErrorHandledRuntimeShader = new shaders.ErrorHandledShader.ErrorHandledRuntimeShader(shader, arr[0], arr[1]);
+		if(onError != null)
+			runtimeShader.onError = onError;
+
+		if(runtimeShader.failed || shaders.ErrorHandledShader.isBroken(shader))
+			return null;
+
+		return runtimeShader;
+		#else
+		FunkinLua.luaTrace('Runtime shaders need MODS_ALLOWED to load $shader.', false, false, FlxColor.RED);
+		return null;
+		#end
+	}
+
+	static function removeCameraShaderFilter(camera:FlxCamera, ?shader:String = null):Bool
+	{
+		if(camera == null || camera.filters == null)
+			return false;
+
+		if(shader == null || shader.length == 0)
+		{
+			camera.filters = [];
+			return true;
+		}
+
+		var target:Dynamic = LuaUtils.getObjectDirectly(shader);
+		var removed:Bool = false;
+		var filters:Array<openfl.filters.BitmapFilter> = [];
+		for(filter in camera.filters)
+		{
+			var keep:Bool = true;
+			if(Std.isOfType(filter, openfl.filters.ShaderFilter))
+			{
+				var shaderFilter:openfl.filters.ShaderFilter = cast filter;
+				var filterShader:Dynamic = shaderFilter.shader;
+				if(filterShader == target)
+					keep = false;
+				else if(Std.isOfType(filterShader, shaders.ErrorHandledShader.ErrorHandledRuntimeShader))
+				{
+					var runtime:shaders.ErrorHandledShader.ErrorHandledRuntimeShader = cast filterShader;
+					keep = runtime.shaderName != shader;
+				}
+			}
+
+			if(keep)
+				filters.push(filter);
+			else
+				removed = true;
+		}
+
+		camera.filters = filters;
+		return removed;
 	}
 	#end
 }

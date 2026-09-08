@@ -336,7 +336,14 @@ class LuaModchart
 			var targetBeat:Null<Float> = null;
 
 			if (Std.isOfType(nameOrBeat, String))
-				targetBeat = toFloat(nameOrBeat, Math.NaN);
+			{
+				var text = Std.string(nameOrBeat).trim();
+				var parsedBeat = toFloat(text, Math.NaN);
+				if (beat == null && !Math.isNaN(parsedBeat))
+					targetBeat = parsedBeat;
+				else if (text.length > 0)
+					name = text;
+			}
 			else if (nameOrBeat != null)
 				targetBeat = toFloat(nameOrBeat, Math.NaN);
 

@@ -13,12 +13,12 @@ using StringTools;
 
 typedef EventNote =
 {
-	strumTime:Float;
-	event:String;
-	value1:String;
-	value2:String;
-	@:optional value3:String;
-	@:optional value4:String;
+	strumTime:Float,
+	event:String,
+	value1:String,
+	value2:String,
+	?value3:String,
+	?value4:String
 }
 
 typedef NoteSplashData =

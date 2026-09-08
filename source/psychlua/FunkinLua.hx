@@ -2062,6 +2062,7 @@ class FunkinLua
 		ExtraFunctions.implement(this);
 		CustomSubstate.implement(this);
 		ShaderFunctions.implement(this);
+		ActorFrameFunctions.implement(this);
 		DeprecatedFunctions.implement(this);
 		LegacyCompatFunctions.implement(this);
 		#if AWAY3D_ALLOWED Mesh3DFunctions.implement(this); #end
@@ -2103,6 +2104,8 @@ class FunkinLua
 			}
 			if (isString)
 				scriptName = 'unknown';
+
+			ActorFrameFunctions.installHooks(this);
 		}
 		catch (e:Dynamic)
 		{
