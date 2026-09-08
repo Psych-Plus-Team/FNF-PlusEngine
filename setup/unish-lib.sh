@@ -15,8 +15,8 @@ haxelib git hxcpp https://github.com/Psych-Plus-Team/hxcpp
 echo "[Core] lime"
 haxelib git lime https://github.com/Psych-Plus-Team/lime
 
-echo "[Core] openfl 9.5.0"
-haxelib install openfl 9.5.0 --quiet
+echo "[Core] openfl git"
+haxelib git openfl https://github.com/Psych-Plus-Team/openfl.git --quiet
 
 echo "[Core - 3D] away3d"
 haxelib git away3d https://github.com/openfl/away3d.git
@@ -27,8 +27,8 @@ haxelib git away3d https://github.com/openfl/away3d.git
 echo "[Flixel] flixel"
 haxelib git flixel https://github.com/Psych-Plus-Team/flixel
 
-echo "[Flixel] flixel-addons 3.3.2"
-haxelib install flixel-addons 3.3.2 --quiet
+echo "[Flixel] flixel-addons git"
+haxelib git flixel-addons https://github.com/Psych-Plus-Team/flixel-addons.git --quiet
 
 echo "[Flixel] flixel-tools 1.5.1"
 haxelib install flixel-tools 1.5.1 --quiet
