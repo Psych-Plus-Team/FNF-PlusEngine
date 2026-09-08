@@ -1075,11 +1075,23 @@ class PlayState extends MusicBeatState
 
 			if (sys.FileSystem.exists(smFolder))
 			{
+				var actorFramePath:String = smFolder + '/actorframe.lua';
+				#if LUA_ALLOWED
+				if (sys.FileSystem.exists(actorFramePath))
+				{
+					trace('Loading SM ActorFrame script: actorframe.lua');
+					new FunkinLua(actorFramePath);
+				}
+				#end
+
 				var files:Array<String> = sys.FileSystem.readDirectory(smFolder);
 
 				for (file in files)
 				{
 					#if LUA_ALLOWED
+					if (file.toLowerCase() == 'actorframe.lua')
+						continue;
+
 					if (file.toLowerCase().endsWith('.lua'))
 					{
 						trace('Loading SM Lua script: $file');
@@ -1104,14 +1116,21 @@ class PlayState extends MusicBeatState
 		}
 		else // Para canciones normales, buscar en data/
 		{
+			#if LUA_ALLOWED
+			startLuasNamed('data/$songName/actorframe.lua');
+			#end
+
 			for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'data/$songName/'))
 				#if linux
-				for (file in CoolUtil.sortAlphabetically(Paths.readDirectory(folder)))
+			for (file in CoolUtil.sortAlphabetically(Paths.readDirectory(folder)))
 				#else
 				for (file in Paths.readDirectory(folder))
 				#end
 			{
 				#if LUA_ALLOWED
+				if (file.toLowerCase() == 'actorframe.lua')
+					continue;
+
 				if (file.toLowerCase().endsWith('.lua'))
 					new FunkinLua(folder + file);
 				#end
