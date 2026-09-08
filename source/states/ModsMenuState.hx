@@ -65,7 +65,6 @@ class ModsMenuState extends MusicBeatState {
 	var waitingToRestart:Bool = false;
 	var holdTime:Float = 0;
 	var startMod:String = null;
-	var returnToSelector:Bool = false;
 	var _lastControllerMode:Bool = false;
 
 	// geometry (computed in create)
@@ -75,9 +74,8 @@ class ModsMenuState extends MusicBeatState {
 	var listH:Float;
 	var rowH:Float = 72;
 
-	public function new(startMod:String = null, returnToSelector:Bool = false) {
+	public function new(startMod:String = null) {
 		this.startMod = startMod;
-		this.returnToSelector = returnToSelector;
 		super();
 	}
 
@@ -882,15 +880,13 @@ class ModsMenuState extends MusicBeatState {
 		FlxTransitionableState.skipNextTransIn = true;
 		FlxTransitionableState.skipNextTransOut = true;
 		var m = currentMod();
-		MusicBeatState.switchState(new ModsMenuState(m != null ? m.folder : null, false, returnToSelector));
+		MusicBeatState.switchState(new ModsMenuState(m != null ? m.folder : null));
 	}
 
 	function exitMenu() {
 		saveTxt();
 		FlxG.sound.play(Paths.sound('cancelMenu'));
-		if (returnToSelector) {
-			MusicBeatState.switchState(new ModsManagerSelectorState());
-		} else if (waitingToRestart) {
+		if (waitingToRestart) {
 			TitleState.initialized = false;
 			TitleState.closedState = false;
 			FlxG.sound.music.fadeOut(0.3);

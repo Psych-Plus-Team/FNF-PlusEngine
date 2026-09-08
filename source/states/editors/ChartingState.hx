@@ -5926,7 +5926,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function saveChart(canQuickSave:Bool = true)
 	{
 		updateChartData();
-		PlayState.SONG.extendedEventValues = chartUsesExtendedValues(PlayState.SONG);
+		PlayState.SONG.extendedEventValues = Song.chartUsesExtendedValues(PlayState.SONG);
 		var chartData:String = PsychJsonPrinter.print(PlayState.SONG, ['sectionNotes', 'events']);
 		if (canQuickSave && Song.chartPath != null)
 		{

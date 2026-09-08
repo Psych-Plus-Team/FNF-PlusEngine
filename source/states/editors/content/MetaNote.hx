@@ -229,7 +229,7 @@ class EventMetaNote extends MetaNote
 
 		if (event != null)
 		{
-			for (i in 0...Math.min(event.length, 4))
+			for (i in 0...(event.length > 4 ? 4 : event.length))
 				result[i] = event[i] != null ? event[i] : '';
 		}
 
@@ -248,7 +248,7 @@ class EventMetaNote extends MetaNote
 		while (event.length < 4)
 			event.push('');
 
-		for (i in 0...Math.min(values.length, 4))
+		for (i in 0...(values.length > 4 ? 4 : values.length))
 		{
 			if (values[i] != null)
 				event[i] = values[i];

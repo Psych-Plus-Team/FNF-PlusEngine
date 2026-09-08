@@ -491,6 +491,7 @@ class MusicBeatState extends BaseMusicBeatState
 		if (!stateScriptHooksEnabled())
 			return;
 
+		#if HSCRIPT_ALLOWED
 		#if MODS_ALLOWED
 		Mods.loadTopMod();
 		#end
@@ -672,6 +673,7 @@ class MusicBeatState extends BaseMusicBeatState
 				{
 					trace('GlobalScript: Error setting getPublicVar: $e');
 				}
+				#end
 
 				trace('GlobalScript: Functions configured successfully');
 
