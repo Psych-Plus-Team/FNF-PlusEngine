@@ -97,6 +97,7 @@ class ShaderFunctions
 				return false;
 			}
 
+			removeCameraShaderFilter(camera, shader);
 			var filters:Array<openfl.filters.BitmapFilter> = camera.filters != null ? camera.filters.copy() : [];
 			filters.push(new openfl.filters.ShaderFilter(runtimeShader));
 			camera.filters = filters;

@@ -8,11 +8,76 @@ class ShaderCompatibility
 			return null;
 
 		var code:String = source.replace("\r\n", "\n").replace("\r", "\n");
+		var dialect:String = getShaderDialect(code, shaderName);
+
+		if (dialect == null)
+			return code;
+
+		code = stripDialectPragmas(code);
 		code = stripUniformInitializers(code);
+
 		if (stage == "fragment")
-			code = adaptFragmentDialect(code);
-		code = normalizeStrictConstructors(code);
-		return code;
+		{
+			switch (dialect)
+			{
+				case "notitg":
+					code = adaptNotITGFragment(code);
+				case "shadertoy":
+					code = adaptShadertoyFragment(code);
+				default:
+			}
+		}
+
+		return normalizeStrictConstructors(code);
+	}
+
+	static function getShaderDialect(source:String, shaderName:String):String
+	{
+		var lower:String = source.toLowerCase();
+		if (hasDialectFlag(lower, "notitg"))
+			return "notitg";
+		if (hasDialectFlag(lower, "shadertoy"))
+			return "shadertoy";
+
+		if (shaderName != null)
+		{
+			var name:String = shaderName.toLowerCase();
+			if (StringTools.startsWith(name, "notitg:") || StringTools.startsWith(name, "notitg/"))
+				return "notitg";
+			if (StringTools.startsWith(name, "shadertoy:") || StringTools.startsWith(name, "shadertoy/"))
+				return "shadertoy";
+		}
+
+		return null;
+	}
+
+	static function hasDialectFlag(source:String, dialect:String):Bool
+	{
+		return source.indexOf("#pragma " + dialect) != -1
+			|| source.indexOf("#pragma shader_dialect " + dialect) != -1
+			|| source.indexOf("#pragma shader-dialect " + dialect) != -1
+			|| source.indexOf("@shader_dialect " + dialect) != -1
+			|| source.indexOf("@shader-dialect " + dialect) != -1;
+	}
+
+	static function stripDialectPragmas(source:String):String
+	{
+		var lines:Array<String> = source.split("\n");
+		for (i in 0...lines.length)
+		{
+			var line:String = lines[i];
+			var lower:String = StringTools.trim(line).toLowerCase();
+			if (StringTools.startsWith(lower, "#pragma notitg")
+				|| StringTools.startsWith(lower, "#pragma shadertoy")
+				|| StringTools.startsWith(lower, "#pragma shader_dialect")
+				|| StringTools.startsWith(lower, "#pragma shader-dialect")
+				|| lower.indexOf("@shader_dialect ") != -1
+				|| lower.indexOf("@shader-dialect ") != -1)
+			{
+				lines[i] = "";
+			}
+		}
+		return lines.join("\n");
 	}
 
 	static function stripVersionPragmas(source:String):String
@@ -34,22 +99,11 @@ class ShaderCompatibility
 		return lines.join("\n");
 	}
 
-	static function adaptFragmentDialect(source:String):String
+	static function adaptNotITGFragment(source:String):String
 	{
 		var code:String = source;
 		var needsHeader:Bool = code.indexOf("#pragma header") == -1;
-		var looksLikeNotITG:Bool = hasAny(code, [
-			"sampler0",
-			"imageCoord",
-			"textureCoord",
-			"imageSize",
-			"textureSize",
-			"uniform vec2 resolution",
-			"varying vec4 color"
-		]);
-
-		if (!looksLikeNotITG)
-			return code;
+		var usedLegacyColor:Bool = code.indexOf("color") != -1;
 
 		code = stripVersionPragmas(code);
 		code = removeBuiltinDeclarations(code);
@@ -61,7 +115,7 @@ class ShaderCompatibility
 		code = replaceWord(code, "resolution", "openfl_TextureSize");
 		code = replaceTexture2DBiasCalls(code);
 
-		if (code.indexOf("color") != -1)
+		if (usedLegacyColor)
 			code = "#define color vec4(1.0)\n" + code;
 		if (needsHeader)
 			code = "#pragma header\n\n" + code;
@@ -69,18 +123,50 @@ class ShaderCompatibility
 		return code;
 	}
 
-	static function removeBuiltinDeclarations(source:String):String
+	static function adaptShadertoyFragment(source:String):String
+	{
+		var code:String = stripVersionPragmas(source);
+		var needsHeader:Bool = code.indexOf("#pragma header") == -1;
+		var usesITime:Bool = code.indexOf("iTime") != -1;
+		var hasITimeUniform:Bool = code.indexOf("uniform float iTime") != -1;
+
+		code = removeBuiltinDeclarations(code, [
+			"iResolution" => true,
+			"iChannel0" => true
+		]);
+		code = replaceWord(code, "iResolution", "vec3(openfl_TextureSize, 1.0)");
+		code = replaceWord(code, "iChannel0", "bitmap");
+		code = replaceWord(code, "texture", "texture2D");
+
+		if (usesITime && !hasITimeUniform)
+			code = "uniform float iTime;\n" + code;
+
+		if (code.indexOf("void mainImage") != -1 && code.indexOf("void main()") == -1)
+		{
+			code += "\n\nvoid main()\n{\n\tvec4 fragColor = vec4(0.0);\n\tmainImage(fragColor, openfl_TextureCoordv * openfl_TextureSize);\n\tgl_FragColor = fragColor;\n}\n";
+		}
+
+		if (needsHeader)
+			code = "#pragma header\n\n" + code;
+
+		return code;
+	}
+
+	static function removeBuiltinDeclarations(source:String, ?builtins:Map<String, Bool>):String
 	{
 		var lines:Array<String> = source.split("\n");
-		var builtins:Map<String, Bool> = [
-			"color" => true,
-			"textureCoord" => true,
-			"imageCoord" => true,
-			"textureSize" => true,
-			"imageSize" => true,
-			"resolution" => true,
-			"sampler0" => true
-		];
+		if (builtins == null)
+		{
+			builtins = [
+				"color" => true,
+				"textureCoord" => true,
+				"imageCoord" => true,
+				"textureSize" => true,
+				"imageSize" => true,
+				"resolution" => true,
+				"sampler0" => true
+			];
+		}
 
 		for (i in 0...lines.length)
 		{
