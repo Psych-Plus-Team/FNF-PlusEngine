@@ -30,7 +30,7 @@ class AddEvent extends EaseEvent {
 			if (entryPerc == null)
 				entryPerc = ModchartUtil.findEntryFrom(this);
 
-			setModPercent(name, entryPerc + addAmount, player);
+			setModPercent(name, FlxMath.lerp(entryPerc, entryPerc + addAmount, ease(1)), player);
 		}
 	}
 }

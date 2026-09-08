@@ -2085,7 +2085,10 @@ class FunkinLua
 			var result:Dynamic = null;
 			lastCalledScript = this;
 			if (!isString)
+			{
+				loadNotitgDataPrelude(scriptName);
 				result = LuaL.dofile(lua, scriptName);
+			}
 			else
 				result = LuaL.dostring(lua, scriptName);
 
@@ -2117,6 +2120,56 @@ class FunkinLua
 
 		if (autoCallOnCreate)
 			call('onCreate', []);
+	}
+
+	function loadNotitgDataPrelude(targetScript:String):Void
+	{
+		#if sys
+		if (targetScript == null)
+			return;
+
+		var normalized:String = targetScript.replace('\\', '/');
+		if (!normalized.toLowerCase().endsWith('/modchart.lua'))
+			return;
+
+		var slash:Int = normalized.lastIndexOf('/');
+		if (slash < 0)
+			return;
+
+		var dir:String = normalized.substring(0, slash);
+		if (!FileSystem.exists(dir))
+			return;
+
+		var files:Array<String> = FileSystem.readDirectory(dir);
+		files.sort(function(a:String, b:String):Int
+		{
+			var la = a.toLowerCase();
+			var lb = b.toLowerCase();
+			if (la < lb)
+				return -1;
+			if (la > lb)
+				return 1;
+			return 0;
+		});
+
+		for (file in files)
+		{
+			var lower:String = file.toLowerCase();
+			if (!lower.startsWith('n_') || !lower.endsWith('.lua'))
+				continue;
+
+			var path:String = dir + '/' + file;
+			var result:Dynamic = LuaL.dofile(lua, path);
+			var resultStr:String = Lua.tostring(lua, -1);
+			if (resultStr != null && result != 0)
+			{
+				trace(resultStr);
+				luaTrace('$path\n$resultStr', true, false, FlxColor.RED);
+				break;
+			}
+			trace('Lua NotITG data prelude loaded succesfully:' + path);
+		}
+		#end
 	}
 
 	static inline var LUAMODE_SCAN_BYTES:Int = 1024;

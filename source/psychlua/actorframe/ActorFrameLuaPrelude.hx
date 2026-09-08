@@ -53,7 +53,7 @@ class ActorFrameLuaPrelude
 			"  local texture = t.Texture or t.texture or t.File or t.file",
 			"  local root = { Name = t.Name or 'proxwall', Camera = t.Camera or t.camera or 'hud', __ActorFrameKind = 'ActorFrame', __ActorFrameProxyWall = true }",
 			"  for i = 1, count do",
-			"    root[#root + 1] = Def.Sprite { Name = 'proxy' .. tostring(i), Texture = texture, X = startX - spacing * i, Y = t.Y or t.y or 0, Width = t.Width or t.width, Height = t.Height or t.height, Alpha = t.Alpha or t.alpha or 1, Visible = t.Visible ~= false, Blend = t.Blend or t.blend }",
+			"    root[#root + 1] = Def.Sprite { Name = 'proxy' .. tostring(i), Texture = texture, X = startX - spacing * i, Y = t.Y or t.y or 0, Alpha = t.Alpha or t.alpha or 1, Visible = t.Visible ~= false, Blend = t.Blend or t.blend }",
 			"  end",
 			"  return root",
 			"end",

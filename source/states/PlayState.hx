@@ -1089,10 +1089,11 @@ class PlayState extends MusicBeatState
 				for (file in files)
 				{
 					#if LUA_ALLOWED
-					if (file.toLowerCase() == 'actorframe.lua')
+					var lowerFile:String = file.toLowerCase();
+					if (lowerFile == 'actorframe.lua' || (lowerFile.startsWith('n_') && lowerFile.endsWith('.lua')))
 						continue;
 
-					if (file.toLowerCase().endsWith('.lua'))
+					if (lowerFile.endsWith('.lua'))
 					{
 						trace('Loading SM Lua script: $file');
 						new FunkinLua(smFolder + '/' + file);
@@ -1128,10 +1129,11 @@ class PlayState extends MusicBeatState
 				#end
 			{
 				#if LUA_ALLOWED
-				if (file.toLowerCase() == 'actorframe.lua')
+				var lowerFile:String = file.toLowerCase();
+				if (lowerFile == 'actorframe.lua' || (lowerFile.startsWith('n_') && lowerFile.endsWith('.lua')))
 					continue;
 
-				if (file.toLowerCase().endsWith('.lua'))
+				if (lowerFile.endsWith('.lua'))
 					new FunkinLua(folder + file);
 				#end
 

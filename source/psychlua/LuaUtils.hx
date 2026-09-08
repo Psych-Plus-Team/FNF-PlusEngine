@@ -125,7 +125,7 @@ class LuaUtils
 			}
 			return target;
 		}
-		
+
 		if(allowMaps && isMap(instance))
 		{
 			//trace(instance);
@@ -217,7 +217,7 @@ class LuaUtils
 		#end
 		return null;
 	}
-	
+
 	public static function isMap(variable:Dynamic)
 	{
 		/*switch(Type.typeof(variable)){
@@ -323,7 +323,7 @@ class LuaUtils
 		{
 			case 'this' | 'instance' | 'game':
 				return getTargetInstance();
-			
+
 			default:
 				var obj:Dynamic = MusicBeatState.getVariables().get(objectName);
 				if(obj == null)
@@ -336,7 +336,7 @@ class LuaUtils
 				return obj;
 		}
 	}
-	
+
 	public static function isOfTypes(value:Any, types:Array<Dynamic>)
 	{
 		for (type in types)
@@ -348,7 +348,7 @@ class LuaUtils
 	public static function isLuaSupported(value:Any):Bool {
 		return (value == null || isOfTypes(value, [Bool, Int, Float, String, Array]) || Type.typeof(value) == ValueType.TObject);
 	}
-	
+
 	public static function getTargetInstance()
 	{
 		var ctx = getCurrentContext();
@@ -370,7 +370,7 @@ class LuaUtils
 			group = PlayState.instance.boyfriendGroup;
 			pos = newPos;
 		}
-		
+
 		newPos = PlayState.instance.members.indexOf(PlayState.instance.dadGroup);
 		if(newPos < pos)
 		{
@@ -379,7 +379,7 @@ class LuaUtils
 		}
 		return group;
 	}
-	
+
 	public static function addAnimByIndices(obj:String, name:String, prefix:String, indices:Any = null, framerate:Float = 24, loop:Bool = false)
 	{
 		var obj:FlxSprite = cast LuaUtils.getObjectDirectly(obj);
@@ -410,7 +410,7 @@ class LuaUtils
 		}
 		return false;
 	}
-	
+
 	public static function loadFrames(spr:FlxSprite, image:String, spriteType:String)
 	{
 		switch(spriteType.toLowerCase().replace(' ', ''))
@@ -599,7 +599,7 @@ class LuaUtils
 			case 'backout': return FlxEase.backOut;
 			case 'backoutin': return FlxEase.backInOut;
 			case 'bell': return FlxEase.sineInOut;
-			case 'bounce': return FlxEase.bounceOut;
+			case 'bounce': return FlxEase.bounce;
 			case 'bouncein': return FlxEase.bounceIn;
 			case 'bounceinout': return FlxEase.bounceInOut;
 			case 'bounceout': return FlxEase.bounceOut;
@@ -676,7 +676,7 @@ class LuaUtils
 		}
 		return NORMAL;
 	}
-	
+
 	public static function typeToString(type:Int):String {
 		#if LUA_ALLOWED
 		switch(type) {
