@@ -98,9 +98,13 @@ class Stealth extends Modifier {
 		// Use pre-computed IDs to avoid Std.string(lane) + string concat allocations
 		final stealthVal = getUnsafeLaneAdd(_stealthID, _stealthIDs[lane], player);
 		final darkVal = getUnsafeLaneAdd(_darkID, _darkIDs[lane], player);
-		final visibility = FlxMath.bound(params.isTapArrow ? stealthVal : darkVal, 0, 1);
+		final stealthVisibility = FlxMath.bound(stealthVal, 0, 1);
+		final darkVisibility = FlxMath.bound(darkVal, 0, 1);
+		final visibility = params.isTapArrow ? stealthVisibility : darkVisibility;
 		final alpha = FlxMath.bound(getUnsafe(_alphaID, player), 0, 1)
 			* (hasUnsafeForPlayer(_alphaIDs[lane], player) ? FlxMath.bound(getUnsafe(_alphaIDs[lane], player), 0, 1) : 1);
+		if (params.isTapArrow && stealthVisibility != 0)
+			data.glow += stealthVisibility * 2;
 		data.alpha *= alpha * (1 - visibility);
 
 		// sudden & hidden

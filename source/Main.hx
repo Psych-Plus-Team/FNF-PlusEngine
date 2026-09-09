@@ -63,6 +63,16 @@ class Main extends Sprite
 
 	public static function main():Void
 	{
+		#if (cpp && windows)
+		final maxInstanceSlots:Int = ClientPrefs.loadMaxInstanceSlotsEarly();
+		if (!backend.Native.reserveInstanceSlot(maxInstanceSlots))
+		{
+			backend.Native.showInstanceLimitMessage(maxInstanceSlots);
+			Sys.exit(0);
+			return;
+		}
+		#end
+
 		Lib.current.addChild(new Main());
 		#if cpp
 		cpp.NativeGc.enable(true);

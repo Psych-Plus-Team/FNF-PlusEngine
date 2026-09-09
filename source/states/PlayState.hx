@@ -1089,10 +1089,11 @@ class PlayState extends MusicBeatState
 				for (file in files)
 				{
 					#if LUA_ALLOWED
-					if (file.toLowerCase() == 'actorframe.lua')
+					var lowerFile:String = file.toLowerCase();
+					if (lowerFile == 'actorframe.lua' || (lowerFile.startsWith('n_') && lowerFile.endsWith('.lua')))
 						continue;
 
-					if (file.toLowerCase().endsWith('.lua'))
+					if (lowerFile.endsWith('.lua'))
 					{
 						trace('Loading SM Lua script: $file');
 						new FunkinLua(smFolder + '/' + file);
@@ -1128,10 +1129,11 @@ class PlayState extends MusicBeatState
 				#end
 			{
 				#if LUA_ALLOWED
-				if (file.toLowerCase() == 'actorframe.lua')
+				var lowerFile:String = file.toLowerCase();
+				if (lowerFile == 'actorframe.lua' || (lowerFile.startsWith('n_') && lowerFile.endsWith('.lua')))
 					continue;
 
-				if (file.toLowerCase().endsWith('.lua'))
+				if (lowerFile.endsWith('.lua'))
 					new FunkinLua(folder + file);
 				#end
 
@@ -3047,6 +3049,15 @@ class PlayState extends MusicBeatState
 		super.openSubState(SubState);
 	}
 
+	function openScriptableSubState(name:String, fallback:FlxSubState, ?args:Array<Dynamic>):Void
+	{
+		#if HSCRIPT_ALLOWED
+		openSubState(backend.ScriptableSubstate.tryCreate(name, fallback, args));
+		#else
+		openSubState(fallback);
+		#end
+	}
+
 	public var canResync:Bool = true;
 
 	override function closeSubState()
@@ -3796,7 +3807,7 @@ class PlayState extends MusicBeatState
 					note.resetAnim = 0;
 				}
 		}
-		openSubState(backend.ScriptableSubstate.tryCreate('PauseSubState', new PauseSubState()));
+		openScriptableSubState('PauseSubState', new PauseSubState());
 
 		#if DISCORD_ALLOWED
 		if (autoUpdateRPC)
@@ -3887,7 +3898,7 @@ class PlayState extends MusicBeatState
 						vocals.stop();
 						opponentVocals.stop();
 						FlxG.sound.music.stop();
-						openSubState(backend.ScriptableSubstate.tryCreate('GameOverSubstate', new GameOverSubstate(boyfriend)));
+						openScriptableSubState('GameOverSubstate', new GameOverSubstate(boyfriend));
 						gameOverTimer = null;
 					});
 				}
@@ -3896,7 +3907,7 @@ class PlayState extends MusicBeatState
 					vocals.stop();
 					opponentVocals.stop();
 					FlxG.sound.music.stop();
-					openSubState(backend.ScriptableSubstate.tryCreate('GameOverSubstate', new GameOverSubstate(boyfriend)));
+					openScriptableSubState('GameOverSubstate', new GameOverSubstate(boyfriend));
 				}
 
 				// MusicBeatState.switchState(backend.ScriptableState.tryCreate('GameOverState', new GameOverState(boyfriend.getScreenPosition().x, boyfriend.getScreenPosition().y)));

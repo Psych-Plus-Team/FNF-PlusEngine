@@ -34,6 +34,7 @@ import states.TitleState;
 	#if windows
 	public var fullscreenMode:String = 'Borderless'; // 'Borderless', 'Borderless Fix', 'Exclusive'
 	public var windowsGDIEffects:Bool = false; // Requires manual user consent in Gameplay Settings
+	public var maxInstanceSlots:Int = 1; // Maximum simultaneous Plus Engine windows allowed
 	#end
 	public var accuracySystem:String = 'Psych'; // 'Wife3', 'Psych', 'Simple', 'osu!mania', 'DJMAX', 'ITG'
 	public var badShitBreakCombo:Bool = false; // When true, Bad and Shit will break the combo
@@ -186,6 +187,8 @@ class ClientPrefs
 	public static var judgementCounter:Bool = false;
 	public static inline var FRAMERATE_MAX:Int = 240;
 	public static inline var FRAMERATE_UNCAPPED:Int = 1000;
+	public static inline var MAX_INSTANCE_SLOTS_MIN:Int = 1;
+	public static inline var MAX_INSTANCE_SLOTS_MAX:Int = 8;
 	public static final FRAMERATE_MODES:Array<String> = ['Psych', 'Fixed', 'Interpolated'];
 
 	// Every key has two binds, add your key bind down here and then add your control on options/ControlsSubState.hx and Controls.hx
@@ -319,10 +322,47 @@ class ClientPrefs
 	}
 	#end
 
+	#if windows
+	public static function loadMaxInstanceSlotsEarly():Int
+	{
+		var slots:Int = data.maxInstanceSlots;
+
+		try
+		{
+			var save:FlxSave = new FlxSave();
+			save.bind('funkin', CoolUtil.getSavePath());
+			if (save != null && save.data != null && Reflect.hasField(save.data, 'maxInstanceSlots'))
+				slots = normalizeMaxInstanceSlots(Reflect.field(save.data, 'maxInstanceSlots'));
+		}
+		catch (_:Dynamic) {}
+
+		data.maxInstanceSlots = slots;
+		return slots;
+	}
+
+	public static function normalizeMaxInstanceSlots(value:Dynamic):Int
+	{
+		var slots:Int = data.maxInstanceSlots;
+		try
+			slots = Std.int(value)
+		catch (_:Dynamic) {}
+
+		if (slots < MAX_INSTANCE_SLOTS_MIN)
+			slots = MAX_INSTANCE_SLOTS_MIN;
+		else if (slots > MAX_INSTANCE_SLOTS_MAX)
+			slots = MAX_INSTANCE_SLOTS_MAX;
+
+		return slots;
+	}
+	#end
+
 	public static function saveSettings()
 	{
 		syncThemeModeFlags();
 		normalizeFPSCounterPrefs();
+		#if windows
+		data.maxInstanceSlots = normalizeMaxInstanceSlots(data.maxInstanceSlots);
+		#end
 
 		for (key in Reflect.fields(data))
 			Reflect.setField(FlxG.save.data, key, Reflect.field(data, key));
@@ -362,6 +402,9 @@ class ClientPrefs
 				data.fpsCounterMode = fpsModeFromLegacy(Std.int(Reflect.field(FlxG.save.data, 'fpsDebugLevel')));
 		}
 		normalizeFPSCounterPrefs();
+		#if windows
+		data.maxInstanceSlots = normalizeMaxInstanceSlots(data.maxInstanceSlots);
+		#end
 
 		var storedFramerateMode:Dynamic = Reflect.field(FlxG.save.data, 'framerateMode');
 		if (storedFramerateMode == null)

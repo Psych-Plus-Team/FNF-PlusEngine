@@ -19,6 +19,22 @@ class LegacySettingsSubState extends BaseOptionsMenu
 			'instantWindowClose', BOOL);
 		addOption(option);
 
+		#if windows
+		var option:Option = new Option('Max Instance Slots',
+			'Maximum Plus Engine windows that can run at the same time. Changes apply the next time you open the engine.',
+			'maxInstanceSlots', INT);
+		option.minValue = ClientPrefs.MAX_INSTANCE_SLOTS_MIN;
+		option.maxValue = ClientPrefs.MAX_INSTANCE_SLOTS_MAX;
+		option.changeValue = 1;
+		option.scrollSpeed = 4;
+		option.displayFormat = '%v slot(s)';
+		option.onChange = function()
+		{
+			ClientPrefs.data.maxInstanceSlots = ClientPrefs.normalizeMaxInstanceSlots(ClientPrefs.data.maxInstanceSlots);
+		};
+		addOption(option);
+		#end
+
 		var option:Option = new Option('Use Psych Freeplay', 'If checked, uses the classic Psych Engine Freeplay state instead of the PlusEngine Freeplay.',
 			'usePsychFreeplay', BOOL);
 		addOption(option);
