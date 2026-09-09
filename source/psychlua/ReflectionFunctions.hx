@@ -3,7 +3,7 @@ package psychlua;
 import Type.ValueType;
 import haxe.Constraints;
 
-import backend.StructurePsychOld;
+import backend.ClassResolver;
 import substates.GameOverSubstate;
 import objects.StrumNote;
 
@@ -18,9 +18,9 @@ class ReflectionFunctions
 
 	static function resolveClass(className:String):Class<Dynamic>
 	{
-		return StructurePsychOld.resolveClass(className);
+		return ClassResolver.resolveClass(className);
 	}
-	
+
 	public static function implement(funk:FunkinLua)
 	{
 		var lua:State = funk.lua;
@@ -46,7 +46,7 @@ class ReflectionFunctions
 				FunkinLua.luaTrace('getPropertyFromClass: Class $classVar not found', false, false, FlxColor.RED);
 				return null;
 			}
-			variable = StructurePsychOld.resolveClientPrefsDataProperty(classVar, variable);
+			variable = ClassResolver.resolveClientPrefsDataProperty(classVar, variable);
 
 			var split:Array<String> = variable.split('.');
 			if(split.length > 1) {
@@ -65,7 +65,7 @@ class ReflectionFunctions
 				FunkinLua.luaTrace('setPropertyFromClass: Class $classVar not found', false, false, FlxColor.RED);
 				return null;
 			}
-			variable = StructurePsychOld.resolveClientPrefsDataProperty(classVar, variable);
+			variable = ClassResolver.resolveClientPrefsDataProperty(classVar, variable);
 
 			var split:Array<String> = variable.split('.');
 			if(split.length > 1) {
@@ -114,7 +114,7 @@ class ReflectionFunctions
 							var propName:String = cast variable;
 							if (propName == 'x' || propName == 'y')
 							{
-								var renderedPoint = LuaModchart.getRenderedStrumPosition(cast member);
+								var renderedPoint = ModchartFunctions.getRenderedStrumPosition(cast member);
 								if (renderedPoint != null)
 									return propName == 'x' ? renderedPoint.x : renderedPoint.y;
 							}
@@ -234,7 +234,7 @@ class ReflectionFunctions
 					if(shouldDestroy && obj != null) obj.destroy();
 			}
 		});
-		
+
 		Lua_helper.add_callback(lua, "callMethod", function(funcToRun:String, ?args:Array<Dynamic>) {
 			var parent:Dynamic = PlayState.instance;
 			var split:Array<String> = funcToRun.split('.');
@@ -244,7 +244,7 @@ class ReflectionFunctions
 				funcToRun = split.join('.').trim();
 				parent = varParent;
 			}
-			
+
 			if(funcToRun.length > 0) {
 				return callMethodFromObject(parent, funcToRun, parseInstances(args));
 			}
@@ -261,7 +261,7 @@ class ReflectionFunctions
 			{
 				if(args == null) args = [];
 				var myType:Dynamic = resolveClass(className);
-		
+
 				if(myType == null)
 				{
 					FunkinLua.luaTrace('createInstance: Class $className not found', false, false, FlxColor.RED);
@@ -311,7 +311,7 @@ class ReflectionFunctions
 	}
 	public static function parseInstances(arg:Dynamic):Dynamic {
 		if (arg == null) return null;
-		
+
 		if (Std.isOfType(arg, Array)) {
 			return parseInstanceArray(arg);
 		} else {

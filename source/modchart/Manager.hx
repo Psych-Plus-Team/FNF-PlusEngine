@@ -7,7 +7,7 @@ import haxe.ds.StringMap;
 import haxe.ds.Vector;
 import modchart.backend.core.Node.NodeFunction;
 import modchart.engine.events.types.CallbackEvent;
-import psychlua.LuaUtils;
+import psychlua.backend.LuaUtils;
 
 using StringTools;
 

@@ -3,11 +3,11 @@ package backend;
 import flixel.FlxSubState;
 import debug.TraceDisplay;
 #if HSCRIPT_ALLOWED
-import psychlua.HScript;
+import psychlua.backend.HScript;
 import crowplexus.hscript.Expr.Error as IrisError;
 import crowplexus.hscript.Printer;
 #end
-import psychlua.LuaUtils;
+import psychlua.backend.LuaUtils;
 #if sys
 import sys.FileSystem;
 #end
@@ -62,7 +62,7 @@ class MusicBeatSubstate extends BaseMusicBeatSubstate
 		super.create();
 		#if (HSCRIPT_ALLOWED && MODS_ALLOWED && sys)
 		// Skip companion for CustomSubstate (Lua-driven substates handle their own scripts)
-		if (!(this is psychlua.CustomSubstate) && MusicBeatState.stateScriptOverridesEnabled())
+		if (!(this is psychlua.backend.CustomSubstate) && MusicBeatState.stateScriptOverridesEnabled())
 			_loadCompanionScript();
 		#end
 

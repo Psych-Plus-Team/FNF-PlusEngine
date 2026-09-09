@@ -43,8 +43,8 @@ class ScriptGlobals {
 		'objects.Note',
 		'objects.NoteSplash',
 		'objects.StrumNote',
-		'psychlua.CustomSubstate',
-		'psychlua.ModchartSprite',
+		'psychlua.backend.CustomSubstate',
+		'psychlua.backend.ModchartSprite',
 		'scripting.ScriptBytes',
 		'scripting.ScriptDraw',
 		'scripting.ScriptError',
@@ -105,7 +105,7 @@ class ScriptGlobals {
 		'lime.math.Vector2'
 	];
 
-	public static final buildTarget:String = psychlua.LuaUtils.getBuildTarget();
+	public static final buildTarget:String = psychlua.backend.LuaUtils.getBuildTarget();
 
 	public static function register():Void {
 		registeredCount = 0;
@@ -164,16 +164,16 @@ class ScriptGlobals {
 		set('getModSetting', function(saveTag:String, ?modName:String):Dynamic {
 			if (modName == null)
 				modName = mod;
-			return psychlua.LuaUtils.getModSetting(saveTag, modName);
+			return psychlua.backend.LuaUtils.getModSetting(saveTag, modName);
 		});
 
 		sharedInput(set);
 
-		set('Function_Stop', psychlua.LuaUtils.Function_Stop);
-		set('Function_Continue', psychlua.LuaUtils.Function_Continue);
-		set('Function_StopLua', psychlua.LuaUtils.Function_StopLua);
-		set('Function_StopHScript', psychlua.LuaUtils.Function_StopHScript);
-		set('Function_StopAll', psychlua.LuaUtils.Function_StopAll);
+		set('Function_Stop', psychlua.backend.LuaUtils.Function_Stop);
+		set('Function_Continue', psychlua.backend.LuaUtils.Function_Continue);
+		set('Function_StopLua', psychlua.backend.LuaUtils.Function_StopLua);
+		set('Function_StopHScript', psychlua.backend.LuaUtils.Function_StopHScript);
+		set('Function_StopAll', psychlua.backend.LuaUtils.Function_StopAll);
 	}
 
 	public static function getVar(name:String):Dynamic

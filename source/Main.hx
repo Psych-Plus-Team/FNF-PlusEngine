@@ -17,7 +17,7 @@ import lime.app.Application;
 import states.TitleState;
 #if HSCRIPT_ALLOWED
 import crowplexus.iris.Iris;
-import psychlua.HScript.HScriptInfos;
+import psychlua.backend.HScript.HScriptInfos;
 #end
 import openfl.events.KeyboardEvent;
 import flixel.util.FlxTimer;
@@ -186,7 +186,7 @@ class Main extends Sprite
 		scripting.ScriptBackend.setup();
 		#end
 
-		#if LUA_ALLOWED Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(psychlua.CallbackHandler.call)); #end
+		#if LUA_ALLOWED Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(psychlua.backend.CallbackHandler.call)); #end
 		Controls.instance = new Controls();
 		ClientPrefs.loadDefaultKeys();
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end

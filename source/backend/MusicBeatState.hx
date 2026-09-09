@@ -5,12 +5,12 @@ import flixel.FlxState;
 import objects.GlobalLoadingOverlay;
 import backend.ui.md3.NetworkCheckToast;
 #if HSCRIPT_ALLOWED
-import psychlua.HScript;
+import psychlua.backend.HScript;
 import crowplexus.hscript.Expr.Error as IrisError;
 import crowplexus.hscript.Printer;
 import crowplexus.iris.Iris;
 #end
-import psychlua.LuaUtils;
+import psychlua.backend.LuaUtils;
 #if sys
 import sys.FileSystem;
 #end

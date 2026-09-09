@@ -3,8 +3,8 @@ package psychlua;
 #if LUA_ALLOWED
 import backend.MusicBeatState;
 import flixel.util.FlxColor;
-import psychlua.actorframe.ActorFrameBackend;
-import psychlua.actorframe.ActorFrameLuaPrelude;
+import psychlua.backend.actorframe.ActorFrameBackend;
+import psychlua.backend.actorframe.ActorFrameLuaPrelude;
 
 class ActorFrameFunctions
 {

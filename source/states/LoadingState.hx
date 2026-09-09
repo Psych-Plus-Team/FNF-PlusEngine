@@ -16,7 +16,7 @@ import objects.GlobalLoadingOverlay;
 import objects.Note;
 import objects.NoteSplash;
 #if HSCRIPT_ALLOWED
-import psychlua.HScript;
+import psychlua.backend.HScript;
 import crowplexus.iris.Iris;
 import crowplexus.hscript.Expr.Error as IrisError;
 import crowplexus.hscript.Printer;

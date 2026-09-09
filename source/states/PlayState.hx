@@ -51,9 +51,10 @@ import slushithings.windows.WindowsAPI;
 #end
 #if LUA_ALLOWED
 import psychlua.*;
+import psychlua.backend.*;
 #else
-import psychlua.LuaUtils;
-import psychlua.HScript;
+import psychlua.backend.LuaUtils;
+import psychlua.backend.HScript;
 #end
 #if mobile
 import mobile.backend.StorageUtil;
@@ -63,7 +64,7 @@ import mobile.backend.MobileScaleMode;
 import modchart.Manager;
 #end
 #if HSCRIPT_ALLOWED
-import psychlua.HScript.HScriptInfos;
+import psychlua.backend.HScript.HScriptInfos;
 import crowplexus.iris.Iris;
 import crowplexus.hscript.Expr.Error as IrisError;
 import crowplexus.hscript.Printer;
@@ -482,7 +483,7 @@ class PlayState extends MusicBeatState
 	public static var instance:PlayState;
 
 	#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
-	private var luaDebugGroup:FlxTypedGroup<psychlua.DebugLuaText>;
+	private var luaDebugGroup:FlxTypedGroup<psychlua.backend.DebugLuaText>;
 	#end
 
 	public var introSoundsSuffix:String = '';
@@ -637,7 +638,7 @@ class PlayState extends MusicBeatState
 		Conductor.bpm = SONG.bpm;
 
 		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
-		luaDebugGroup = new FlxTypedGroup<psychlua.DebugLuaText>();
+		luaDebugGroup = new FlxTypedGroup<psychlua.backend.DebugLuaText>();
 		luaDebugGroup.cameras = [camOther];
 		add(luaDebugGroup);
 		#end
@@ -1500,7 +1501,7 @@ class PlayState extends MusicBeatState
 	#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 	public function addTextToDebug(text:String, color:FlxColor)
 	{
-		var debugPanel:psychlua.DebugLuaText = null;
+		var debugPanel:psychlua.backend.DebugLuaText = null;
 		for (spr in luaDebugGroup.members)
 		{
 			if (spr != null)
@@ -1511,7 +1512,7 @@ class PlayState extends MusicBeatState
 		}
 		if (debugPanel == null)
 		{
-			debugPanel = new psychlua.DebugLuaText();
+			debugPanel = new psychlua.backend.DebugLuaText();
 			luaDebugGroup.add(debugPanel);
 		}
 		debugPanel.pushMessage(text, color);
@@ -2041,7 +2042,7 @@ class PlayState extends MusicBeatState
 							if (FlxG.sound.music != null && !startingSong && canResync)
 								resyncVocals();
 							#if LUA_ALLOWED
-							psychlua.LuaVideo.resumeAll();
+							psychlua.VideoFunctions.resumeAll();
 							#end
 							paused = false;
 							resumingWithCountdown = false;
@@ -2093,7 +2094,7 @@ class PlayState extends MusicBeatState
 	inline function getRenderedStrumCenterX(strum:StrumNote):Float
 	{
 		#if (MODCHARTS_NOTITG_ALLOWED && LUA_ALLOWED)
-		final renderedPoint = LuaModchart.getRenderedStrumPosition(strum);
+		final renderedPoint = ModchartFunctions.getRenderedStrumPosition(strum);
 		if (renderedPoint != null)
 			return renderedPoint.x + Manager.ARROW_SIZEDIV2;
 		#end
@@ -2103,7 +2104,7 @@ class PlayState extends MusicBeatState
 	inline function getRenderedStrumTopY(strum:StrumNote):Float
 	{
 		#if (MODCHARTS_NOTITG_ALLOWED && LUA_ALLOWED)
-		final renderedPoint = LuaModchart.getRenderedStrumPosition(strum);
+		final renderedPoint = ModchartFunctions.getRenderedStrumPosition(strum);
 		if (renderedPoint != null)
 			return renderedPoint.y;
 		#end
@@ -3094,7 +3095,7 @@ class PlayState extends MusicBeatState
 
 			// Reanudar todos los videos de Lua
 			#if LUA_ALLOWED
-			psychlua.LuaVideo.resumeAll();
+			psychlua.VideoFunctions.resumeAll();
 			#end
 
 			callOnScripts('onResume');
@@ -3795,7 +3796,7 @@ class PlayState extends MusicBeatState
 
 		// Pausar todos los videos de Lua
 		#if LUA_ALLOWED
-		psychlua.LuaVideo.pauseAll();
+		psychlua.VideoFunctions.pauseAll();
 		#end
 
 		if (!cpuControlled)
@@ -6626,7 +6627,7 @@ class PlayState extends MusicBeatState
 	{
 		// Limpiar todos los videos de Lua
 		#if LUA_ALLOWED
-		psychlua.LuaVideo.clearAll();
+		psychlua.VideoFunctions.clearAll();
 		#end
 
 		// Restaurar el estado original de la ventana al salir de PlayState
@@ -6643,7 +6644,7 @@ class PlayState extends MusicBeatState
 			#end
 		}
 
-		if (psychlua.CustomSubstate.instance != null)
+		if (psychlua.backend.CustomSubstate.instance != null)
 		{
 			closeSubState();
 			resetSubState();

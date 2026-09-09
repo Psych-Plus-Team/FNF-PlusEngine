@@ -23,7 +23,7 @@ class ScriptedBridgeMacro {
 		{base: 'objects.Alphabet'},
 		{base: 'objects.Bar'},
 		{base: 'objects.HealthIcon'},
-		{base: 'psychlua.ModchartSprite'}
+		{base: 'psychlua.backend.ModchartSprite'}
 	];
 
 	static inline var PACK:String = 'scripting.bridges';

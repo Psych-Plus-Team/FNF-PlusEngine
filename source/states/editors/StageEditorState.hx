@@ -9,7 +9,7 @@ import flixel.util.FlxDestroyUtil;
 import openfl.net.FileReference;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
-import psychlua.ModchartSprite;
+import psychlua.backend.ModchartSprite;
 import flash.net.FileFilter;
 import states.editors.content.Prompt;
 import states.editors.content.PreloadListSubState;

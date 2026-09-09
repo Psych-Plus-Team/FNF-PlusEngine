@@ -210,8 +210,8 @@ class HScript {
 		set('Character', objects.Character);
 		set('Alphabet', objects.Alphabet);
 		set('Note', objects.Note);
-		set('CustomSubstate', psychlua.CustomSubstate);
-		set('ModchartSprite', psychlua.ModchartSprite);
+		set('CustomSubstate', psychlua.backend.CustomSubstate);
+		set('ModchartSprite', psychlua.backend.ModchartSprite);
 		#if (!flash && sys)
 		set('FlxRuntimeShader', flixel.addons.display.FlxRuntimeShader);
 		#end

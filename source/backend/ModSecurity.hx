@@ -144,8 +144,8 @@ class ModSecurity {
 		// a mod that could write to it could replace any engine callback for every script at once.
 		"Lua_helper" => true,
 		"psychlua.Lua_helper" => true,
-		"psychlua.FunkinLua" => true,
-		"psychlua.HScript" => true,
+		"psychlua.backend.FunkinLua" => true,
+		"psychlua.backend.HScript" => true,
 		"psychlua.ReflectionFunctions" => true,
 		"psychlua.Convert" => true,
 		// Performance overlay + its native hardware helpers. Mods have no business
