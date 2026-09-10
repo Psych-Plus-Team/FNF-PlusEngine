@@ -25,7 +25,8 @@ class ModchartFunctions
 		lane: 0,
 		player: 0,
 		isTapArrow: false,
-		straightHolds: false
+		straightHolds: false,
+		isHoldBody: false
 	};
 
 	public static function getRenderedStrumPosition(strum:FlxSprite, ?field:Dynamic = -1):Null<FlxPoint>
@@ -73,6 +74,7 @@ class ModchartFunctions
 		__luaArrowData.player = player;
 		__luaArrowData.hitten = Adapter.instance.arrowHit(strum);
 		__luaArrowData.isTapArrow = isTapArrow;
+		__luaArrowData.isHoldBody = false;
 
 		final arrowPosition = new openfl.geom.Vector3D(Adapter.instance.getDefaultReceptorX(lane, player) + Manager.ARROW_SIZEDIV2,
 			Adapter.instance.getDefaultReceptorY(lane, player) + Manager.ARROW_SIZEDIV2, 0);
@@ -151,6 +153,38 @@ class ModchartFunctions
 			}
 
 			Manager.instance.setRawValue(name, value, player, resolveFieldIndex(field, -1));
+		});
+
+		Lua_helper.add_callback(lua, "resetModsNow", function(?player:Int = -1, ?field:Dynamic = -1)
+		{
+			if (Manager.instance == null)
+				return;
+
+			if (isNamedPlayfield(field))
+			{
+				final playfield = requireNamedPlayfield(field, 'resetModsNow');
+				if (playfield != null)
+					playfield.resetModsNow(player);
+				return;
+			}
+
+			Manager.instance.resetModsNow(player, resolveFieldIndex(field, -1));
+		});
+
+		Lua_helper.add_callback(lua, "resetMods", function(beat:Float, ?player:Int = -1, ?field:Dynamic = -1)
+		{
+			if (Manager.instance == null)
+				return;
+
+			if (isNamedPlayfield(field))
+			{
+				final playfield = requireNamedPlayfield(field, 'resetMods');
+				if (playfield != null)
+					playfield.resetMods(beat, player);
+				return;
+			}
+
+			Manager.instance.resetMods(beat, player, resolveFieldIndex(field, -1));
 		});
 
 		// Get modifier raw value

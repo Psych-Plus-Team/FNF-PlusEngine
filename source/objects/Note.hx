@@ -111,7 +111,6 @@ class Note extends FlxSprite
 	public static var swagWidth:Float = 160 * 0.7;
 	public static var colArray:Array<String> = ['purple', 'blue', 'green', 'red'];
 	public static var defaultNoteSkin(default, never):String = 'noteSkins/NOTE_assets';
-	public static var noRgbNoteSkin(default, never):String = 'noteSkinsNoRGB/NOTE_assets';
 
 	public var noteSplashData:NoteSplashData = {
 		disabled: false,
@@ -198,17 +197,6 @@ class Note extends FlxSprite
 
 	public function defaultRGB()
 	{
-		if (!ClientPrefs.data.noteRGB)
-		{
-			if (colorSwap == null)
-				colorSwap = new ColorSwap();
-			applyHSVToColorSwap(colorSwap, noteData);
-			if (rgbShader != null)
-				rgbShader.enabled = false;
-			shader = colorSwap.shader;
-			return;
-		}
-
 		if (rgbShader == null)
 			return;
 
@@ -304,13 +292,6 @@ class Note extends FlxSprite
 			rgbShader = new RGBShaderReference(this, initializeGlobalRGBShader(noteData));
 			if (PlayState.SONG != null && PlayState.SONG.disableNoteRGB)
 				rgbShader.enabled = false;
-			if (!ClientPrefs.data.noteRGB)
-			{
-				colorSwap = new ColorSwap();
-				applyHSVToColorSwap(colorSwap, noteData);
-				rgbShader.enabled = false;
-				shader = colorSwap.shader;
-			}
 			texture = '';
 
 			x += swagWidth * (noteData);
@@ -440,25 +421,6 @@ class Note extends FlxSprite
 			usePixel = pixel;
 		var arr:Array<FlxColor> = getPaletteFrom(usePixel ? ClientPrefs.data.arrowRGBPixel : ClientPrefs.data.arrowRGB, colorIndex);
 
-		if (!ClientPrefs.data.noteRGB)
-		{
-			var baseArr:Array<FlxColor> = getPaletteFrom(usePixel ? ClientPrefs.defaultData.arrowRGBPixel : ClientPrefs.defaultData.arrowRGB, colorIndex);
-			var hsvArr:Array<Float> = getNoteHSV(colorIndex);
-			if (baseArr != null)
-			{
-				var legacy:Array<FlxColor> = [];
-				for (i in 0...3)
-				{
-					var baseColor:FlxColor = baseArr[i];
-					var hue:Int = FlxMath.wrap(Math.round(baseColor.hue + hsvArr[0]), 0, 360);
-					var sat:Float = FlxMath.bound(baseColor.saturation + (hsvArr[1] / 100), 0, 1);
-					var bright:Float = FlxMath.bound(baseColor.brightness * (1 + (hsvArr[2] / 100)), 0, 1);
-					legacy.push(FlxColor.fromHSB(hue, sat, bright));
-				}
-				return legacy;
-			}
-		}
-
 		if (arr == null)
 			arr = getPaletteFrom(usePixel ? ClientPrefs.defaultData.arrowRGBPixel : ClientPrefs.defaultData.arrowRGB, colorIndex);
 		if (arr == null)
@@ -565,24 +527,8 @@ class Note extends FlxSprite
 		if (animName != null)
 			animation.play(animName, true);
 
-		// Detectar si es NotITG y bloquear el shader
-		if (skin != null && skin.toLowerCase().contains('notitg'))
-		{
-			if (rgbShader != null)
-			{
-				rgbShader.forceDisabled = true;
-				rgbShader.enabled = false;
-			}
-			shader = null;
-		}
-		else
-		{
-			// Desbloquear shader para skins normales
-			if (rgbShader != null)
-				rgbShader.forceDisabled = false;
-			if (!ClientPrefs.data.noteRGB && colorSwap != null)
-				shader = colorSwap.shader;
-		}
+		if (rgbShader != null)
+			rgbShader.forceDisabled = false;
 	}
 
 	public static function getNoteSkinPostfix()
@@ -606,12 +552,8 @@ class Note extends FlxSprite
 
 	public static function getDefaultNoteSkinPath(?pixel:Null<Bool>):String
 	{
-		var preferred:String = ClientPrefs.data.noteRGB ? defaultNoteSkin : noRgbNoteSkin;
-		var fallback:String = ClientPrefs.data.noteRGB ? noRgbNoteSkin : defaultNoteSkin;
-		if (noteSkinPathExists(preferred, pixel))
-			return preferred;
-		if (noteSkinPathExists(fallback, pixel))
-			return fallback;
+		if (noteSkinPathExists(defaultNoteSkin, pixel))
+			return defaultNoteSkin;
 		return defaultNoteSkin;
 	}
 

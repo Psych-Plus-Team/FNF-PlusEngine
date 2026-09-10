@@ -42,11 +42,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		}
 
 		// options
-		var noteRgbOption:Option = new Option('Use Note RGB', 'If enabled, notes use RGB palette colors. If disabled, note colors use HSL offsets.',
-			'noteRGB', BOOL);
-		addOption(noteRgbOption);
-		noteRgbOption.onChange = onChangeNoteRGBMode;
-
 		var noteSkins:Array<String> = getNoteSkinsList();
 		if (noteSkins.length > 0)
 		{
@@ -316,15 +311,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		});
 	}
 
-	function onChangeNoteRGBMode()
-	{
-		Note.globalRgbShaders = [];
-		refreshNoteSkinOptionList();
-		refreshSplashSkinOptionList();
-		onChangeNoteSkin();
-		onChangeSplashSkin();
-	}
-
 	function changeNoteSkin(note:StrumNote)
 	{
 		var skin:String = Note.resolveNoteSkinPath(null, PlayState.isPixelStage);
@@ -337,19 +323,15 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 
 	function getNoteSkinsList():Array<String>
 	{
-		var preferred:String = ClientPrefs.data.noteRGB ? 'images/noteSkins/list.txt' : 'images/noteSkinsNoRGB/list.txt';
-		var fallback:String = ClientPrefs.data.noteRGB ? 'images/noteSkinsNoRGB/list.txt' : 'images/noteSkins/list.txt';
-		return buildSkinOptionList(preferred, fallback, ClientPrefs.defaultData.noteSkin);
+		return buildSkinOptionList('images/noteSkins/list.txt', ClientPrefs.defaultData.noteSkin);
 	}
 
 	function getSplashSkinsList():Array<String>
 	{
-		var preferred:String = ClientPrefs.data.noteRGB ? 'images/noteSplashes/list.txt' : 'images/noteSplashesNoRGB/list.txt';
-		var fallback:String = ClientPrefs.data.noteRGB ? 'images/noteSplashesNoRGB/list.txt' : 'images/noteSplashes/list.txt';
-		return buildSkinOptionList(preferred, fallback, ClientPrefs.defaultData.splashSkin);
+		return buildSkinOptionList('images/noteSplashes/list.txt', ClientPrefs.defaultData.splashSkin);
 	}
 
-	function buildSkinOptionList(preferredPath:String, fallbackPath:String, defaultValue:String):Array<String>
+	function buildSkinOptionList(preferredPath:String, defaultValue:String):Array<String>
 	{
 		var list:Array<String> = [];
 		addSkinOption(list, defaultValue);
@@ -357,13 +339,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		var preferred:Array<String> = Mods.mergeAllTextsNamed(preferredPath);
 		for (value in preferred)
 			addSkinOption(list, value);
-
-		if (list.length <= 1)
-		{
-			var fallback:Array<String> = Mods.mergeAllTextsNamed(fallbackPath);
-			for (value in fallback)
-				addSkinOption(list, value);
-		}
 		return list;
 	}
 

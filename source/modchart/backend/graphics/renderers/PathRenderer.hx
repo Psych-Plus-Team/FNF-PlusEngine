@@ -51,7 +51,16 @@ final class PathRenderer extends BaseRenderer<FlxSprite> {
 
 	// Scratch objects reused every iteration to avoid per-sample allocations.
 	final _scratch:Vector3 = new Vector3();
-	final _paramBuf:ArrowData = {hitTime: 0, distance: 0, sourceTime: 0, lane: 0, player: 0, isTapArrow: true, straightHolds: false};
+	final _paramBuf:ArrowData = {
+		hitTime: 0,
+		distance: 0,
+		sourceTime: 0,
+		lane: 0,
+		player: 0,
+		isTapArrow: true,
+		straightHolds: false,
+		isHoldBody: false
+	};
 
 	public function updateTris(divisions:Int) {
 		if (divisions == __lastDivisions)

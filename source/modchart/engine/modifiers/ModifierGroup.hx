@@ -76,6 +76,10 @@ final class ModifierGroup {
 	@:noCompletion private var __modifierCount:Int = 0;
 	@:noCompletion private var __sortedIDs:Vector<String> = new Vector<String>(32);
 	@:noCompletion private var __idCount:Int = 0;
+	@:noCompletion private var __modSplineActiveID:Int = 0;
+	@:noCompletion private var __knownPercentIDs:Vector<Int> = new Vector<Int>(256);
+	@:noCompletion private var __knownPercentNames:Vector<String> = new Vector<String>(256);
+	@:noCompletion private var __knownPercentCount:Int = 0;
 	public var modifierCount(get, never):Int;
 	inline function get_modifierCount():Int return __modifierCount;
 
@@ -95,6 +99,7 @@ final class ModifierGroup {
 		// Pre-allocate reusable args struct to avoid 1 heap alloc per getPath() call
 		__cachedArgs = {songTime: 0, hitTime: 0, distance: 0, sourceTime: 0, curBeat: 0};
 		__cachedStraightArgs = {songTime: 0, hitTime: 0, distance: 0, sourceTime: 0, curBeat: 0};
+		@:privateAccess __modSplineActiveID = percents.__hashKey('modSpline');
 
 		__loadModifiers();
 	}
@@ -140,6 +145,7 @@ final class ModifierGroup {
 		args.player = data.player;
 		args.isTapArrow = data.isTapArrow;
 		args.straightHolds = data.straightHolds;
+		args.isHoldBody = data.isHoldBody;
 
 		final straightArgs = __cachedStraightArgs;
 		straightArgs.songTime = songPos;
@@ -151,6 +157,7 @@ final class ModifierGroup {
 		straightArgs.player = data.player;
 		straightArgs.isTapArrow = data.isTapArrow;
 		straightArgs.straightHolds = data.straightHolds;
+		straightArgs.isHoldBody = data.isHoldBody;
 
 		// sorta optimizations
 		final mods = __sortedModifiers;
@@ -214,6 +221,8 @@ final class ModifierGroup {
 	// Note: __hashKey in PercentArray is now case-insensitive, so no toLowerCase() needed.
 	public inline function setPercent(name:String, value:Float, player:Int = -1) {
 		final id = @:privateAccess percents.__hashKey(name);
+		final lowerName = name.toLowerCase();
+		__rememberPercent(id, lowerName);
 		final possiblePercs = percents.getUnsafe(id);
 		final generate = possiblePercs == null;
 		final percs = generate ? __getPercentTemplate() : possiblePercs;
@@ -229,6 +238,9 @@ final class ModifierGroup {
 		// if the percent list already was generated, we dont need to set it again
 		if (generate)
 			percents.setUnsafe(id, percs);
+
+		if (lowerName.indexOf('spline') == 0 && lowerName != 'modspline')
+			__setUnsafe(__modSplineActiveID, 1, player);
 	}
 
 	public inline function getPercent(name:String, player:Int):Float {
@@ -242,6 +254,25 @@ final class ModifierGroup {
 	public inline function setRawValue(name:String, value:Float, player:Int = -1) setPercent(name, value, player);
 
 	public inline function getRawValue(name:String, player:Int) return getPercent(name, player);
+
+	public function resetPercents(player:Int = -1):Void {
+		for (i in 0...__knownPercentCount) {
+			final id = __knownPercentIDs[i];
+			final percs = percents.getUnsafe(id);
+			if (percs == null)
+				continue;
+
+			final value = __getDefaultPercent(__knownPercentNames[i]);
+			if (player == -1)
+				for (p in 0...percs.length)
+					percs[p] = value;
+			else if (player >= 0 && player < percs.length)
+				percs[player] = value;
+		}
+
+		if (__modSplineActiveID != 0)
+			__setUnsafe(__modSplineActiveID, 0, player);
+	}
 
 	inline private function __getUnsafe(id:Int, player:Int) {
 		final percs = percents.getUnsafe(id);
@@ -325,5 +356,94 @@ final class ModifierGroup {
 
 	inline private function __findID(str:String) {
 		@:privateAccess percents.__hashKey(str.toLowerCase());
+	}
+
+	function __rememberPercent(id:Int, lowerName:String):Void {
+		for (i in 0...__knownPercentCount)
+			if (__knownPercentIDs[i] == id)
+				return;
+
+		if (__knownPercentCount >= __knownPercentIDs.length) {
+			final oldIDs = __knownPercentIDs.copy();
+			final oldNames = __knownPercentNames.copy();
+			__knownPercentIDs = new Vector<Int>(oldIDs.length + 128);
+			__knownPercentNames = new Vector<String>(oldNames.length + 128);
+			for (i in 0...oldIDs.length) {
+				__knownPercentIDs[i] = oldIDs[i];
+				__knownPercentNames[i] = oldNames[i];
+			}
+		}
+
+		__knownPercentIDs[__knownPercentCount] = id;
+		__knownPercentNames[__knownPercentCount] = lowerName;
+		__knownPercentCount++;
+	}
+
+	function __getDefaultPercent(name:String):Float {
+		return switch (name) {
+			case 'xmod' | 'scale' | 'scalex' | 'scaley' | 'alpha' | 'wavemult':
+				1;
+			case 'beatspeed' | 'beatxspeed' | 'beatyspeed' | 'beatzspeed':
+				1;
+			case 'bumpymult' | 'bumpyxmult' | 'bumpyymult' | 'bumpyzmult'
+				| 'bumpyanglemult' | 'bumpyanglexmult' | 'bumpyangleymult' | 'bumpyanglezmult':
+				1;
+			case 'suddenstart' | 'hiddenstart':
+				5;
+			case 'suddenend' | 'hiddenend':
+				3;
+			case 'suddenglow' | 'hiddenglow':
+				1;
+			case 'spawntime':
+				2000;
+			case 'carouselstart' | 'carouselend':
+				Math.NaN;
+			default:
+				if (__isXmodLane(name) || __isScaleLane(name) || __isAlphaLane(name) || __isBumpyMultLane(name))
+					1;
+				else
+					0;
+		}
+	}
+
+	inline function __isXmodLane(name:String):Bool
+		return name.length > 4 && name.indexOf('xmod') == 0 && __isUnsignedInt(name.substr(4));
+
+	function __isScaleLane(name:String):Bool {
+		if (name.indexOf('scale') != 0)
+			return false;
+
+		var suffix = name.substr(5);
+		if (suffix.length == 0)
+			return false;
+		if (suffix.charAt(0) == 'x' || suffix.charAt(0) == 'y')
+			suffix = suffix.substr(1);
+		return suffix.length > 0 && __isUnsignedInt(suffix);
+	}
+
+	inline function __isAlphaLane(name:String):Bool
+		return name.length > 5 && name.indexOf('alpha') == 0 && __isUnsignedInt(name.substr(5));
+
+	function __isBumpyMultLane(name:String):Bool {
+		if (name.indexOf('bumpy') != 0 || name.length <= 9)
+			return false;
+		if (name.lastIndexOf('mult') != name.length - 4)
+			return false;
+
+		var middle = name.substr(5, name.length - 9);
+		if (middle.indexOf('angle') == 0)
+			middle = middle.substr(5);
+		if (middle.length > 0 && (middle.charAt(0) == 'x' || middle.charAt(0) == 'y' || middle.charAt(0) == 'z'))
+			middle = middle.substr(1);
+		return middle.length > 0 && __isUnsignedInt(middle);
+	}
+
+	function __isUnsignedInt(value:String):Bool {
+		for (i in 0...value.length) {
+			final c = StringTools.unsafeCodeAt(value, i);
+			if (c < 48 || c > 57)
+				return false;
+		}
+		return value.length > 0;
 	}
 }

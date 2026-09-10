@@ -253,9 +253,29 @@ final class HoldRenderer extends BaseRenderer<FlxSprite> {
 	var __lastPlayer:Int = -1;
 
 	/** Pre-allocated ArrowData buffer reused by getArrowParams() to avoid per-segment heap allocation. */
-	final _holdArrowBuf:ArrowData = {hitTime: 0, distance: 0, sourceTime: 0, lane: 0, player: 0, hitten: false, isTapArrow: false, straightHolds: false};
+	final _holdArrowBuf:ArrowData = {
+		hitTime: 0,
+		distance: 0,
+		sourceTime: 0,
+		lane: 0,
+		player: 0,
+		hitten: false,
+		isTapArrow: false,
+		straightHolds: false,
+		isHoldBody: true
+	};
 	/** Pre-allocated ArrowData buffer for parentData (rotate path) to avoid per-hold heap allocation. */
-	final _parentDataBuf:ArrowData = {hitTime: 0, distance: 0, sourceTime: 0, lane: 0, player: 0, hitten: false, isTapArrow: false, straightHolds: false};
+	final _parentDataBuf:ArrowData = {
+		hitTime: 0,
+		distance: 0,
+		sourceTime: 0,
+		lane: 0,
+		player: 0,
+		hitten: false,
+		isTapArrow: false,
+		straightHolds: false,
+		isHoldBody: false
+	};
 	/** Reused path input vectors to avoid allocating basePos.clone() for every getPath call. */
 	final _pathInputA:Vector3 = new Vector3();
 	final _pathInputB:Vector3 = new Vector3();
@@ -343,6 +363,7 @@ final class HoldRenderer extends BaseRenderer<FlxSprite> {
 		_parentDataBuf.hitten = hitten;
 		_parentDataBuf.isTapArrow = true;
 		_parentDataBuf.straightHolds = __straightHolds > 0;
+		_parentDataBuf.isHoldBody = false;
 		final parentData = _parentDataBuf;
 		if (__rotateX != 0 || __rotateY != 0 || __rotateZ != 0) {
 			__parentOutput = parent.getNotePath(copyVec3(basePos, _pathInputA), parentData);
@@ -468,6 +489,7 @@ final class HoldRenderer extends BaseRenderer<FlxSprite> {
 		_holdArrowBuf.hitten = __cachedHoldHitten;
 		_holdArrowBuf.isTapArrow = true;
 		_holdArrowBuf.straightHolds = __straightHolds > 0;
+		_holdArrowBuf.isHoldBody = true;
 		return _holdArrowBuf;
 	}
 

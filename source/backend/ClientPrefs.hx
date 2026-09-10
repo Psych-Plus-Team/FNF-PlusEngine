@@ -55,7 +55,6 @@ import states.TitleState;
 	public var changeWindowBorderColorWithNoteHit:Bool = false; // Changes window border color on note hit (Windows 11 only)
 	#end
 	public var noteSkin:String = 'Default';
-	public var noteRGB:Bool = true;
 	public var splashSkin:String = 'Psych';
 	public var splashAlpha:Float = 0.6;
 	public var colorQuantization:Bool = false; // StepMania-style color quantization

@@ -209,6 +209,27 @@ final class Manager extends FlxBasic
 	}
 
 	/**
+	 * Immediately resets all touched modifiers to their engine defaults.
+	 *
+	 * Most modifiers default to 0. Multipliers and visibility values such as xmod,
+	 * scale and alpha return to 1, while hidden/sudden thresholds keep their native defaults.
+	 */
+	public inline function resetModsNow(player:Int = -1, field:Int = -1)
+	{
+		requestRender();
+		iteratePlayfields((pf) -> pf.resetModsNow(player), field);
+	}
+
+	/**
+	 * Schedules a full modifier reset on a beat.
+	 */
+	public inline function resetMods(beat:Float, player:Int = -1, field:Int = -1)
+	{
+		requestRender();
+		iteratePlayfields((pf) -> pf.resetMods(beat, player), field);
+	}
+
+	/**
 	 * Gets the percent for a specific modifier.
 	 *
 	 * @param name The name of the modifier.

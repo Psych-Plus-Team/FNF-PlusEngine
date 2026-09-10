@@ -20,6 +20,14 @@ class ClassResolver
 		objects.hxcodec.v3_0_0.Video
 	];
 	private static var warnedLegacyUsages:Map<String, Bool> = new Map();
+	private static var resolvedClassCache:Map<String, Class<Dynamic>> = new Map();
+	private static var failedClassCache:Map<String, Bool> = new Map();
+
+	static final packageAliasRules:Array<{oldPrefix:String, newPrefix:String}> = [
+		{oldPrefix: 'psychlua.actorframe.', newPrefix: 'psychlua.backend.actorframe.'},
+		{oldPrefix: 'psychlua.', newPrefix: 'psychlua.backend.'},
+		{oldPrefix: 'backend3D.', newPrefix: 'backend.milkshape.'}
+	];
 
 	static inline function shouldShowDeprecatedWarnings():Bool
 		return ClientPrefs.data.scriptDeprecationWarnings;
@@ -94,6 +102,35 @@ class ClassResolver
 		'VisualsSettingsSubState' => 'options.VisualsSettingsSubState',
 		'GraphicsSettingsSubState' => 'options.GraphicsSettingsSubState',
 		'GameplaySettingsSubState' => 'options.GameplaySettingsSubState',
+		'StructurePsychOld' => 'backend.ClassResolver',
+		'backend.StructurePsychOld' => 'backend.ClassResolver',
+		// ===== PlusEngine psychlua refactor compatibility =====
+		'psychlua.CallbackHandler' => 'psychlua.backend.CallbackHandler',
+		'psychlua.CustomSubstate' => 'psychlua.backend.CustomSubstate',
+		'psychlua.DebugLuaText' => 'psychlua.backend.DebugLuaText',
+		'psychlua.LuaHostContext' => 'psychlua.backend.LuaHostContext',
+		'psychlua.LuaHostKind' => 'psychlua.backend.LuaHostKind',
+		'psychlua.LuaUtils' => 'psychlua.backend.LuaUtils',
+		'psychlua.Mesh3DRenderer' => 'psychlua.backend.Mesh3DRenderer',
+		'psychlua.ModchartAnimateSprite' => 'psychlua.backend.ModchartAnimateSprite',
+		'psychlua.ModchartSprite' => 'psychlua.backend.ModchartSprite',
+		'psychlua.ScriptRegistry' => 'psychlua.backend.ScriptRegistry',
+		'psychlua.ScriptedClass' => 'psychlua.backend.ScriptedClass',
+		'psychlua.ScriptedNativeFactory' => 'psychlua.backend.ScriptedNativeFactory',
+		'psychlua.ScriptedStage' => 'psychlua.backend.ScriptedStage',
+		'psychlua.WindowTweens' => 'psychlua.backend.WindowTweens',
+		'psychlua.actorframe.ActorFrameBackend' => 'psychlua.backend.actorframe.ActorFrameBackend',
+		'psychlua.actorframe.ActorFrameLuaPrelude' => 'psychlua.backend.actorframe.ActorFrameLuaPrelude',
+		'psychlua.actorframe.ActorFrameProxy' => 'psychlua.backend.actorframe.ActorFrameProxy',
+		'psychlua.actorframe.ActorFrameTextureSource' => 'psychlua.backend.actorframe.ActorFrameTextureSource',
+		'psychlua.LegacyCompatFunctions' => 'psychlua.LegacyFunctions',
+		'psychlua.LuaModchart' => 'psychlua.ModchartFunctions',
+		'psychlua.LuaVideo' => 'psychlua.VideoFunctions',
+		'backend3D.MilkShapeAsciiParser' => 'backend.milkshape.MilkShapeAsciiParser',
+		'backend3D.SM3DData' => 'backend.milkshape.SM3DData',
+		'backend3D.SM3DPath' => 'backend.milkshape.SM3DPath',
+		'backend3D.SMCoordinateConverter' => 'backend.milkshape.SMCoordinateConverter',
+		'backend3D.SMModelFile' => 'backend.milkshape.SMModelFile',
 		// ===== hxCodec / hxvlc compatibility for Psych 0.6.x video scripts =====
 		'vlc.MP4Handler' => 'objects.hxcodec.v2_5_0.MP4Handler',
 		'vlc.MP4Sprite' => 'objects.hxcodec.v2_5_0.MP4Sprite',
@@ -159,9 +196,7 @@ class ClassResolver
 		if (variable == null || variable.length < 1)
 			return variable;
 
-		var resolvedClass:String = className;
-		if (classAliasMap.exists(resolvedClass))
-			resolvedClass = classAliasMap.get(resolvedClass);
+		var resolvedClass:String = resolveClassName(className);
 
 		if (resolvedClass != 'backend.ClientPrefs' && resolvedClass != 'ClientPrefs')
 			return variable;
@@ -185,41 +220,97 @@ class ClassResolver
 	 */
 	public static function resolveClass(className:String):Class<Dynamic>
 	{
+		if (className == null || className.length < 1)
+			return null;
+
+		var cached:Class<Dynamic> = resolvedClassCache.get(className);
+		if (cached != null)
+			return cached;
+		if (failedClassCache.exists(className))
+			return null;
+
 		var myClass:Dynamic = safeResolveClass(className);
 
 		// If class not found, try aliases for backwards compatibility
-		if (myClass == null && classAliasMap.exists(className))
+		if (myClass == null)
 		{
-			var newClassName = classAliasMap.get(className);
-			myClass = safeResolveClass(newClassName);
-			if (myClass != null)
+			var newClassName:String = resolveLegacyClassName(className);
+			if (newClassName != null)
 			{
-				warnLegacyLuaUsage(className, newClassName);
+				myClass = safeResolveClass(newClassName);
+				if (myClass != null)
+				{
+					warnLegacyLuaUsage(className, newClassName);
+					#if debug
+					if (shouldShowDeprecatedWarnings())
+						trace('[Compatibility] Redirected "$className" to "$newClassName"');
+					#end
+				}
+			}
+
+			if (myClass == null)
+			{
 				#if debug
-				if (shouldShowDeprecatedWarnings())
-					trace('[Compatibility] Redirected "$className" to "$newClassName"');
+				if (shouldShowDeprecatedWarnings() && !_warnedClasses.exists(className))
+				{
+					trace('[Compatibility] WARNING: Class "$className" not found and no alias exists. This may break old mods.');
+					trace('[Compatibility] If this is a common class, consider adding it to ClassResolver.classAliasMap');
+					_warnedClasses.set(className, true);
+				}
 				#end
+				failedClassCache.set(className, true);
 			}
-			else
-			{
-				#if debug
-				trace('[Compatibility] WARNING: Alias "$className" -> "$newClassName" exists, but target class not found!');
-				#end
-			}
-		}
-		else if (myClass == null)
-		{
-			#if debug
-			if (shouldShowDeprecatedWarnings() && !_warnedClasses.exists(className))
-			{
-				trace('[Compatibility] WARNING: Class "$className" not found and no alias exists. This may break old mods.');
-				trace('[Compatibility] If this is a common class, consider adding it to ClassResolver.classAliasMap');
-				_warnedClasses.set(className, true);
-			}
-			#end
 		}
 
+		if (myClass != null)
+			resolvedClassCache.set(className, cast myClass);
+
 		return myClass;
+	}
+
+	public static function resolveClassName(className:String):String
+	{
+		if (className == null || className.length < 1)
+			return className;
+		if (safeResolveClass(className) != null)
+			return className;
+
+		var newClassName:String = resolveLegacyClassName(className);
+		return newClassName != null ? newClassName : className;
+	}
+
+	static function resolveLegacyClassName(className:String):String
+	{
+		var seen:Map<String, Bool> = new Map();
+		for (newClassName in getLegacyClassCandidates(className))
+		{
+			if (seen.exists(newClassName))
+				continue;
+			seen.set(newClassName, true);
+
+			if (safeResolveClass(newClassName) != null)
+				return newClassName;
+		}
+
+		#if debug
+		if (classAliasMap.exists(className))
+			trace('[Compatibility] WARNING: Alias "$className" -> "${classAliasMap.get(className)}" exists, but target class not found!');
+		#end
+		return null;
+	}
+
+	static function getLegacyClassCandidates(className:String):Array<String>
+	{
+		var aliases:Array<String> = [];
+		if (classAliasMap.exists(className))
+			aliases.push(classAliasMap.get(className));
+
+		for (rule in packageAliasRules)
+		{
+			if (className.startsWith(rule.oldPrefix))
+				aliases.push(rule.newPrefix + className.substr(rule.oldPrefix.length));
+		}
+		return aliases;
 	}
 
 	static inline function safeResolveClass(className:String):Class<Dynamic>

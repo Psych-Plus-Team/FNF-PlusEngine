@@ -66,6 +66,7 @@ final class PlayField extends FlxSprite
 		addModifier('reverse');
 		addModifier('confusion');
 		addModifier('stealth');
+		addModifier('modSpline');
 		addModifier('skew');
 		addModifier('zoom');
 
@@ -96,6 +97,12 @@ final class PlayField extends FlxSprite
 
 	public inline function getRawValue(name:String, player:Int)
 		return modifiers.getRawValue(name, player);
+
+	public inline function resetModsNow(player:Int = -1):Void
+	{
+		events.cancelActiveModEvents(player);
+		modifiers.resetPercents(player);
+	}
 
 	public inline function addModifier(name:String)
 		return modifiers.addModifier(name);
@@ -133,6 +140,9 @@ final class PlayField extends FlxSprite
 	{
 		events.add(event);
 	}
+
+	public inline function resetMods(beat:Float, player:Int = -1):Void
+		callback(beat, (_) -> resetModsNow(player));
 
 	public inline function set(name:String, beat:Float, value:Float, player:Int = -1):Void
 	{
@@ -367,6 +377,7 @@ final class PlayField extends FlxSprite
 		hash = __mixPathHash(hash, data.player);
 		hash = __mixPathHash(hash, data.isTapArrow ? 1 : 0);
 		hash = __mixPathHash(hash, data.straightHolds ? 1 : 0);
+		hash = __mixPathHash(hash, data.isHoldBody ? 1 : 0);
 		hash = __mixPathHash(hash, __quantizePathFloat(posDiff));
 		hash = __mixPathHash(hash, allowVis ? 1 : 0);
 		hash = __mixPathHash(hash, allowPos ? 1 : 0);

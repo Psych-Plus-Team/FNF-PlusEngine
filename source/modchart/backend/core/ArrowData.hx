@@ -12,8 +12,9 @@ final class ArrowData {
 	public var hitten:Bool = false;
 	public var isTapArrow:Bool = false;
 	public var straightHolds:Bool = false;
+	public var isHoldBody:Bool = false;
 
 	public function toString() {
-		return 'ModifierParameters(hitTime: $hitTime, distance: $distance, sourceTime: $sourceTime, lane: $lane, player: $player, hitten: $hitten, isTapArrow: $isTapArrow, straightHolds: $straightHolds)';
+		return 'ModifierParameters(hitTime: $hitTime, distance: $distance, sourceTime: $sourceTime, lane: $lane, player: $player, hitten: $hitten, isTapArrow: $isTapArrow, straightHolds: $straightHolds, isHoldBody: $isHoldBody)';
 	}
 }

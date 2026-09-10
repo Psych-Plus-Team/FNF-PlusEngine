@@ -129,7 +129,7 @@
 	<!-- Force C99 standard for macOS/iOS to fix zlib compilation with Xcode 16.4 -->
 	<haxedef name="HXCPP_CFLAGS" value="-std=c99 -Wno-error=deprecated-non-prototype -Wno-deprecated-declarations -Wno-unused-command-line-argument -Wno-macro-redefined" if="macos || ios" />
 	<haxeflag name="-D" value="no-deprecation-warnings"/>
-	<haxeflag name="--macro" value="include('backend3D')"/>
+	<haxeflag name="--macro" value="include('backend.milkshape')"/>
 	<haxedef name="HXCPP_CFLAGS" value="-Wnull-arithmetic -Wtautological-pointer-compare -Wtrigraphs"/>
 
 
