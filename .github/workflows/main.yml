@@ -450,7 +450,7 @@ jobs:
           path: dist/FNF-PlusEngine-ios.zip
           if-no-files-found: error
 
-    build_linux_x64_opt:
+  build_linux_x64_opt:
     name: Build Linux x64 Opt
     runs-on: ubuntu-24.04
     needs: check_platforms
