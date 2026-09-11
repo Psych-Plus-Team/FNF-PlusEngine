@@ -11,14 +11,27 @@ class ScriptGlobals {
 	static var keepScriptError:Class<ScriptError> = ScriptError;
 	static var keepScriptBytes:Class<ScriptBytes> = ScriptBytes;
 	static var keepScriptDraw:Class<ScriptDraw> = ScriptDraw;
+	static var keepAssetLoader:Class<backend.AssetLoader> = backend.AssetLoader;
 	static var keepABotSpectrum:Class<objects.ABotSpectrum> = objects.ABotSpectrum;
 	static var keepPsychFlxAnimate:Class<backend.PsychFlxAnimate> = backend.PsychFlxAnimate;
 	static var keepCutsceneHandler:Class<cutscenes.CutsceneHandler> = cutscenes.CutsceneHandler;
 	static var keepRainShader:Class<shaders.RainShader> = shaders.RainShader;
 	static var keepGameOverSubstate:Class<substates.GameOverSubstate> = substates.GameOverSubstate;
+	static var keepStickerSubState:Class<substates.StickerSubState> = substates.StickerSubState;
+	static var keepTitleState:Class<states.TitleState> = states.TitleState;
+	static var keepMainMenuState:Class<states.MainMenuState> = states.MainMenuState;
+	static var keepStoryMenuState:Class<states.StoryMenuState> = states.StoryMenuState;
+	static var keepFreeplayState:Class<states.FreeplayState> = states.FreeplayState;
+	static var keepFreeplayStateSelector:Class<states.FreeplayStateSelector> = states.FreeplayStateSelector;
+	static var keepCreditsState:Class<states.CreditsState> = states.CreditsState;
+	static var keepAchievementsMenuState:Class<states.AchievementsMenuState> = states.AchievementsMenuState;
+	static var keepResetScoreSubState:Class<substates.ResetScoreSubState> = substates.ResetScoreSubState;
+	static var keepOptionsState:Class<options.OptionsState> = options.OptionsState;
+	static var keepGameplayChangersSubstate:Class<options.GameplayChangersSubstate> = options.GameplayChangersSubstate;
 
 	public static final TYPE_IMPORTS:Array<String> = [
 		'backend.Paths',
+		'backend.AssetLoader',
 		'backend.Controls',
 		'backend.CoolUtil',
 		'backend.MusicBeatState',
@@ -33,6 +46,7 @@ class ScriptGlobals {
 		'backend.Language',
 		'backend.PsychCamera',
 		'backend.Song',
+		'backend.StageData',
 		'backend.Highscore',
 		'backend.WeekData',
 		'objects.Alphabet',
@@ -43,6 +57,7 @@ class ScriptGlobals {
 		'objects.Note',
 		'objects.NoteSplash',
 		'objects.StrumNote',
+		'objects.MenuItem',
 		'psychlua.backend.CustomSubstate',
 		'psychlua.backend.ModchartSprite',
 		'scripting.ScriptBytes',
@@ -50,9 +65,20 @@ class ScriptGlobals {
 		'scripting.ScriptError',
 		'cutscenes.CutsceneHandler',
 		'shaders.RainShader',
+		'states.TitleState',
+		'states.MainMenuState',
+		'states.StoryMenuState',
 		'states.PlayState',
+		'states.FreeplayState',
+		'states.FreeplayStateSelector',
+		'states.CreditsState',
+		'states.AchievementsMenuState',
 		'states.LoadingState',
+		'options.OptionsState',
+		'options.GameplayChangersSubstate',
 		'substates.GameOverSubstate',
+		'substates.ResetScoreSubState',
+		'substates.StickerSubState',
 		'flixel.FlxG',
 		'flixel.FlxBasic',
 		'flixel.FlxObject',
@@ -69,7 +95,9 @@ class ScriptGlobals {
 		'flixel.tweens.FlxEase',
 		'flixel.tweens.FlxTween',
 		'flixel.group.FlxGroup',
+		'flixel.group.FlxTypedGroup',
 		'flixel.group.FlxSpriteGroup',
+		'flixel.graphics.FlxGraphic',
 		'flixel.ui.FlxButton',
 		'flixel.ui.FlxBar',
 		'flixel.addons.display.FlxBackdrop',

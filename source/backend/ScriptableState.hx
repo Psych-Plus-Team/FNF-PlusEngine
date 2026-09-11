@@ -15,18 +15,18 @@ class ScriptableState extends MusicBeatState {
 		return false;
 
 	public static function hasScript(name:String):Bool
-		return Mods.launchedMod != null && Mods.launchedMod.length > 0 && scripting.ScriptedStates.hasState(name, scripting.ScriptedStates.ResolveScope.LAUNCHED);
+		return scripting.ScriptedStates.hasState(name, hasLaunchedMod() ? scripting.ScriptedStates.ResolveScope.LAUNCHED : scripting.ScriptedStates.ResolveScope.ANY);
 
 	public static function tryCreate(name:String, ?fallback:FlxState, ?args:Array<Dynamic>):FlxState {
-		if (Mods.launchedMod == null || Mods.launchedMod.length < 1)
-			return fallback;
-
-		var state:MusicBeatState = scripting.ScriptedStates.loadState(name, args, scripting.ScriptedStates.ResolveScope.LAUNCHED);
+		var state:MusicBeatState = scripting.ScriptedStates.loadState(name, args, hasLaunchedMod() ? scripting.ScriptedStates.ResolveScope.LAUNCHED : scripting.ScriptedStates.ResolveScope.ANY);
 		return state != null ? state : fallback;
 	}
 
 	public static function tryOverride(state:FlxState):Null<FlxState> {
 		return null;
 	}
+
+	static inline function hasLaunchedMod():Bool
+		return Mods.launchedMod != null && Mods.launchedMod.length > 0;
 }
 #end

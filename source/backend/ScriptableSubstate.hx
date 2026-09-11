@@ -15,14 +15,14 @@ class ScriptableSubstate extends MusicBeatSubstate {
 		return false;
 
 	public static function hasScript(name:String):Bool
-		return Mods.launchedMod != null && Mods.launchedMod.length > 0 && scripting.ScriptedStates.hasSubstate(name, scripting.ScriptedStates.ResolveScope.LAUNCHED);
+		return scripting.ScriptedStates.hasSubstate(name, hasLaunchedMod() ? scripting.ScriptedStates.ResolveScope.LAUNCHED : scripting.ScriptedStates.ResolveScope.ANY);
 
 	public static function tryCreate(name:String, ?fallback:FlxSubState, ?args:Array<Dynamic>):FlxSubState {
-		if (Mods.launchedMod == null || Mods.launchedMod.length < 1)
-			return fallback;
-
-		var substate:MusicBeatSubstate = scripting.ScriptedStates.loadSubstate(name, args, scripting.ScriptedStates.ResolveScope.LAUNCHED);
+		var substate:MusicBeatSubstate = scripting.ScriptedStates.loadSubstate(name, args, hasLaunchedMod() ? scripting.ScriptedStates.ResolveScope.LAUNCHED : scripting.ScriptedStates.ResolveScope.ANY);
 		return substate != null ? substate : fallback;
 	}
+
+	static inline function hasLaunchedMod():Bool
+		return Mods.launchedMod != null && Mods.launchedMod.length > 0;
 }
 #end

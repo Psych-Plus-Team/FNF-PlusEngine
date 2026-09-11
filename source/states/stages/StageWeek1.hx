@@ -9,11 +9,6 @@ class StageWeek1 extends BaseStage
 	var dadbattleLight:FlxSprite;
 	var dadbattleFog:DadBattleFog;
 
-	#if optEdition
-	var fixed_GF_X:Float = 480;
-	var fixed_GF_Y:Float = 280;
-	#end
-
 	inline function backdrop(image:String, x:Float, y:Float, scrollX:Float = 1, scrollY:Float = 1):FlxSprite
 	{
 		var spr:FlxSprite = new FlxSprite(x, y).loadGraphic(Paths.image(image));
@@ -51,15 +46,6 @@ class StageWeek1 extends BaseStage
 			add(stageCurtains);
 		}
 	}
-
-	#if optEdition
-	override function createPost()
-	{
-		if(PlayState.SONG.song == 'Tutorial') {
-			if(dad != null) dad.setPosition(fixed_GF_X, fixed_GF_Y);
-		}
-	}
-	#end
 
 	override function eventPushed(event:objects.Note.EventNote)
 	{
