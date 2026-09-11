@@ -73,7 +73,7 @@ env:
   DEV_BUILD_TAG: dev-build
 
 jobs:
-  # WARNING: Keep platform switches centralized here. The normal/Opt job pairs below
+  # WARNING: Keep platform switches centralized here. The normal/opt job pairs below
   # intentionally depend on these outputs so manual runs stay predictable.
   check_platforms:
     name: Check Platforms
@@ -166,6 +166,26 @@ jobs:
                       archive.write(path, mod_folder / path.relative_to(source))
           PY
 
+      - name: Package Mod-Base-Game-Opt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+
+          source = Path("base_game_opt")
+          output = Path("dist/Mod-Base-Game-Opt.zip")
+          mod_folder = Path("Friday Night Funkin")
+
+          if not source.is_dir():
+              raise SystemExit("base_game_opt directory was not found")
+
+          output.parent.mkdir(parents=True, exist_ok=True)
+          with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_STORED) as archive:
+              for path in sorted(source.rglob("*")):
+                  if path.is_file():
+                      archive.write(path, mod_folder / path.relative_to(source))
+          PY
+
       - name: Upload Mod-Base-Game
         uses: actions/upload-artifact@v7
         with:
@@ -174,8 +194,16 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
-  # WARNING: Normal builds run first and independently. Each Opt build only starts
-  # after its matching normal platform succeeds; a Linux fail only blocks Linux Opt.
+      - name: Upload Mod-Base-Game-Opt
+        uses: actions/upload-artifact@v7
+        with:
+          name: Mod-Base-Game-Opt
+          path: dist/Mod-Base-Game-Opt.zip
+          if-no-files-found: error
+          compression-level: 0
+
+  # WARNING: Normal builds run first and independently. Each opt build only starts
+  # after its matching normal platform succeeds; a Linux fail only blocks Linux opt.
   build_linux_x64:
     name: Build Linux x64
     runs-on: ubuntu-24.04
@@ -539,7 +567,7 @@ jobs:
           compression-level: 0
 
   build_linux_x64_opt:
-    name: Build Linux x64 Opt
+    name: Build Linux x64 opt
     runs-on: ubuntu-24.04
     needs:
       - check_platforms
@@ -584,23 +612,23 @@ jobs:
           EOF
 
       - name: Build
-        run: haxelib run lime build Project.xml linux --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+        run: haxelib run lime build Project.xml linux --app-version="${APP_VERSION}" -D officialBuild -D optEdition -release
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          tar -C export/release/linux/bin -czf dist/FNF-PlusEngine-linux-x64-Opt.tar.gz .
+          tar -C export/release/linux/bin -czf dist/FNF-PlusEngine-linux-x64-opt.tar.gz .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: linux-x64-opt-artifact
-          path: dist/FNF-PlusEngine-linux-x64-Opt.tar.gz
+          path: dist/FNF-PlusEngine-linux-x64-opt.tar.gz
           if-no-files-found: error
           compression-level: 0
 
   build_android_opt:
-    name: Build Android Opt
+    name: Build Android opt
     runs-on: ubuntu-24.04
     needs:
       - check_platforms
@@ -675,25 +703,25 @@ jobs:
           rm -rf export build ~/.gradle
 
       - name: Build
-        run: haxelib run lime build Project.xml android --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release -DHXCPP_IGNORE_WARNINGS
+        run: haxelib run lime build Project.xml android --app-version="${APP_VERSION}" -D officialBuild -D optEdition -release -DHXCPP_IGNORE_WARNINGS
 
       - name: Package artifact
         run: |
           mkdir -p dist
           apk_path="$(find export/release/android/bin -type f -name '*.apk' | head -n 1)"
           test -n "$apk_path"
-          cp "$apk_path" dist/FNF-PlusEngine-android-Opt.apk
+          cp "$apk_path" dist/FNF-PlusEngine-android-opt.apk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: android-opt-artifact
-          path: dist/FNF-PlusEngine-android-Opt.apk
+          path: dist/FNF-PlusEngine-android-opt.apk
           if-no-files-found: error
           compression-level: 0
 
   build_windows_x64_opt:
-    name: Build Windows x64 Opt
+    name: Build Windows x64 opt
     runs-on: windows-2025
     needs:
       - check_platforms
@@ -735,23 +763,23 @@ jobs:
           '@ | Set-Content -Path source/backend/BuildInfoGenerated.hx
 
       - name: Build
-        run: haxelib run lime build Project.xml windows --app-version="${env:APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+        run: haxelib run lime build Project.xml windows --app-version="${env:APP_VERSION}" -D officialBuild -D optEdition -release
 
       - name: Package artifact
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Compress-Archive -Path export/release/windows/bin/* -DestinationPath dist/FNF-PlusEngine-windows-x64-Opt.zip -Force
+          Compress-Archive -Path export/release/windows/bin/* -DestinationPath dist/FNF-PlusEngine-windows-x64-opt.zip -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: windows-x64-opt-artifact
-          path: dist/FNF-PlusEngine-windows-x64-Opt.zip
+          path: dist/FNF-PlusEngine-windows-x64-opt.zip
           if-no-files-found: error
           compression-level: 0
 
   build_macos_arm64_opt:
-    name: Build macOS ARM64 Opt
+    name: Build macOS ARM64 opt
     runs-on: macos-15
     needs:
       - check_platforms
@@ -793,23 +821,23 @@ jobs:
           EOF
 
       - name: Build
-        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D optEdition -release
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-arm64-Opt.zip
+          ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-arm64-opt.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: macos-arm64-opt-artifact
-          path: dist/FNF-PlusEngine-macos-arm64-Opt.zip
+          path: dist/FNF-PlusEngine-macos-arm64-opt.zip
           if-no-files-found: error
           compression-level: 0
 
   build_macos_intel_opt:
-    name: Build macOS Intel Opt
+    name: Build macOS Intel opt
     runs-on: macos-15-intel
     needs:
       - check_platforms
@@ -851,23 +879,23 @@ jobs:
           EOF
 
       - name: Build
-        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D optEdition -release
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-intel-Opt.zip
+          ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-intel-opt.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: macos-intel-opt-artifact
-          path: dist/FNF-PlusEngine-macos-intel-Opt.zip
+          path: dist/FNF-PlusEngine-macos-intel-opt.zip
           if-no-files-found: error
           compression-level: 0
 
   build_ios_opt:
-    name: Build iOS Opt
+    name: Build iOS opt
     runs-on: macos-15
     needs:
       - check_platforms
@@ -909,18 +937,18 @@ jobs:
           EOF
 
       - name: Build
-        run: haxelib run lime build Project.xml ios -nosign --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+        run: haxelib run lime build Project.xml ios -nosign --app-version="${APP_VERSION}" -D officialBuild -D optEdition -release
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent export/release/ios/build/Release-iphoneos dist/FNF-PlusEngine-ios-Opt.zip
+          ditto -c -k --sequesterRsrc --keepParent export/release/ios/build/Release-iphoneos dist/FNF-PlusEngine-ios-opt.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: ios-opt-artifact
-          path: dist/FNF-PlusEngine-ios-Opt.zip
+          path: dist/FNF-PlusEngine-ios-opt.zip
           if-no-files-found: error
           compression-level: 0
 
@@ -961,12 +989,12 @@ jobs:
               ("build_macos_arm64", "macOS ARM64"),
               ("build_macos_intel", "macOS Intel"),
               ("build_ios", "iOS"),
-              ("build_linux_x64_opt", "Linux x64 Opt"),
-              ("build_android_opt", "Android Opt"),
-              ("build_windows_x64_opt", "Windows x64 Opt"),
-              ("build_macos_arm64_opt", "macOS ARM64 Opt"),
-              ("build_macos_intel_opt", "macOS Intel Opt"),
-              ("build_ios_opt", "iOS Opt"),
+              ("build_linux_x64_opt", "Linux x64 opt"),
+              ("build_android_opt", "Android opt"),
+              ("build_windows_x64_opt", "Windows x64 opt"),
+              ("build_macos_arm64_opt", "macOS ARM64 opt"),
+              ("build_macos_intel_opt", "macOS Intel opt"),
+              ("build_ios_opt", "iOS opt"),
           ]
           icons = {
               "success": "[ok]",

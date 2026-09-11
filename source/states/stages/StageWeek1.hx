@@ -9,7 +9,7 @@ class StageWeek1 extends BaseStage
 	var dadbattleLight:FlxSprite;
 	var dadbattleFog:DadBattleFog;
 
-	#if OPT_VERSION
+	#if optEdition
 	var fixed_GF_X:Float = 480;
 	var fixed_GF_Y:Float = 280;
 	#end
@@ -52,7 +52,7 @@ class StageWeek1 extends BaseStage
 		}
 	}
 
-	#if OPT_VERSION
+	#if optEdition
 	override function createPost()
 	{
 		if(PlayState.SONG.song == 'Tutorial') {
