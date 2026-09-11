@@ -31,6 +31,30 @@ on:
         description: 'Build iOS'
         type: boolean
         default: true
+      build_linux_opt:
+        description: 'Build Linux x64 (Optimized)'
+        type: boolean
+        default: true
+      build_android_opt:
+        description: 'Build Android (Optimized)'
+        type: boolean
+        default: true
+      build_windows_opt:
+        description: 'Build Windows x64 (Optimized)'
+        type: boolean
+        default: true
+      build_macos_arm64_opt:
+        description: 'Build macOS ARM64 (Optimized)'
+        type: boolean
+        default: true
+      build_macos_intel_opt:
+        description: 'Build macOS Intel (Optimized)'
+        type: boolean
+        default: true
+      build_ios_opt:
+        description: 'Build iOS (Optimized)'
+        type: boolean
+        default: true
       publish_all:
         description: 'Publish to all platforms (dev build)'
         type: boolean
@@ -59,6 +83,12 @@ jobs:
       build_macos_arm64: ${{ steps.set_outputs.outputs.build_macos_arm64 }}
       build_macos_intel: ${{ steps.set_outputs.outputs.build_macos_intel }}
       build_ios: ${{ steps.set_outputs.outputs.build_ios }}
+      build_linux_opt: ${{ steps.set_outputs.outputs.build_linux_opt }}
+      build_android_opt: ${{ steps.set_outputs.outputs.build_android_opt }}
+      build_windows_opt: ${{ steps.set_outputs.outputs.build_windows_opt }}
+      build_macos_arm64_opt: ${{ steps.set_outputs.outputs.build_macos_arm64_opt }}
+      build_macos_intel_opt: ${{ steps.set_outputs.outputs.build_macos_intel_opt }}
+      build_ios_opt: ${{ steps.set_outputs.outputs.build_ios_opt }}
       publish_all: ${{ steps.set_outputs.outputs.publish_all }}
       dev_build: ${{ steps.set_outputs.outputs.dev_build }}
     steps:
@@ -71,6 +101,12 @@ jobs:
             echo "build_macos_arm64=true" >> $GITHUB_OUTPUT
             echo "build_macos_intel=true" >> $GITHUB_OUTPUT
             echo "build_ios=true" >> $GITHUB_OUTPUT
+            echo "build_linux_opt=true" >> $GITHUB_OUTPUT
+            echo "build_android_opt=true" >> $GITHUB_OUTPUT
+            echo "build_windows_opt=true" >> $GITHUB_OUTPUT
+            echo "build_macos_arm64_opt=true" >> $GITHUB_OUTPUT
+            echo "build_macos_intel_opt=true" >> $GITHUB_OUTPUT
+            echo "build_ios_opt=true" >> $GITHUB_OUTPUT
             echo "publish_all=true" >> $GITHUB_OUTPUT
             if [[ "${{ github.ref_name }}" == "dev" ]]; then
               echo "dev_build=true" >> $GITHUB_OUTPUT
@@ -84,6 +120,12 @@ jobs:
             echo "build_macos_arm64=${{ github.event.inputs.build_macos_arm64 }}" >> $GITHUB_OUTPUT
             echo "build_macos_intel=${{ github.event.inputs.build_macos_intel }}" >> $GITHUB_OUTPUT
             echo "build_ios=${{ github.event.inputs.build_ios }}" >> $GITHUB_OUTPUT
+            echo "build_linux_opt=${{ github.event.inputs.build_linux_opt }}" >> $GITHUB_OUTPUT
+            echo "build_android_opt=${{ github.event.inputs.build_android_opt }}" >> $GITHUB_OUTPUT
+            echo "build_windows_opt=${{ github.event.inputs.build_windows_opt }}" >> $GITHUB_OUTPUT
+            echo "build_macos_arm64_opt=${{ github.event.inputs.build_macos_arm64_opt }}" >> $GITHUB_OUTPUT
+            echo "build_macos_intel_opt=${{ github.event.inputs.build_macos_intel_opt }}" >> $GITHUB_OUTPUT
+            echo "build_ios_opt=${{ github.event.inputs.build_ios_opt }}" >> $GITHUB_OUTPUT
             echo "publish_all=${{ github.event.inputs.publish_all }}" >> $GITHUB_OUTPUT
             echo "dev_build=${{ github.event.inputs.dev_build }}" >> $GITHUB_OUTPUT
           fi
@@ -408,6 +450,326 @@ jobs:
           path: dist/FNF-PlusEngine-ios.zip
           if-no-files-found: error
 
+    build_linux_x64_opt:
+    name: Build Linux x64 Opt
+    runs-on: ubuntu-24.04
+    needs: check_platforms
+    if: needs.check_platforms.outputs.build_linux_opt == 'true'
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Haxe
+        run: |
+          sudo add-apt-repository ppa:haxe/releases -y
+          sudo apt-get update
+          sudo apt-get install -y haxe libvlc-dev libvlccore-dev
+          haxe --version
+
+      - name: Install libraries
+        run: |
+          chmod +x ./setup/unish-lib.sh
+          ./setup/unish-lib.sh
+
+      - name: Prepare build
+        run: |
+          printf '%s\n' "${{ github.run_id }}" > VERSION
+          cat > source/backend/BuildInfoGenerated.hx <<'EOF'
+          package backend;
+
+          class BuildInfoGenerated
+          {
+          	public static inline final githubDevBuild:Bool = ${{ needs.check_platforms.outputs.dev_build == 'true' }};
+          	public static inline final commit:String = "${{ github.sha }}";
+          	public static inline final runId:String = "${{ github.run_id }}";
+          }
+          EOF
+
+      - name: Build
+        run: haxelib run lime build Project.xml linux --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          tar -C export/release/linux/bin -czf dist/FNF-PlusEngine-linux-x64-Opt.tar.gz .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-x64-opt-artifact
+          path: dist/FNF-PlusEngine-linux-x64-Opt.tar.gz
+          if-no-files-found: error
+
+  build_android_opt:
+    name: Build Android Opt
+    runs-on: ubuntu-24.04
+    needs: check_platforms
+    if: needs.check_platforms.outputs.build_android_opt == 'true'
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Haxe
+        run: |
+          sudo add-apt-repository ppa:haxe/releases -y
+          sudo apt-get update
+          sudo apt-get install -y haxe
+          haxe --version
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android packages
+        run: |
+          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "cmdline-tools;latest" \
+            "ndk;27.3.13750724"
+          {
+            echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.3.13750724"
+            echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.3.13750724"
+          } >> "$GITHUB_ENV"
+
+      - name: Install libraries
+        run: |
+          chmod +x ./setup/unish-lib.sh
+          ./setup/unish-lib.sh
+
+      - name: Configure Lime
+        run: |
+          haxelib run lime setup android
+          haxelib run lime config ANDROID_SDK "$ANDROID_SDK_ROOT"
+          haxelib run lime config ANDROID_NDK_ROOT "$ANDROID_SDK_ROOT/ndk/27.3.13750724"
+          haxelib run lime config JAVA_HOME "$JAVA_HOME"
+
+      - name: Prepare build
+        run: |
+          printf '%s\n' "${{ github.run_id }}" > VERSION
+          cat > source/backend/BuildInfoGenerated.hx <<'EOF'
+          package backend;
+
+          class BuildInfoGenerated
+          {
+          	public static inline final githubDevBuild:Bool = ${{ needs.check_platforms.outputs.dev_build == 'true' }};
+          	public static inline final commit:String = "${{ github.sha }}";
+          	public static inline final runId:String = "${{ github.run_id }}";
+          }
+          EOF
+          rm -rf export build ~/.gradle
+
+      - name: Build
+        run: haxelib run lime build Project.xml android --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release -DHXCPP_IGNORE_WARNINGS
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          apk_path="$(find export/release/android/bin -type f -name '*.apk' | head -n 1)"
+          test -n "$apk_path"
+          cp "$apk_path" dist/FNF-PlusEngine-android-Opt.apk
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-opt-artifact
+          path: dist/FNF-PlusEngine-android-Opt.apk
+          if-no-files-found: error
+
+  build_windows_x64_opt:
+    name: Build Windows x64 Opt
+    runs-on: windows-2025
+    needs: check_platforms
+    if: needs.check_platforms.outputs.build_windows_opt == 'true'
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Install libraries
+        run: |
+          haxelib setup C:\haxelib
+          cmd /c setup\windows-lib.bat
+
+      - name: Prepare build
+        run: |
+          Set-Content -Path VERSION -Value "${{ github.run_id }}"
+          @'
+          package backend;
+
+          class BuildInfoGenerated
+          {
+          	public static inline final githubDevBuild:Bool = ${{ needs.check_platforms.outputs.dev_build == 'true' }};
+          	public static inline final commit:String = "${{ github.sha }}";
+          	public static inline final runId:String = "${{ github.run_id }}";
+          }
+          '@ | Set-Content -Path source/backend/BuildInfoGenerated.hx
+
+      - name: Build
+        run: haxelib run lime build Project.xml windows --app-version="${env:APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+
+      - name: Package artifact
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path export/release/windows/bin/* -DestinationPath dist/FNF-PlusEngine-windows-x64-Opt.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-x64-opt-artifact
+          path: dist/FNF-PlusEngine-windows-x64-Opt.zip
+          if-no-files-found: error
+
+  build_macos_arm64_opt:
+    name: Build macOS ARM64 Opt
+    runs-on: macos-15
+    needs: check_platforms
+    if: needs.check_platforms.outputs.build_macos_arm64_opt == 'true'
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Install libraries
+        run: |
+          chmod +x ./setup/unish-lib.sh
+          ./setup/unish-lib.sh
+
+      - name: Prepare build
+        run: |
+          printf '%s\n' "${{ github.run_id }}" > VERSION
+          cat > source/backend/BuildInfoGenerated.hx <<'EOF'
+          package backend;
+
+          class BuildInfoGenerated
+          {
+          	public static inline final githubDevBuild:Bool = ${{ needs.check_platforms.outputs.dev_build == 'true' }};
+          	public static inline final commit:String = "${{ github.sha }}";
+          	public static inline final runId:String = "${{ github.run_id }}";
+          }
+          EOF
+
+      - name: Build
+        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-arm64-Opt.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-arm64-opt-artifact
+          path: dist/FNF-PlusEngine-macos-arm64-Opt.zip
+          if-no-files-found: error
+
+  build_macos_intel_opt:
+    name: Build macOS Intel Opt
+    runs-on: macos-15-intel
+    needs: check_platforms
+    if: needs.check_platforms.outputs.build_macos_intel_opt == 'true'
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Install libraries
+        run: |
+          chmod +x ./setup/unish-lib.sh
+          ./setup/unish-lib.sh
+
+      - name: Prepare build
+        run: |
+          printf '%s\n' "${{ github.run_id }}" > VERSION
+          cat > source/backend/BuildInfoGenerated.hx <<'EOF'
+          package backend;
+
+          class BuildInfoGenerated
+          {
+          	public static inline final githubDevBuild:Bool = ${{ needs.check_platforms.outputs.dev_build == 'true' }};
+          	public static inline final commit:String = "${{ github.sha }}";
+          	public static inline final runId:String = "${{ github.run_id }}";
+          }
+          EOF
+
+      - name: Build
+        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-intel-Opt.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-intel-opt-artifact
+          path: dist/FNF-PlusEngine-macos-intel-Opt.zip
+          if-no-files-found: error
+
+  build_ios_opt:
+    name: Build iOS Opt
+    runs-on: macos-15
+    needs: check_platforms
+    if: needs.check_platforms.outputs.build_ios_opt == 'true'
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Install libraries
+        run: |
+          chmod +x ./setup/unish-lib.sh
+          ./setup/unish-lib.sh
+
+      - name: Prepare build
+        run: |
+          printf '%s\n' "${{ github.run_id }}" > VERSION
+          cat > source/backend/BuildInfoGenerated.hx <<'EOF'
+          package backend;
+
+          class BuildInfoGenerated
+          {
+          	public static inline final githubDevBuild:Bool = ${{ needs.check_platforms.outputs.dev_build == 'true' }};
+          	public static inline final commit:String = "${{ github.sha }}";
+          	public static inline final runId:String = "${{ github.run_id }}";
+          }
+          EOF
+
+      - name: Build
+        run: haxelib run lime build Project.xml ios -nosign --app-version="${APP_VERSION}" -D officialBuild -D OPT_VERSION -release
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent export/release/ios/build/Release-iphoneos dist/FNF-PlusEngine-ios-Opt.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-opt-artifact
+          path: dist/FNF-PlusEngine-ios-Opt.zip
+          if-no-files-found: error
+
   summary:
     name: Workflow Summary
     runs-on: ubuntu-24.04
@@ -419,6 +781,12 @@ jobs:
       - build_macos_arm64
       - build_macos_intel
       - build_ios
+      - build_linux_x64_opt
+      - build_android_opt
+      - build_windows_x64_opt
+      - build_macos_arm64_opt
+      - build_macos_intel_opt
+      - build_ios_opt
     if: always()
 
     steps:
@@ -437,6 +805,12 @@ jobs:
               ("build_macos_arm64", "macOS ARM64"),
               ("build_macos_intel", "macOS Intel"),
               ("build_ios", "iOS"),
+              ("build_linux_x64_opt", "Linux x64 Opt"),
+              ("build_android_opt", "Android Opt"),
+              ("build_windows_x64_opt", "Windows x64 Opt"),
+              ("build_macos_arm64_opt", "macOS ARM64 Opt"),
+              ("build_macos_intel_opt", "macOS Intel Opt"),
+              ("build_ios_opt", "iOS Opt"),
           ]
           icons = {
               "success": "[ok]",
@@ -518,6 +892,42 @@ jobs:
         with:
           name: ios-artifact
           path: release-assets/ios
+
+      - name: Download Linux Opt artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: linux-x64-opt-artifact
+          path: release-assets/linux-x64-opt
+
+      - name: Download Android Opt artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: android-opt-artifact
+          path: release-assets/android-opt
+
+      - name: Download Windows Opt artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: windows-x64-opt-artifact
+          path: release-assets/windows-x64-opt
+
+      - name: Download macOS ARM64 Opt artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: macos-arm64-opt-artifact
+          path: release-assets/macos-arm64-opt
+
+      - name: Download macOS Intel Opt artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: macos-intel-opt-artifact
+          path: release-assets/macos-intel-opt
+
+      - name: Download iOS Opt artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ios-opt-artifact
+          path: release-assets/ios-opt
 
       - name: Publish prerelease
         uses: actions/github-script@v8
@@ -607,6 +1017,12 @@ jobs:
               'release-assets/macos-arm64',
               'release-assets/macos-intel',
               'release-assets/ios',
+              'release-assets/linux-x64-opt',
+              'release-assets/android-opt',
+              'release-assets/windows-x64-opt',
+              'release-assets/macos-arm64-opt',
+              'release-assets/macos-intel-opt',
+              'release-assets/ios-opt',
             ];
 
             for (const dir of assetDirs) {
