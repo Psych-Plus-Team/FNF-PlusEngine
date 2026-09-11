@@ -73,6 +73,8 @@ env:
   DEV_BUILD_TAG: dev-build
 
 jobs:
+  # WARNING: Keep platform switches centralized here. The normal/Opt job pairs below
+  # intentionally depend on these outputs so manual runs stay predictable.
   check_platforms:
     name: Check Platforms
     runs-on: ubuntu-24.04
@@ -130,6 +132,50 @@ jobs:
             echo "dev_build=${{ github.event.inputs.dev_build }}" >> $GITHUB_OUTPUT
           fi
 
+  package_base_game:
+    name: Package Mod Base Game
+    runs-on: ubuntu-24.04
+    needs: check_platforms
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
+
+      - name: Package Mod-Base-Game
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+
+          source = Path("base_game")
+          output = Path("dist/Mod-Base-Game.zip")
+          mod_folder = Path("Friday Night Funkin")
+
+          if not source.is_dir():
+              raise SystemExit("base_game directory was not found")
+
+          output.parent.mkdir(parents=True, exist_ok=True)
+          with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_STORED) as archive:
+              for path in sorted(source.rglob("*")):
+                  if path.is_file():
+                      archive.write(path, mod_folder / path.relative_to(source))
+          PY
+
+      - name: Upload Mod-Base-Game
+        uses: actions/upload-artifact@v7
+        with:
+          name: Mod-Base-Game
+          path: dist/Mod-Base-Game.zip
+          if-no-files-found: error
+          compression-level: 0
+
+  # WARNING: Normal builds run first and independently. Each Opt build only starts
+  # after its matching normal platform succeeds; a Linux fail only blocks Linux Opt.
   build_linux_x64:
     name: Build Linux x64
     runs-on: ubuntu-24.04
@@ -137,7 +183,13 @@ jobs:
     if: needs.check_platforms.outputs.build_linux == 'true'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - name: Setup Haxe
         run: |
@@ -179,6 +231,7 @@ jobs:
           name: linux-x64-artifact
           path: dist/FNF-PlusEngine-linux-x64.tar.gz
           if-no-files-found: error
+          compression-level: 0
 
   build_android:
     name: Build Android
@@ -187,7 +240,13 @@ jobs:
     if: needs.check_platforms.outputs.build_android == 'true'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - name: Setup Haxe
         run: |
@@ -261,6 +320,7 @@ jobs:
           name: android-artifact
           path: dist/FNF-PlusEngine-android.apk
           if-no-files-found: error
+          compression-level: 0
 
   build_windows_x64:
     name: Build Windows x64
@@ -269,7 +329,13 @@ jobs:
     if: needs.check_platforms.outputs.build_windows == 'true'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - uses: krdlab/setup-haxe@master
         with:
@@ -308,6 +374,7 @@ jobs:
           name: windows-x64-artifact
           path: dist/FNF-PlusEngine-windows-x64.zip
           if-no-files-found: error
+          compression-level: 0
 
   build_macos_arm64:
     name: Build macOS ARM64
@@ -316,7 +383,13 @@ jobs:
     if: needs.check_platforms.outputs.build_macos_arm64 == 'true'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - uses: krdlab/setup-haxe@master
         with:
@@ -355,6 +428,7 @@ jobs:
           name: macos-arm64-artifact
           path: dist/FNF-PlusEngine-macos-arm64.zip
           if-no-files-found: error
+          compression-level: 0
 
   build_macos_intel:
     name: Build macOS Intel
@@ -363,7 +437,13 @@ jobs:
     if: needs.check_platforms.outputs.build_macos_intel == 'true'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - uses: krdlab/setup-haxe@master
         with:
@@ -402,6 +482,7 @@ jobs:
           name: macos-intel-artifact
           path: dist/FNF-PlusEngine-macos-intel.zip
           if-no-files-found: error
+          compression-level: 0
 
   build_ios:
     name: Build iOS
@@ -410,7 +491,13 @@ jobs:
     if: needs.check_platforms.outputs.build_ios == 'true'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - uses: krdlab/setup-haxe@master
         with:
@@ -449,15 +536,26 @@ jobs:
           name: ios-artifact
           path: dist/FNF-PlusEngine-ios.zip
           if-no-files-found: error
+          compression-level: 0
 
   build_linux_x64_opt:
     name: Build Linux x64 Opt
     runs-on: ubuntu-24.04
-    needs: check_platforms
-    if: needs.check_platforms.outputs.build_linux_opt == 'true'
+    needs:
+      - check_platforms
+      - build_linux_x64
+    if: |
+      needs.check_platforms.outputs.build_linux_opt == 'true' &&
+      needs.build_linux_x64.result == 'success'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - name: Setup Haxe
         run: |
@@ -499,15 +597,26 @@ jobs:
           name: linux-x64-opt-artifact
           path: dist/FNF-PlusEngine-linux-x64-Opt.tar.gz
           if-no-files-found: error
+          compression-level: 0
 
   build_android_opt:
     name: Build Android Opt
     runs-on: ubuntu-24.04
-    needs: check_platforms
-    if: needs.check_platforms.outputs.build_android_opt == 'true'
+    needs:
+      - check_platforms
+      - build_android
+    if: |
+      needs.check_platforms.outputs.build_android_opt == 'true' &&
+      needs.build_android.result == 'success'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - name: Setup Haxe
         run: |
@@ -581,15 +690,26 @@ jobs:
           name: android-opt-artifact
           path: dist/FNF-PlusEngine-android-Opt.apk
           if-no-files-found: error
+          compression-level: 0
 
   build_windows_x64_opt:
     name: Build Windows x64 Opt
     runs-on: windows-2025
-    needs: check_platforms
-    if: needs.check_platforms.outputs.build_windows_opt == 'true'
+    needs:
+      - check_platforms
+      - build_windows_x64
+    if: |
+      needs.check_platforms.outputs.build_windows_opt == 'true' &&
+      needs.build_windows_x64.result == 'success'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - uses: krdlab/setup-haxe@master
         with:
@@ -628,15 +748,26 @@ jobs:
           name: windows-x64-opt-artifact
           path: dist/FNF-PlusEngine-windows-x64-Opt.zip
           if-no-files-found: error
+          compression-level: 0
 
   build_macos_arm64_opt:
     name: Build macOS ARM64 Opt
     runs-on: macos-15
-    needs: check_platforms
-    if: needs.check_platforms.outputs.build_macos_arm64_opt == 'true'
+    needs:
+      - check_platforms
+      - build_macos_arm64
+    if: |
+      needs.check_platforms.outputs.build_macos_arm64_opt == 'true' &&
+      needs.build_macos_arm64.result == 'success'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - uses: krdlab/setup-haxe@master
         with:
@@ -675,15 +806,26 @@ jobs:
           name: macos-arm64-opt-artifact
           path: dist/FNF-PlusEngine-macos-arm64-Opt.zip
           if-no-files-found: error
+          compression-level: 0
 
   build_macos_intel_opt:
     name: Build macOS Intel Opt
     runs-on: macos-15-intel
-    needs: check_platforms
-    if: needs.check_platforms.outputs.build_macos_intel_opt == 'true'
+    needs:
+      - check_platforms
+      - build_macos_intel
+    if: |
+      needs.check_platforms.outputs.build_macos_intel_opt == 'true' &&
+      needs.build_macos_intel.result == 'success'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - uses: krdlab/setup-haxe@master
         with:
@@ -722,15 +864,26 @@ jobs:
           name: macos-intel-opt-artifact
           path: dist/FNF-PlusEngine-macos-intel-Opt.zip
           if-no-files-found: error
+          compression-level: 0
 
   build_ios_opt:
     name: Build iOS Opt
     runs-on: macos-15
-    needs: check_platforms
-    if: needs.check_platforms.outputs.build_ios_opt == 'true'
+    needs:
+      - check_platforms
+      - build_ios
+    if: |
+      needs.check_platforms.outputs.build_ios_opt == 'true' &&
+      needs.build_ios.result == 'success'
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+          set-safe-directory: false
 
       - uses: krdlab/setup-haxe@master
         with:
@@ -769,12 +922,14 @@ jobs:
           name: ios-opt-artifact
           path: dist/FNF-PlusEngine-ios-Opt.zip
           if-no-files-found: error
+          compression-level: 0
 
   summary:
     name: Workflow Summary
     runs-on: ubuntu-24.04
     needs:
       - check_platforms
+      - package_base_game
       - build_linux_x64
       - build_android
       - build_windows_x64
@@ -799,6 +954,7 @@ jobs:
 
           needs = json.loads(r'''${{ toJson(needs) }}''')
           order = [
+              ("package_base_game", "Mod Base Game"),
               ("build_linux_x64", "Linux x64"),
               ("build_android", "Android"),
               ("build_windows_x64", "Windows x64"),
@@ -846,88 +1002,23 @@ jobs:
       - check_platforms
       - summary
     if: |
-      always() &&
       github.event_name != 'pull_request' &&
       github.ref == 'refs/heads/dev' &&
-      needs.check_platforms.outputs.publish_all == 'true'
+      needs.check_platforms.outputs.publish_all == 'true' &&
+      needs.summary.result == 'success'
 
     permissions:
       contents: write
 
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Download Linux artifact
+      # WARNING: One pattern download keeps this job lighter than twelve separate
+      # download steps, and automatically includes Mod-Base-Game.
+      - name: Download release artifacts
         uses: actions/download-artifact@v7
         with:
-          name: linux-x64-artifact
-          path: release-assets/linux-x64
-
-      - name: Download Android artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: android-artifact
-          path: release-assets/android
-
-      - name: Download Windows artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: windows-x64-artifact
-          path: release-assets/windows-x64
-
-      - name: Download macOS ARM64 artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: macos-arm64-artifact
-          path: release-assets/macos-arm64
-
-      - name: Download macOS Intel artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: macos-intel-artifact
-          path: release-assets/macos-intel
-
-      - name: Download iOS artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: ios-artifact
-          path: release-assets/ios
-
-      - name: Download Linux Opt artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: linux-x64-opt-artifact
-          path: release-assets/linux-x64-opt
-
-      - name: Download Android Opt artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: android-opt-artifact
-          path: release-assets/android-opt
-
-      - name: Download Windows Opt artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: windows-x64-opt-artifact
-          path: release-assets/windows-x64-opt
-
-      - name: Download macOS ARM64 Opt artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: macos-arm64-opt-artifact
-          path: release-assets/macos-arm64-opt
-
-      - name: Download macOS Intel Opt artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: macos-intel-opt-artifact
-          path: release-assets/macos-intel-opt
-
-      - name: Download iOS Opt artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: ios-opt-artifact
-          path: release-assets/ios-opt
+          pattern: '*'
+          path: release-assets
+          merge-multiple: true
 
       - name: Publish prerelease
         uses: actions/github-script@v8
@@ -1010,20 +1101,7 @@ jobs:
               draft: false,
             });
 
-            const assetDirs = [
-              'release-assets/linux-x64',
-              'release-assets/android',
-              'release-assets/windows-x64',
-              'release-assets/macos-arm64',
-              'release-assets/macos-intel',
-              'release-assets/ios',
-              'release-assets/linux-x64-opt',
-              'release-assets/android-opt',
-              'release-assets/windows-x64-opt',
-              'release-assets/macos-arm64-opt',
-              'release-assets/macos-intel-opt',
-              'release-assets/ios-opt',
-            ];
+            const assetDirs = ['release-assets'];
 
             for (const dir of assetDirs) {
               for (const filePath of collectFiles(dir)) {

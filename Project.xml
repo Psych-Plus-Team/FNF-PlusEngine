@@ -86,11 +86,8 @@
 	<define name="CHECK_FOR_UPDATES" if="officialBuild"/>
 
 	<section if="MODS_ALLOWED">
-		<!-- Base content is shipped as a normal modpack, not as engine assets. -->
-		<assets path='base_game' rename='mods/Friday Night Funkin' embed='false' type='template' unless="OPT_VERSION"/>
-		<assets path='base_game' rename='mods/Friday Night Funkin' embed='false' unless="OPT_VERSION"/>
-		<assets path='base_game_opt' rename='mods/Friday Night Funkin' embed='false' type='template' if="OPT_VERSION"/>
-		<assets path='base_game_opt' rename='mods/Friday Night Funkin' embed='false' if="OPT_VERSION"/>
+		<!-- WARNING: The base game mod is packaged by CI as Mod-Base-Game.zip.
+		     Keep it out of engine builds so release archives stay separated. -->
 		<assets path='example_mods' rename='mods' embed='false' />
 		<assets path='example_sm' rename='sm' embed='false' />
 		<assets path='list.txt' rename='modsList.txt' />
