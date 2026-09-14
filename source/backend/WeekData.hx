@@ -4,6 +4,8 @@ import backend.AssetLoader;
 import openfl.utils.AssetType;
 import haxe.Json;
 
+using StringTools;
+
 typedef WeekFile =
 {
 	// JSON variables
@@ -85,7 +87,10 @@ class WeekData
 		var originalLength:Int = directories.length;
 
 		for (mod in Mods.parseList().enabled)
-			directories.push(Paths.mods(mod + '/'));
+			addDirectory(directories, Paths.mods(mod + '/'));
+
+		for (mod in Mods.getGlobalMods())
+			addDirectory(directories, Paths.mods(mod + '/'));
 		#else
 		var directories:Array<String> = [Paths.getSharedPath()];
 		var originalLength:Int = directories.length;
@@ -109,7 +114,7 @@ class WeekData
 						#if MODS_ALLOWED
 						if (j >= originalLength)
 						{
-							weekFile.folder = directories[j].substring(Paths.mods().length, directories[j].length - 1);
+							weekFile.folder = getModFolderFromDirectory(directories[j]);
 						}
 						#end
 
@@ -168,7 +173,7 @@ class WeekData
 				if (i >= originalLength)
 				{
 					#if MODS_ALLOWED
-					weekFile.folder = directory.substring(Paths.mods().length, directory.length - 1);
+					weekFile.folder = getModFolderFromDirectory(directory);
 					#end
 				}
 				if ((PlayState.isStoryMode && !weekFile.hideStoryMode) || (!PlayState.isStoryMode && !weekFile.hideFreeplay))
@@ -179,6 +184,45 @@ class WeekData
 			}
 		}
 	}
+
+	static function addDirectory(directories:Array<String>, directory:String):Void
+	{
+		if (directory == null || directory.length < 1)
+			return;
+
+		var normalized:String = directory.replace('\\', '/');
+		if (!normalized.endsWith('/'))
+			normalized += '/';
+
+		if (!directories.contains(normalized))
+			directories.push(normalized);
+	}
+
+	#if MODS_ALLOWED
+	static function getModFolderFromDirectory(directory:String):String
+	{
+		if (directory == null || directory.length < 1)
+			return '';
+
+		var normalized:String = directory.replace('\\', '/');
+		if (!normalized.endsWith('/'))
+			normalized += '/';
+
+		var baseGameDirectory:String = Paths.mods(Mods.BASE_GAME_MOD_FOLDER + '/').replace('\\', '/');
+		if (!baseGameDirectory.endsWith('/'))
+			baseGameDirectory += '/';
+		if (normalized == baseGameDirectory)
+			return Mods.BASE_GAME_MOD_FOLDER;
+
+		var modsRoot:String = Paths.mods().replace('\\', '/');
+		if (!modsRoot.endsWith('/'))
+			modsRoot += '/';
+		if (normalized.startsWith(modsRoot))
+			return normalized.substring(modsRoot.length, normalized.length - 1);
+
+		return '';
+	}
+	#end
 
 	private static function getWeekFile(path:String):WeekFile
 	{

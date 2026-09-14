@@ -2620,7 +2620,7 @@ class PlayState extends MusicBeatState
 
 		try
 		{
-			var eventsChart:SwagSong = Song.getChart('events', songName);
+			var eventsChart:SwagSong = Song.getEventsChart(songName);
 			if (eventsChart != null)
 				for (event in eventsChart.events) // Event Notes
 					for (i in 0...event[1].length)

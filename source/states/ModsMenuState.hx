@@ -605,8 +605,10 @@ class ModsMenuState extends MusicBeatState {
 		}
 		modRestartText.visible = m.mustRestart;
 
-		var enabled = !modsList.disabled.contains(m.folder);
-		enableBtn.setText(enabled ? Language.getPhrase('disable_button', 'DISABLE') : Language.getPhrase('enable_button', 'ENABLE'));
+		var lockedGlobal:Bool = Mods.isRequiredGlobalMod(m.folder);
+		var enabled = lockedGlobal || !modsList.disabled.contains(m.folder);
+		enableBtn.setText(lockedGlobal ? Language.getPhrase('enabled_button', 'ENABLED') : (enabled ? Language.getPhrase('disable_button', 'DISABLE') : Language.getPhrase('enable_button', 'ENABLE')));
+		enableBtn.enabled = !lockedGlobal;
 		settingsBtn.enabled = (m.settings != null && m.settings.length > 0);
 		launchBtn.enabled = enabled && m.launchable;
 
@@ -660,6 +662,13 @@ class ModsMenuState extends MusicBeatState {
 		if (m == null)
 			return;
 		var mod = m.folder;
+		if (Mods.isRequiredGlobalMod(mod)) {
+			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
+			launchStatus.text = 'Base game is always loaded globally';
+			launchStatus.color = 0xFF66FF66;
+			return;
+		}
+
 		if (!modsList.disabled.contains(mod)) {
 			modsList.enabled.remove(mod);
 			modsList.disabled.push(mod);
@@ -747,6 +756,9 @@ class ModsMenuState extends MusicBeatState {
 
 		for (item in view) {
 			var mod = item.folder;
+			if (Mods.isRequiredGlobalMod(mod))
+				continue;
+
 			var isDisabled = modsList.disabled.contains(mod);
 			if (anyDisabled && isDisabled) {
 				#if MODS_ALLOWED

@@ -1,12 +1,12 @@
 {
 	"name": "Friday Night Funkin'",
-	"description": "The base game, shipped as an ordinary modpack.\nWeeks 1 to 7 and Weekend 1: their songs, charts, characters, stages and cutscenes.\nStages are scripted classes under scripts/classes/stages/, so nothing here needs the engine to know about it.\nDisable it and the engine boots with no content at all, which is the point.",
+	"description": "The base game, shipped as the required global content pack.\nWeeks 1 to 7 and Weekend 1: their songs, charts, characters, stages and cutscenes.\nStages are scripted classes under scripts/classes/stages/, so nothing here needs the engine to know about it.\nIt stays outside the app binary, but the engine loads it as part of its base content when present.",
 	"color": [
 		200,
 		0,
 		120
 	],
 	"restart": false,
-	"runsGlobally": false,
+	"runsGlobally": true,
 	"type": "modpack"
 }

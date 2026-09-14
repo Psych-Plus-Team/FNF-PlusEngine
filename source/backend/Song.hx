@@ -284,6 +284,59 @@ class Song
 		return rawData != null ? parseJSON(rawData, jsonInput) : null;
 	}
 
+	public static function getEventsChart(folder:String):SwagSong
+	{
+		var sidecarPath:String = getChartSidecarPath('events');
+		if (sidecarPath != null && AssetLoader.exists(sidecarPath, TEXT))
+		{
+			var rawData:String = chartCache.get(sidecarPath);
+			if (rawData == null)
+			{
+				rawData = AssetLoader.loadText(sidecarPath);
+				if (rawData != null)
+					chartCache.set(sidecarPath, rawData);
+			}
+
+			if (rawData != null)
+				return parseJSON(rawData, 'events');
+		}
+
+		if (chartBelongsToExternalMod())
+			return null;
+
+		return getChart('events', folder);
+	}
+
+	static function getChartSidecarPath(name:String):String
+	{
+		if (chartPath == null || chartPath.length < 1)
+			return null;
+
+		var normalized:String = chartPath.replace('\\', '/');
+		var slash:Int = normalized.lastIndexOf('/');
+		if (slash < 0)
+			return null;
+
+		return normalized.substr(0, slash + 1) + name + '.json';
+	}
+
+	static function chartBelongsToExternalMod():Bool
+	{
+		#if MODS_ALLOWED
+		if (chartPath == null || chartPath.length < 1)
+			return false;
+
+		var relative:String = Paths.getModRelativePath(chartPath);
+		if (relative == null || relative.length < 1)
+			return false;
+
+		var modFolder:String = relative.split('/')[0];
+		return modFolder != null && modFolder.length > 0 && !Mods.isBaseGameMod(modFolder);
+		#else
+		return false;
+		#end
+	}
+
 	public static function clearChartCache():Void
 	{
 		chartCache.clear();
