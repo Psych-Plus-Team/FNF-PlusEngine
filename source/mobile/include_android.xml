@@ -11,6 +11,9 @@
 		<application android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" />
 	</config:android>
 	<!-- Copy our custom launcher icon resources into the generated Gradle project -->
+	<assets path="android/app/src/main" rename="app/src/main" type="template" />
+	<!-- Tell lime run/test to start the public launcher activity instead of the internal game runtime activity -->
+	<config:android launch-activity=".launcher.EngineLauncherActivity" />
 	
 	<!-- Android Permissions -->
 	<config:android permission="android.permission.INTERNET" />

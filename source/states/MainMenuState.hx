@@ -409,13 +409,24 @@ class MainMenuState extends MusicBeatState
 					}
 			}
 
-			if (controls.BACK)
+			var pressedBack:Bool = controls.BACK #if android || FlxG.android.justReleased.BACK #end;
+			if (pressedBack)
 			{
 				selectedSomethin = true;
 				FlxG.mouse.visible = false;
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 				MusicBeatState.switchState(backend.ScriptableState.tryCreate('TitleState', new TitleState()));
 			}
+			#if android
+			else if (touchPad != null && touchPad.buttonX.justPressed)
+			{
+				selectedSomethin = true;
+				FlxG.mouse.visible = false;
+				FlxG.sound.play(Paths.sound('cancelMenu'));
+				AndroidTools.finishActivity();
+				return;
+			}
+			#end
 
 			if (controls.ACCEPT || (FlxG.mouse.overlaps(menuItems, FlxG.camera) && FlxG.mouse.justPressed && allowMouse))
 			{

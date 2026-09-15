@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="plus_launcher_recovery_title">Recovery</string>
+	<string name="plus_launcher_title">Plus Engine Launcher</string>
+	<string name="plus_launcher_subtitle">Choose how you want to start the engine.</string>
+	<string name="plus_launcher_start_game">Start game</string>
+	<string name="plus_launcher_files">Files</string>
+	<string name="plus_launcher_open_data">Open /data</string>
+	<string name="plus_launcher_open_external">Open /external</string>
+	<string name="plus_launcher_permissions">Engine permissions</string>
+	<string name="plus_launcher_open_settings">Open settings</string>
+	<string name="plus_launcher_request_permissions">Request permissions</string>
+	<string name="plus_launcher_updates">Updates</string>
+	<string name="plus_launcher_check_updates">Check updates</string>
+	<string name="plus_launcher_download_update">Download update</string>
+	<string name="plus_launcher_storage">Storage</string>
+	<string name="plus_launcher_refresh">Refresh</string>
+	<string name="plus_launcher_mod_installer">Mod installer</string>
+	<string name="plus_launcher_open_mod_installer">Open installer</string>
+	<string name="plus_launcher_github">GitHub</string>
+	<string name="plus_launcher_language">Language</string>
+	<string name="plus_launcher_spanish">Spanish</string>
+	<string name="plus_launcher_english">English</string>
+	<string name="plus_launcher_ready">Ready</string>
+	<string name="plus_launcher_checking">Checking...</string>
+	<string name="plus_launcher_no_update">You are up to date.</string>
+	<string name="plus_launcher_update_available">Update available</string>
+	<string name="plus_launcher_update_error">Could not check updates.</string>
+	<string name="plus_launcher_downloading">Download started.</string>
+	<string name="plus_launcher_no_apk">No APK asset was found in the latest release.</string>
+	<string name="plus_launcher_installed">Installed</string>
+	<string name="plus_launcher_missing">Missing</string>
+	<string name="plus_launcher_granted">Granted</string>
+	<string name="plus_launcher_required">Required</string>
+	<string name="plus_launcher_not_needed">Not needed</string>
+	<string name="plus_launcher_not_installed">Not installed</string>
+	<string name="plus_launcher_app_data">App data</string>
+	<string name="plus_launcher_game_data">Game data</string>
+	<string name="plus_launcher_mods">Mods</string>
+	<string name="plus_launcher_apk">APK</string>
+</resources>

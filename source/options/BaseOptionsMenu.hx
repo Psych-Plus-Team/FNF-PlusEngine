@@ -31,6 +31,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	private var rowStackCache:Array<Float> = [];
 	private var rowsHeightCache:Float = 0;
 	private var rowsLayoutDirty:Bool = true;
+	private var rowsLayoutSettled:Bool = false;
 
 	private var lastThemeSignature:String = "";
 	private var titleText:FlxText;
@@ -174,7 +175,8 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		if (playingIntroTransition || closingTransition)
 			return;
 
-		layoutRows(elapsed);
+		if (!rowsLayoutSettled || rowsLayoutDirty)
+			rowsLayoutSettled = layoutRows(elapsed);
 
 		if (curOption != null && !isOptionSelectable(curOption))
 			changeSelection(0);
@@ -661,8 +663,9 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		curSelected = found;
 		curOption = optionsArray[curSelected];
 
+		rowsLayoutSettled = false;
 		refreshOptionAlphas();
-		layoutRows(FlxG.elapsed);
+		rowsLayoutSettled = layoutRows(FlxG.elapsed);
 
 		callOnCompanionScript('onOptionSelectionChange', [curSelected, getCurrentOption()]);
 		if (change != 0)
@@ -711,25 +714,31 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		}
 	}
 
-	function layoutRows(elapsed:Float, instant:Bool = false):Void
+	function layoutRows(elapsed:Float, instant:Bool = false):Bool
 	{
 		if (optionRows == null)
-			return;
+			return true;
 
 		ensureRowsLayoutCache();
+		var allSettled:Bool = true;
 		var moveLerp:Float = elapsed <= 0 ? 0 : Math.exp(-elapsed * 12);
+		#if mobile
+		var cullPad:Float = 24;
+		#else
+		var cullPad:Float = 90;
+		#end
 		for (row in optionRows.members)
 		{
 			if (row == null)
 				continue;
-			var offset:Int = row.index - curSelected;
-			var selected:Bool = offset == 0;
+			var selected:Bool = row.index == curSelected;
 			var targetX:Float = safeOffsetX() + ROW_X + (selected ? 0 : 18);
 			var targetY:Float = rowTargetY(row.index);
 			var targetScale:Float = 1;
 			var newX:Float = targetX;
 			var newY:Float = targetY;
 			var newScale:Float = targetScale;
+			var rowSettled:Bool = instant;
 
 			if (instant)
 			{
@@ -739,31 +748,54 @@ class BaseOptionsMenu extends MusicBeatSubstate
 			}
 			else
 			{
-				newX = FlxMath.lerp(targetX, row.x, moveLerp);
-				newY = FlxMath.lerp(targetY, row.y, moveLerp);
-				newScale = FlxMath.lerp(targetScale, row.scale.x, moveLerp);
+				rowSettled = Math.abs(row.x - targetX) <= 0.05
+					&& Math.abs(row.y - targetY) <= 0.05
+					&& Math.abs(row.scale.x - targetScale) <= 0.001;
+
+				if (!rowSettled)
+				{
+					newX = FlxMath.lerp(targetX, row.x, moveLerp);
+					newY = FlxMath.lerp(targetY, row.y, moveLerp);
+					newScale = FlxMath.lerp(targetScale, row.scale.x, moveLerp);
+
+					if (Math.abs(newX - targetX) <= 0.05)
+						newX = targetX;
+					if (Math.abs(newY - targetY) <= 0.05)
+						newY = targetY;
+					if (Math.abs(newScale - targetScale) <= 0.001)
+						newScale = targetScale;
+
+					rowSettled = newX == targetX && newY == targetY && newScale == targetScale;
+				}
 			}
 
-			var onScreen:Bool = newY + row.rowHeight >= -90 && newY <= FlxG.height + 90;
+			var onScreen:Bool = newY + row.rowHeight >= -cullPad && newY <= FlxG.height + cullPad;
+			var visibilityChanged:Bool = row.visible != onScreen;
 			row.visible = onScreen;
-			row.active = onScreen;
+			row.active = onScreen && !rowSettled;
 			if (!onScreen && !instant)
 			{
 				row.x = newX;
 				row.y = newY;
 				row.scale.set(newScale, newScale);
-				row.syncLayout();
+				if (!rowSettled)
+					allSettled = false;
 				continue;
 			}
 
-			if (instant || Math.abs(row.x - newX) > 0.05 || Math.abs(row.y - newY) > 0.05 || Math.abs(row.scale.x - newScale) > 0.001)
+			if (instant || visibilityChanged || Math.abs(row.x - newX) > 0.05 || Math.abs(row.y - newY) > 0.05 || Math.abs(row.scale.x - newScale) > 0.001)
 			{
 				row.x = newX;
 				row.y = newY;
 				row.scale.set(newScale, newScale);
 				row.syncLayout();
 			}
+
+			if (!rowSettled)
+				allSettled = false;
 		}
+
+		return allSettled;
 	}
 
 	function rowTargetY(index:Int):Float
@@ -792,6 +824,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	function markRowsLayoutDirty():Void
 	{
 		rowsLayoutDirty = true;
+		rowsLayoutSettled = false;
 	}
 
 	function ensureRowsLayoutCache():Void

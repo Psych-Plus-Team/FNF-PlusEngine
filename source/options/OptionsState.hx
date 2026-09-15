@@ -33,6 +33,7 @@ class OptionsState extends MusicBeatState
 	var gridScroll:Float = 0;
 	var targetScroll:Float = 0;
 	var optionsIntroActive:Bool = true;
+	var cardsLayoutSettled:Bool = false;
 	var substateInputBlocked:Bool = false;
 	var lastThemeSignature:String = "";
 	var mobileTipText:FlxText;
@@ -102,6 +103,7 @@ class OptionsState extends MusicBeatState
 		substateAnchorX = item != null ? item.x : SUBSTATE_TITLE_X;
 		substateAnchorY = item != null ? item.y : SUBSTATE_TITLE_Y;
 		substateInputBlocked = true;
+		cardsLayoutSettled = false;
 		if (item != null)
 		{
 			item.setLabel(getDisplayLabel(label), getDescription(label));
@@ -192,7 +194,11 @@ class OptionsState extends MusicBeatState
 
 		super.create();
 		callOnCompanionScript('onOptionsMenuCreatePost', [getOptionsCopy()]);
-		new FlxTimer().start(INTRO_DURATION + 0.06, function(_) optionsIntroActive = false);
+		new FlxTimer().start(INTRO_DURATION + 0.06, function(_)
+		{
+			optionsIntroActive = false;
+			cardsLayoutSettled = false;
+		});
 	}
 
 	override function closeSubState()
@@ -206,6 +212,7 @@ class OptionsState extends MusicBeatState
 		substateInputBlocked = false;
 		substateVisualActive = false;
 		substateReturning = true;
+		cardsLayoutSettled = false;
 		restoreCards();
 		for (item in grpOptions.members)
 		{
@@ -229,12 +236,20 @@ class OptionsState extends MusicBeatState
 			refreshThemeVisuals(true);
 
 		targetScroll = computeTargetScroll();
-		gridScroll = FlxMath.lerp(targetScroll, gridScroll, Math.exp(-elapsed * 10.2));
-		layoutCards(elapsed, false);
+		if (!cardsLayoutSettled || Math.abs(gridScroll - targetScroll) > 0.05 || optionsIntroActive || substateReturning)
+		{
+			gridScroll = FlxMath.lerp(targetScroll, gridScroll, Math.exp(-elapsed * 10.2));
+			if (Math.abs(gridScroll - targetScroll) <= 0.05)
+				gridScroll = targetScroll;
+			cardsLayoutSettled = layoutCards(elapsed, false);
+		}
 
 		var selected = getSelectedCard();
 		if (substateReturning && selected != null && Math.abs(selected.x - cardTargetX(curSelected)) < 4)
+		{
 			substateReturning = false;
+			cardsLayoutSettled = false;
+		}
 
 		if (!exiting && !substateInputBlocked)
 		{
@@ -280,11 +295,12 @@ class OptionsState extends MusicBeatState
 		}
 	}
 
-	function layoutCards(elapsed:Float, instant:Bool):Void
+	function layoutCards(elapsed:Float, instant:Bool):Bool
 	{
 		if (grpOptions == null)
-			return;
+			return true;
 
+		var allSettled:Bool = true;
 		var moveLerp:Float = instant ? 0 : Math.exp(-elapsed * (optionsIntroActive ? 7.2 : 10.2));
 		for (item in grpOptions.members)
 		{
@@ -297,6 +313,11 @@ class OptionsState extends MusicBeatState
 			var targetY:Float = cardTargetY(item.index) - gridScroll;
 			var targetScale:Float = selected ? 1.035 : 1;
 			var targetAlpha:Float = selected ? 1 : 0.68;
+			var newX:Float = targetX;
+			var newY:Float = targetY;
+			var newScale:Float = targetScale;
+			var newAlpha:Float = targetAlpha;
+			var itemSettled:Bool = instant;
 
 			if (substateVisualActive)
 			{
@@ -320,23 +341,60 @@ class OptionsState extends MusicBeatState
 
 			if (instant)
 			{
-				item.x = targetX;
-				item.y = targetY;
-				item.scale.set(targetScale, targetScale);
-				item.alpha = optionsIntroActive ? 0 : targetAlpha;
+				newAlpha = optionsIntroActive ? 0 : targetAlpha;
 			}
 			else
 			{
-				item.x = FlxMath.lerp(targetX, item.x, moveLerp);
-				item.y = FlxMath.lerp(targetY, item.y, moveLerp);
-				item.scale.set(FlxMath.lerp(targetScale, item.scale.x, Math.exp(-elapsed * 10.2)),
-					FlxMath.lerp(targetScale, item.scale.y, Math.exp(-elapsed * 10.2)));
-				item.alpha = FlxMath.lerp(targetAlpha, item.alpha, moveLerp);
+				itemSettled = Math.abs(item.x - targetX) <= 0.05
+					&& Math.abs(item.y - targetY) <= 0.05
+					&& Math.abs(item.scale.x - targetScale) <= 0.001
+					&& Math.abs(item.alpha - targetAlpha) <= 0.005;
+
+				if (!itemSettled)
+				{
+					newX = FlxMath.lerp(targetX, item.x, moveLerp);
+					newY = FlxMath.lerp(targetY, item.y, moveLerp);
+					newScale = FlxMath.lerp(targetScale, item.scale.x, Math.exp(-elapsed * 10.2));
+					newAlpha = FlxMath.lerp(targetAlpha, item.alpha, moveLerp);
+
+					if (Math.abs(newX - targetX) <= 0.05)
+						newX = targetX;
+					if (Math.abs(newY - targetY) <= 0.05)
+						newY = targetY;
+					if (Math.abs(newScale - targetScale) <= 0.001)
+						newScale = targetScale;
+					if (Math.abs(newAlpha - targetAlpha) <= 0.005)
+						newAlpha = targetAlpha;
+
+					itemSettled = newX == targetX && newY == targetY && newScale == targetScale && newAlpha == targetAlpha;
+				}
+			}
+
+			var visibilityChanged:Bool = item.visible != (newAlpha > 0.01 || targetAlpha > 0.01);
+			item.visible = newAlpha > 0.01 || targetAlpha > 0.01;
+			item.active = item.visible && !itemSettled;
+
+			if (instant
+				|| visibilityChanged
+				|| Math.abs(item.x - newX) > 0.05
+				|| Math.abs(item.y - newY) > 0.05
+				|| Math.abs(item.scale.x - newScale) > 0.001
+				|| Math.abs(item.alpha - newAlpha) > 0.005)
+			{
+				item.x = newX;
+				item.y = newY;
+				item.scale.set(newScale, newScale);
+				item.alpha = newAlpha;
+				item.syncLayout(headerMode);
 			}
 			if (item.headerMode != headerMode)
 				item.applyTheme(selected, false, headerMode);
-			item.syncLayout(headerMode);
+
+			if (!itemSettled)
+				allSettled = false;
 		}
+
+		return allSettled;
 	}
 
 	function selectedCardTargetX():Float
@@ -367,6 +425,7 @@ class OptionsState extends MusicBeatState
 			return;
 
 		curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
+		cardsLayoutSettled = false;
 		refreshThemeVisuals(false);
 
 		callOnCompanionScript('onOptionsMenuSelectionChange', [curSelected, getSelectedOptionLabel()]);
@@ -396,6 +455,7 @@ class OptionsState extends MusicBeatState
 	{
 		if (grpOptions == null || options == null)
 			return;
+		cardsLayoutSettled = false;
 		for (i in 0...grpOptions.members.length)
 		{
 			var item = grpOptions.members[i];
@@ -482,6 +542,7 @@ class OptionsState extends MusicBeatState
 	{
 		if (grpOptions == null)
 			return;
+		cardsLayoutSettled = false;
 
 		while (grpOptions.members.length > 0)
 		{

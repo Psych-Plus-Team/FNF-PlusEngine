@@ -205,6 +205,9 @@ class FreeplayState_Psych extends MusicBeatState
 		updateTexts();
 
 		addTouchPad('LEFT_FULL', 'A_B_C_X_Y_Z');
+		addTouchPadCamera();
+		if (touchPad != null)
+			touchPad.updateTrackedButtons();
 		freeplayTouchInputBlockTime = 0.12;
 		super.create();
 
@@ -220,6 +223,9 @@ class FreeplayState_Psych extends MusicBeatState
 		super.closeSubState();
 		removeTouchPad();
 		addTouchPad('LEFT_FULL', 'A_B_C_X_Y_Z');
+		addTouchPadCamera();
+		if (touchPad != null)
+			touchPad.updateTrackedButtons();
 		freeplayTouchInputBlockTime = 0.12;
 	}
 

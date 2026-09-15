@@ -110,8 +110,8 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		addCharacter();
 
-		cameraFollowPointer = new FlxSprite().makeGraphic(40, 40, FlxColor.WHITE);
-		cameraFollowPointer.alpha = 0.65;
+		cameraFollowPointer = new FlxSprite().makeGraphic(6, 6, FlxColor.LIME);
+		cameraFollowPointer.alpha = controls.mobileC ? 0.25 : 0.45;
 
 		healthBar = new Bar(30, FlxG.height - 75);
 		healthBar.scrollFactor.set();
