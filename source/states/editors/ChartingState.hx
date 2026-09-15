@@ -229,12 +229,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var infoText:FlxText;
 
 	var autoSaveIcon:FlxSprite;
-	var outputTxt:FlxText;
+	var outputToast:ChartEditorToast;
 
 	var selectionStart:FlxPoint = FlxPoint.get();
 	var selectionBox:FlxSprite;
 
 	var _shouldReset:Bool = true;
+
+	static inline var HIGH_BPM_WARNING:Float = 250;
+	static inline var MAX_EDITOR_BPM:Float = 999;
 
 	public function new(?shouldReset:Bool = true)
 	{
@@ -514,13 +517,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		upperBox.bg.visible = false;
 		add(upperBox);
 
-		outputTxt = new FlxText(25, FlxG.height - 50, FlxG.width - 50, '', 20);
-		outputTxt.borderSize = 2;
-		outputTxt.borderStyle = OUTLINE_FAST;
-		outputTxt.scrollFactor.set();
-		outputTxt.cameras = [camUI];
-		outputTxt.alpha = 0;
-		add(outputTxt);
+		outputToast = new ChartEditorToast(camUI);
+		add(outputToast);
 
 		if (PlayState.SONG == null) // Atleast try to avoid crashes
 		{
@@ -720,12 +718,12 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	{
 		var song:SwagSong = {
 			song: 'Test',
-			notes: [],
 			events: [],
 			bpm: 150,
 			needsVoices: true,
 			speed: 1,
 			offset: 0,
+			notes: [ChartEditorTiming.createBlankSection(150, true)],
 
 			player1: 'bf',
 			player2: 'dad',
@@ -792,7 +790,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var noteSelectionSine:Float = 0;
 	var selectedNotes:Array<MetaNote> = [];
 	var ignoreClickForThisFrame:Bool = false;
-	var outputAlpha:Float = 0;
 	var songFinished:Bool = false;
 
 	var fileDialog:FileDialogHandler = new FileDialogHandler();
@@ -925,7 +922,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		ClientPrefs.toggleVolumeKeys(PsychUIInputText.focusOn == null);
 
 		var lastTime:Float = Conductor.songPosition;
-		outputAlpha = Math.max(0, outputAlpha - elapsed);
 		var holdingAlt:Bool = touchPad.buttonG.justPressed || FlxG.keys.pressed.ALT;
 		if (FlxG.sound.music != null)
 		{
@@ -2044,8 +2040,6 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		else
 			noteSelectionSine = 0;
 
-		outputTxt.alpha = outputAlpha;
-		outputTxt.visible = (outputAlpha > 0);
 		updateVortexIndicatorPosition();
 		FlxG.camera.scroll.y = scrollY;
 		lastFocus = PsychUIInputText.focusOn;
@@ -2172,19 +2166,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	function showOutput(message:String, isError:Bool = false)
 	{
 		trace(message);
-		outputTxt.text = message;
-		outputTxt.y = FlxG.height - outputTxt.height - 30;
-		outputAlpha = 4;
 		if (isError)
-		{
 			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
-			outputTxt.color = FlxColor.RED;
-		}
 		else
-		{
 			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
-			outputTxt.color = FlxColor.WHITE;
-		}
+		outputToast.show(message, isError);
 	}
 
 	function resetSelectedNotes()
@@ -2418,9 +2404,20 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function loadChart(song:SwagSong)
 	{
-		PlayState.SONG = song;
+		PlayState.SONG = ChartEditorTiming.ensureSongBasics(song);
 		StageData.loadDirectory(PlayState.SONG);
-		Conductor.bpm = PlayState.SONG.bpm;
+		syncChartTiming();
+	}
+
+	function syncChartTiming(?mapChanges:Bool = true):Void
+	{
+		ChartEditorTiming.syncConductor(PlayState.SONG, mapChanges);
+	}
+
+	function warnIfHighBPM(value:Float, context:String):Void
+	{
+		if (value > HIGH_BPM_WARNING)
+			showOutput('Warning: ${context} BPM is over ${Std.int(HIGH_BPM_WARNING)}. This can make charting harder and may expose weird timing bugs.', true);
 	}
 
 	function loadMusic(?killAudio:Bool = false)
@@ -2459,6 +2456,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		catch (e:Exception)
 		{
 			FlxG.log.error('Error loading song: $e');
+			_cacheSections();
 			return;
 		}
 
@@ -2656,13 +2654,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		swagEvent.scrollFactor.x = 0;
 		swagEvent.active = false;
 
-		var secNum:Int = 0;
-		for (i in 1...cachedSectionTimes.length)
-		{
-			if (cachedSectionTimes[i] > daStrumTime)
-				break;
-			secNum++;
-		}
+		var secNum:Int = sectionIndexForTime(daStrumTime);
 		positionNoteYOnTime(swagEvent, secNum);
 		return swagEvent;
 	}
@@ -2779,6 +2771,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 		cachedSectionRow.push(row);
 		cachedSectionTimes.push(time);
+		syncChartTiming();
 	}
 
 	var showPreviousSection:Bool = true;
@@ -3666,16 +3659,19 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		});
 
 		objY += 25;
-		changeBpmStepper = new PsychUINumericStepper(objX, objY, 1, 0, 1, 400, 3);
+		changeBpmStepper = new PsychUINumericStepper(objX, objY, 1, 0, 1, MAX_EDITOR_BPM, 3);
 		changeBpmStepper.onValueChange = function()
 		{
 			var sec = getCurChartSection();
 			if (sec != null)
 			{
 				var oldTimes:Array<Float> = cachedSectionTimes.copy();
+				var oldBpm:Float = sec.bpm != null ? sec.bpm : Conductor.bpm;
 				sec.bpm = changeBpmStepper.value;
 				sec.changeBPM = true;
 				changeBpmCheckBox.checked = true;
+				if (oldBpm <= HIGH_BPM_WARNING && changeBpmStepper.value > HIGH_BPM_WARNING)
+					warnIfHighBPM(changeBpmStepper.value, 'section');
 				adaptNotesToNewTimes(oldTimes);
 			}
 		};
@@ -4060,11 +4056,14 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		objY += 65;
 		// (x:Float = 0, y:Float = 0, step:Float = 1, defValue:Float = 0, min:Float = -999, max:Float = 999, decimals:Int = 0, ?wid:Int = 60, ?isPercent:Bool = false)
-		bpmStepper = new PsychUINumericStepper(objX, objY, 1, 1, 1, 400, 3);
+		bpmStepper = new PsychUINumericStepper(objX, objY, 1, 1, 1, MAX_EDITOR_BPM, 3);
 		bpmStepper.onValueChange = function()
 		{
 			var oldTimes:Array<Float> = cachedSectionTimes.copy();
+			var oldBpm:Float = PlayState.SONG.bpm;
 			PlayState.SONG.bpm = bpmStepper.value;
+			if (oldBpm <= HIGH_BPM_WARNING && bpmStepper.value > HIGH_BPM_WARNING)
+				warnIfHighBPM(bpmStepper.value, 'song');
 			adaptNotesToNewTimes(oldTimes);
 		};
 
@@ -5892,26 +5891,20 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 	function updateChartData()
 	{
+		ChartEditorTiming.ensureSongBasics(PlayState.SONG);
+		if (cachedSectionTimes == null || cachedSectionTimes.length < 2)
+			_cacheSections();
+
 		for (secNum => section in PlayState.SONG.notes)
 			PlayState.SONG.notes[secNum].sectionNotes = [];
 
 		notes.sort(PlayState.sortByTime);
-		var noteSec:Int = 0;
-		var nextSectionTime:Float = cachedSectionTimes[noteSec + 1];
-		var curSectionTime:Float = cachedSectionTimes[noteSec];
-
 		for (num => note in notes)
 		{
 			if (note == null)
 				continue;
 
-			while (cachedSectionTimes[noteSec + 1] <= note.strumTime)
-			{
-				noteSec++;
-				nextSectionTime = cachedSectionTimes[noteSec + 1];
-				curSectionTime = cachedSectionTimes[noteSec];
-			}
-
+			var noteSec:Int = sectionIndexForTime(note.strumTime);
 			var arr:Array<Dynamic> = PlayState.SONG.notes[noteSec].sectionNotes;
 			// trace('Added note with time ${note.songData[0]} at section $noteSec');
 			arr.push(note.songData);
@@ -5966,6 +5959,18 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		return PlayState.SONG.notes != null ? PlayState.SONG.notes[curSec] : null;
 	}
 
+	function sectionIndexForTime(time:Float):Int
+	{
+		if (PlayState.SONG == null || PlayState.SONG.notes == null || PlayState.SONG.notes.length < 1 || cachedSectionTimes == null || cachedSectionTimes.length < 2)
+			return 0;
+
+		var maxSection:Int = Std.int(Math.min(PlayState.SONG.notes.length - 1, cachedSectionTimes.length - 2));
+		var section:Int = 0;
+		while (section < maxSection && cachedSectionTimes[section + 1] <= time)
+			section++;
+		return section;
+	}
+
 	function updateNotesRGB()
 	{
 		PlayState.SONG.disableNoteRGB = noRGBCheckBox.checked;
@@ -6016,6 +6021,8 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var gridLerp:Float = FlxMath.bound((scrollY + FlxG.height / 2 - gridBg.y) / gridBg.height, 0.000001, 0.999999);
 		notes.sort(PlayState.sortByTime);
 		_cacheSections();
+		if (oldTimes == null || oldTimes.length < 2 || cachedSectionTimes == null || cachedSectionTimes.length < 2)
+			return;
 
 		var noteSec:Int = 0;
 		var oldNextSectionTime:Float = oldTimes[noteSec + 1];
@@ -6040,9 +6047,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 				{
 					trace('failsafe, cancel early and delete notes after this');
 					var changedSelected:Bool = false;
-					for (i in num...notes.length)
+					var doomedNotes:Array<MetaNote> = notes.slice(num);
+					for (n in doomedNotes)
 					{
-						var n = notes[num];
 						if (n != null)
 						{
 							if (selectedNotes.contains(n))
@@ -6051,7 +6058,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 								changedSelected = true;
 							}
 							notes.remove(n);
-							note.destroy();
+							n.destroy();
 						}
 					}
 					if (changedSelected)
@@ -6077,13 +6084,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 
 		for (event in events)
 		{
-			var secNum:Int = 0;
-			for (time in cachedSectionTimes)
-			{
-				if (time > event.strumTime)
-					break;
-				secNum++;
-			}
+			var secNum:Int = sectionIndexForTime(event.strumTime);
 			positionNoteYOnTime(event, secNum);
 		}
 
