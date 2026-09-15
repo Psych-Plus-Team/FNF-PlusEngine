@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="plus_launcher_recovery_title">Pemulihan</string>
+	<string name="plus_launcher_title">Peluncur Plus Engine</string>
+	<string name="plus_launcher_subtitle">Pilih cara yang Anda inginkan untuk mulai engine.</string>
+	<string name="plus_launcher_start_game">Mulai game</string>
+	<string name="plus_launcher_files">Berkas</string>
+	<string name="plus_launcher_open_data">Buka /data</string>
+	<string name="plus_launcher_open_external">Buka /external</string>
+	<string name="plus_launcher_permissions">Izin engine</string>
+	<string name="plus_launcher_open_settings">Buka pengaturan</string>
+	<string name="plus_launcher_request_permissions">Minta izin</string>
+	<string name="plus_launcher_updates">Pembaruan</string>
+	<string name="plus_launcher_check_updates">Cek pembaruan</string>
+	<string name="plus_launcher_download_update">Unduh pembaruan</string>
+	<string name="plus_launcher_storage">Penyimpanan</string>
+	<string name="plus_launcher_refresh">Segarkan</string>
+	<string name="plus_launcher_mod_installer">Penginstal mod</string>
+	<string name="plus_launcher_open_mod_installer">Buka penginstal</string>
+	<string name="plus_launcher_github">GitHub</string>
+	<string name="plus_launcher_language">Bahasa</string>
+	<string name="plus_launcher_spanish">Spanyol</string>
+	<string name="plus_launcher_english">Inggris</string>
+	<string name="plus_launcher_ready">Siap</string>
+	<string name="plus_launcher_checking">Mengecek...</string>
+	<string name="plus_launcher_no_update">Anda sudah mendapatkan pembaruan terbaru.</string>
+	<string name="plus_launcher_update_available">Tersedia pembaruan</string>
+	<string name="plus_launcher_update_error">Tidak dapat cek pembaruan.</string>
+	<string name="plus_launcher_downloading">Unduh dimulai.</string>
+	<string name="plus_launcher_no_apk">Tidak ditemukan aset APK dalam rilis terbaru.</string>
+	<string name="plus_launcher_installed">Terinstal</string>
+	<string name="plus_launcher_missing">Hilang</string>
+	<string name="plus_launcher_granted">Diberikan</string>
+	<string name="plus_launcher_required">Dibutuhkan</string>
+	<string name="plus_launcher_not_needed">Tidak dibutuhkan</string>
+	<string name="plus_launcher_not_installed">Tidak terinstal</string>
+	<string name="plus_launcher_app_data">Data aplikasi</string>
+	<string name="plus_launcher_game_data">Data game</string>
+	<string name="plus_launcher_mods">Mods</string>
+	<string name="plus_launcher_apk">APK</string>
+</resources>
