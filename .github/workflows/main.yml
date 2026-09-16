@@ -260,20 +260,37 @@ jobs:
           java-version: "21"
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
-
-      - name: Install Android packages
         run: |
-          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
+          # WARNING: Do not install the legacy "tools" package. Modern cmdline-tools removed it.
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
+          if [[ ! -x "$SDKMANAGER" ]]; then
+            SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -n 1)"
+          fi
+
+          if [[ -z "$SDKMANAGER" || ! -x "$SDKMANAGER" ]]; then
+            echo "::error::Android sdkmanager was not found under $SDK_ROOT"
+            exit 1
+          fi
+
+          SDKMANAGER_DIR="$(dirname "$SDKMANAGER")"
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" \
             "platform-tools" \
             "platforms;android-36" \
             "build-tools;36.0.0" \
-            "cmdline-tools;latest" \
             "ndk;27.3.13750724"
           {
-            echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.3.13750724"
-            echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.3.13750724"
+            echo "ANDROID_HOME=$SDK_ROOT"
+            echo "ANDROID_SDK_ROOT=$SDK_ROOT"
+            echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/27.3.13750724"
+            echo "ANDROID_NDK_ROOT=$SDK_ROOT/ndk/27.3.13750724"
           } >> "$GITHUB_ENV"
+          {
+            echo "$SDKMANAGER_DIR"
+            echo "$SDK_ROOT/platform-tools"
+          } >> "$GITHUB_PATH"
 
       - name: Install libraries
         run: |

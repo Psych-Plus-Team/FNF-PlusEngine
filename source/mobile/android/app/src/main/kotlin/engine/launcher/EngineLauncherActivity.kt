@@ -4,7 +4,9 @@ import android.Manifest
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -21,6 +23,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -88,6 +91,14 @@ import kotlin.concurrent.thread
 import org.json.JSONObject
 
 class EngineLauncherActivity : ComponentActivity() {
+	private companion object {
+		private const val DOCUMENTS_UI_BROWSE_ACTION = "android.provider.action.BROWSE"
+		private const val EXTERNAL_STORAGE_AUTHORITY = "com.android.externalstorage.documents"
+		private const val FORCE_LANDSCAPE_EXTRA = "org.haxe.lime.forceLandscapeBeforeSdl"
+		private const val PRIMARY_ROOT_ID = "primary"
+		private val DOCUMENTS_UI_PACKAGES = listOf(null, "com.google.android.documentsui", "com.android.documentsui")
+	}
+
 	private val modInstallerPackages = listOf(
 		"com.leninasto.fnfmodinstaler",
 		"com.leninasto.fnfmodinstaller"
@@ -97,6 +108,7 @@ class EngineLauncherActivity : ComponentActivity() {
 	private var storageRows by mutableStateOf(emptyList<StorageItem>())
 	private var updateState by mutableStateOf(UpdateState())
 	private var modInstallerInstalled by mutableStateOf(false)
+	private var gameLaunchPending = false
 
 	private val runtimePermissionLauncher = registerForActivityResult(
 		ActivityResultContracts.RequestMultiplePermissions()
@@ -116,8 +128,8 @@ class EngineLauncherActivity : ComponentActivity() {
 					updateState = updateState,
 					modInstallerInstalled = modInstallerInstalled,
 					onStartGame = ::startGame,
-					onOpenData = { openFolderSaf(getGameDataDirectory()) },
-					onOpenExternal = { openFolderSaf(getPublicEngineDirectory()) },
+					onOpenData = { openFolderInFiles(getGameDataDirectory()) },
+					onOpenExternal = { openFolderInFiles(getPublicEngineDirectory()) },
 					onRequestPermissions = ::requestMissingPermissions,
 					onOpenSettings = ::openBestPermissionSettings,
 					onCheckUpdates = ::checkForUpdates,
@@ -133,17 +145,37 @@ class EngineLauncherActivity : ComponentActivity() {
 
 	override fun onResume() {
 		super.onResume()
+		requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+		gameLaunchPending = false
 		refreshState()
 	}
 
 	private fun refreshState() {
 		permissions = buildPermissionItems()
-		modInstallerInstalled = findModInstallerIntent() != null
+		modInstallerInstalled = findModInstallerPackage() != null
 		refreshStorage()
 	}
 
 	private fun startGame() {
-		startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
+		if (gameLaunchPending) return
+
+		gameLaunchPending = true
+		requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+
+		val launchDelay = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 80L else 360L
+		window.decorView.postDelayed({
+			val intent = Intent(this, MainActivity::class.java)
+				.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+				.putExtra(FORCE_LANDSCAPE_EXTRA, true)
+
+			runCatching {
+				startActivity(intent)
+			}.onFailure {
+				gameLaunchPending = false
+				requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+				Toast.makeText(this, it.localizedMessage ?: it.toString(), Toast.LENGTH_LONG).show()
+			}
+		}, launchDelay)
 	}
 
 	private fun getGameDataDirectory(): File {
@@ -155,34 +187,27 @@ class EngineLauncherActivity : ComponentActivity() {
 		return File(getSharedStorageRoot(), ".PlusEngine")
 	}
 
-	private fun openFolderSaf(folder: File) {
+	private fun openFolderInFiles(folder: File) {
 		folder.mkdirs()
 
-		val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-			.addFlags(
-				Intent.FLAG_GRANT_READ_URI_PERMISSION or
-					Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-					Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
-					Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
-			)
-			.putExtra("android.provider.extra.SHOW_ADVANCED", true)
+		val target = getDocumentsUiFolderTarget(folder)
+		if (target == null) {
+			Toast.makeText(this, folder.absolutePath, Toast.LENGTH_LONG).show()
+			return
+		}
 
-		getSafInitialUri(folder)?.let { initialUri ->
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-				intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, initialUri)
+		for (intent in buildFolderBrowseIntents(target)) {
+			runCatching {
+				startActivity(intent)
+			}.onSuccess {
+				return
 			}
 		}
 
-		runCatching {
-			startActivity(intent)
-		}.onFailure {
-			Toast.makeText(this, folder.absolutePath, Toast.LENGTH_LONG).show()
-		}
+		Toast.makeText(this, folder.absolutePath, Toast.LENGTH_LONG).show()
 	}
 
-	private fun getSafInitialUri(folder: File): Uri? {
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
-
+	private fun getDocumentsUiFolderTarget(folder: File): FolderTarget? {
 		val root = getSharedStorageRoot().absolutePath.replace('\\', '/').trimEnd('/')
 		val path = folder.absolutePath.replace('\\', '/')
 		if (!path.startsWith(root)) return null
@@ -190,7 +215,35 @@ class EngineLauncherActivity : ComponentActivity() {
 		val relative = path.removePrefix(root).trimStart('/')
 		if (relative.isBlank()) return null
 
-		return Uri.parse("content://com.android.externalstorage.documents/document/${Uri.encode("primary:$relative")}")
+		val documentId = "$PRIMARY_ROOT_ID:$relative"
+		return FolderTarget(
+			documentUri = DocumentsContract.buildDocumentUri(EXTERNAL_STORAGE_AUTHORITY, documentId),
+			rootUri = DocumentsContract.buildRootUri(EXTERNAL_STORAGE_AUTHORITY, PRIMARY_ROOT_ID)
+		)
+	}
+
+	private fun buildFolderBrowseIntents(target: FolderTarget): List<Intent> {
+		val baseIntents = listOf(
+			Intent(DOCUMENTS_UI_BROWSE_ACTION)
+				.setData(target.documentUri),
+			Intent(Intent.ACTION_VIEW)
+				.setDataAndType(target.documentUri, DocumentsContract.Document.MIME_TYPE_DIR),
+			Intent(Intent.ACTION_VIEW)
+				.setDataAndType(target.rootUri, DocumentsContract.Root.MIME_TYPE_ITEM)
+				.putExtra(DocumentsContract.EXTRA_INITIAL_URI, target.documentUri)
+		)
+
+		return baseIntents.flatMap { base ->
+			DOCUMENTS_UI_PACKAGES.map { packageName ->
+				Intent(base)
+					.addCategory(Intent.CATEGORY_DEFAULT)
+					.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+					.putExtra("android.provider.extra.SHOW_ADVANCED", true)
+					.apply {
+						if (packageName != null) setPackage(packageName)
+					}
+			}
+		}
 	}
 
 	@Suppress("DEPRECATION")
@@ -443,11 +496,34 @@ class EngineLauncherActivity : ComponentActivity() {
 	}
 
 	private fun findModInstallerIntent(): Intent? {
-		for (packageName in modInstallerPackages) {
-			val intent = packageManager.getLaunchIntentForPackage(packageName)
-			if (intent != null) return intent
+		val packageName = findModInstallerPackage() ?: return null
+		val intent = packageManager.getLaunchIntentForPackage(packageName)
+		if (intent != null) return intent
+
+		val detailsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+			.setData(Uri.parse("package:$packageName"))
+		if (detailsIntent.resolveActivity(packageManager) != null) {
+			return detailsIntent
 		}
 		return null
+	}
+
+	private fun findModInstallerPackage(): String? {
+		for (packageName in modInstallerPackages) {
+			if (isPackageInstalled(packageName)) return packageName
+		}
+		return null
+	}
+
+	private fun isPackageInstalled(packageName: String): Boolean {
+		return runCatching {
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+				packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+			} else {
+				@Suppress("DEPRECATION")
+				packageManager.getPackageInfo(packageName, 0)
+			}
+		}.isSuccess
 	}
 
 	private fun openGithub() {
@@ -477,6 +553,11 @@ private enum class PermissionStatus {
 private data class StorageItem(
 	val label: String,
 	val value: String
+)
+
+private data class FolderTarget(
+	val documentUri: Uri,
+	val rootUri: Uri
 )
 
 private data class UpdateState(
@@ -548,153 +629,170 @@ private fun LauncherScreen(
 	onSetLanguage: (String) -> Unit
 ) {
 	Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-		Box(
-			modifier = Modifier
-				.fillMaxSize()
-				.background(
-					Brush.linearGradient(
-						listOf(
-							MaterialTheme.colorScheme.background,
-							MaterialTheme.colorScheme.surface,
-							MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.38f)
+		BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+			val compact = maxWidth < 720.dp
+			val pagePadding = if (compact) 14.dp else 24.dp
+
+			Box(
+				modifier = Modifier
+					.fillMaxSize()
+					.background(
+						Brush.linearGradient(
+							listOf(
+								MaterialTheme.colorScheme.background,
+								MaterialTheme.colorScheme.surface,
+								MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.38f)
+							)
 						)
 					)
-				)
-		) {
-			LazyColumn(
-				modifier = Modifier.fillMaxSize(),
-				contentPadding = PaddingValues(24.dp),
-				verticalArrangement = Arrangement.spacedBy(16.dp)
 			) {
-				item {
-					Header(onStartGame)
-				}
-
-				item {
-					Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-						LauncherCard(
-							title = stringResource(R.string.plus_launcher_files),
-							icon = Icons.Rounded.FolderOpen,
-							modifier = Modifier.weight(1f)
-						) {
-							ActionRow {
-								OutlinedButton(onClick = onOpenData, modifier = Modifier.weight(1f)) {
-									Text(stringResource(R.string.plus_launcher_open_data), maxLines = 1, overflow = TextOverflow.Ellipsis)
-								}
-								OutlinedButton(onClick = onOpenExternal, modifier = Modifier.weight(1f)) {
-									Text(stringResource(R.string.plus_launcher_open_external), maxLines = 1, overflow = TextOverflow.Ellipsis)
-								}
-							}
-						}
-
-						LauncherCard(
-							title = stringResource(R.string.plus_launcher_mod_installer),
-							icon = Icons.AutoMirrored.Rounded.Launch,
-							modifier = Modifier.weight(1f)
-						) {
-							StatusPill(
-								text = if (modInstallerInstalled) stringResource(R.string.plus_launcher_installed) else stringResource(R.string.plus_launcher_not_installed),
-								ok = modInstallerInstalled
-							)
-							Spacer(Modifier.height(12.dp))
-							Button(onClick = onOpenModInstaller, modifier = Modifier.fillMaxWidth()) {
-								Text(stringResource(R.string.plus_launcher_open_mod_installer))
-							}
-						}
+				LazyColumn(
+					modifier = Modifier.fillMaxSize(),
+					contentPadding = PaddingValues(pagePadding),
+					verticalArrangement = Arrangement.spacedBy(14.dp)
+				) {
+					item {
+						Header(onStartGame, compact)
 					}
-				}
 
-				item {
-					Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-						LauncherCard(
-							title = stringResource(R.string.plus_launcher_permissions),
-							icon = Icons.Rounded.Security,
-							modifier = Modifier.weight(1f)
-						) {
-							permissions.forEach { PermissionRow(it) }
-							Spacer(Modifier.height(12.dp))
-							ActionRow {
-								Button(onClick = onRequestPermissions, modifier = Modifier.weight(1f)) {
-									Text(stringResource(R.string.plus_launcher_request_permissions), maxLines = 1, overflow = TextOverflow.Ellipsis)
-								}
-								OutlinedButton(onClick = onOpenSettings, modifier = Modifier.weight(1f)) {
-									Text(stringResource(R.string.plus_launcher_open_settings), maxLines = 1, overflow = TextOverflow.Ellipsis)
-								}
-							}
-						}
-
-						LauncherCard(
-							title = stringResource(R.string.plus_launcher_updates),
-							icon = Icons.Rounded.SystemUpdate,
-							modifier = Modifier.weight(1f)
-						) {
-							Text(
-								text = "${updateState.currentVersion} -> ${updateState.latestVersion.ifBlank { updateState.currentVersion }}",
-								style = MaterialTheme.typography.bodyLarge,
-								fontWeight = FontWeight.SemiBold
-							)
-							Text(
-								text = updateState.status.ifBlank { stringResource(R.string.plus_launcher_ready) },
-								color = MaterialTheme.colorScheme.onSurfaceVariant,
-								style = MaterialTheme.typography.bodyMedium
-							)
-							Spacer(Modifier.height(12.dp))
-							ActionRow {
-								Button(onClick = onCheckUpdates, enabled = !updateState.checking, modifier = Modifier.weight(1f)) {
-									Icon(Icons.Rounded.Refresh, contentDescription = null)
-									Spacer(Modifier.width(8.dp))
-									Text(stringResource(R.string.plus_launcher_check_updates), maxLines = 1, overflow = TextOverflow.Ellipsis)
-								}
-								OutlinedButton(
-									onClick = onDownloadUpdate,
-									enabled = updateState.downloadUrl != null,
-									modifier = Modifier.weight(1f)
+					item {
+						AdaptiveCardPair(
+							compact = compact,
+							first = { modifier ->
+								LauncherCard(
+									title = stringResource(R.string.plus_launcher_files),
+									icon = Icons.Rounded.FolderOpen,
+									modifier = modifier
 								) {
-									Icon(Icons.Rounded.Download, contentDescription = null)
-									Spacer(Modifier.width(8.dp))
-									Text(stringResource(R.string.plus_launcher_download_update), maxLines = 1, overflow = TextOverflow.Ellipsis)
+									ActionRow {
+										OutlinedButton(onClick = onOpenData, modifier = Modifier.weight(1f)) {
+											Text(stringResource(R.string.plus_launcher_open_data), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										}
+										OutlinedButton(onClick = onOpenExternal, modifier = Modifier.weight(1f)) {
+											Text(stringResource(R.string.plus_launcher_open_external), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										}
+									}
+								}
+							},
+							second = { modifier ->
+								LauncherCard(
+									title = stringResource(R.string.plus_launcher_mod_installer),
+									icon = Icons.AutoMirrored.Rounded.Launch,
+									modifier = modifier
+								) {
+									StatusPill(
+										text = if (modInstallerInstalled) stringResource(R.string.plus_launcher_installed) else stringResource(R.string.plus_launcher_not_installed),
+										ok = modInstallerInstalled
+									)
+									Spacer(Modifier.height(12.dp))
+									Button(onClick = onOpenModInstaller, modifier = Modifier.fillMaxWidth()) {
+										Text(stringResource(R.string.plus_launcher_open_mod_installer), maxLines = 1, overflow = TextOverflow.Ellipsis)
+									}
 								}
 							}
-						}
+						)
 					}
-				}
 
-				item {
-					Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-						LauncherCard(
-							title = stringResource(R.string.plus_launcher_storage),
-							icon = Icons.Rounded.Storage,
-							modifier = Modifier.weight(1f)
-						) {
-							storageRows.forEach { StorageRow(it) }
-							Spacer(Modifier.height(12.dp))
-							OutlinedButton(onClick = onRefreshStorage, modifier = Modifier.fillMaxWidth()) {
-								Icon(Icons.Rounded.Refresh, contentDescription = null)
-								Spacer(Modifier.width(8.dp))
-								Text(stringResource(R.string.plus_launcher_refresh))
+					item {
+						AdaptiveCardPair(
+							compact = compact,
+							first = { modifier ->
+								LauncherCard(
+									title = stringResource(R.string.plus_launcher_permissions),
+									icon = Icons.Rounded.Security,
+									modifier = modifier
+								) {
+									permissions.forEach { PermissionRow(it) }
+									Spacer(Modifier.height(12.dp))
+									ActionRow {
+										Button(onClick = onRequestPermissions, modifier = Modifier.weight(1f)) {
+											Text(stringResource(R.string.plus_launcher_request_permissions), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										}
+										OutlinedButton(onClick = onOpenSettings, modifier = Modifier.weight(1f)) {
+											Text(stringResource(R.string.plus_launcher_open_settings), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										}
+									}
+								}
+							},
+							second = { modifier ->
+								LauncherCard(
+									title = stringResource(R.string.plus_launcher_updates),
+									icon = Icons.Rounded.SystemUpdate,
+									modifier = modifier
+								) {
+									Text(
+										text = "${updateState.currentVersion} -> ${updateState.latestVersion.ifBlank { updateState.currentVersion }}",
+										style = MaterialTheme.typography.bodyLarge,
+										fontWeight = FontWeight.SemiBold
+									)
+									Text(
+										text = updateState.status.ifBlank { stringResource(R.string.plus_launcher_ready) },
+										color = MaterialTheme.colorScheme.onSurfaceVariant,
+										style = MaterialTheme.typography.bodyMedium
+									)
+									Spacer(Modifier.height(12.dp))
+									ActionRow {
+										Button(onClick = onCheckUpdates, enabled = !updateState.checking, modifier = Modifier.weight(1f)) {
+											Icon(Icons.Rounded.Refresh, contentDescription = null)
+											Spacer(Modifier.width(8.dp))
+											Text(stringResource(R.string.plus_launcher_check_updates), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										}
+										OutlinedButton(
+											onClick = onDownloadUpdate,
+											enabled = updateState.downloadUrl != null,
+											modifier = Modifier.weight(1f)
+										) {
+											Icon(Icons.Rounded.Download, contentDescription = null)
+											Spacer(Modifier.width(8.dp))
+											Text(stringResource(R.string.plus_launcher_download_update), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										}
+									}
+								}
 							}
-						}
+						)
+					}
 
-						LauncherCard(
-							title = stringResource(R.string.plus_launcher_language),
-							icon = Icons.Rounded.Language,
-							modifier = Modifier.weight(1f)
-						) {
-							ActionRow {
-								OutlinedButton(onClick = { onSetLanguage("es") }, modifier = Modifier.weight(1f)) {
-									Text(stringResource(R.string.plus_launcher_spanish))
+					item {
+						AdaptiveCardPair(
+							compact = compact,
+							first = { modifier ->
+								LauncherCard(
+									title = stringResource(R.string.plus_launcher_storage),
+									icon = Icons.Rounded.Storage,
+									modifier = modifier
+								) {
+									storageRows.forEach { StorageRow(it) }
+									Spacer(Modifier.height(12.dp))
+									OutlinedButton(onClick = onRefreshStorage, modifier = Modifier.fillMaxWidth()) {
+										Icon(Icons.Rounded.Refresh, contentDescription = null)
+										Spacer(Modifier.width(8.dp))
+										Text(stringResource(R.string.plus_launcher_refresh), maxLines = 1, overflow = TextOverflow.Ellipsis)
+									}
 								}
-								OutlinedButton(onClick = { onSetLanguage("en") }, modifier = Modifier.weight(1f)) {
-									Text(stringResource(R.string.plus_launcher_english))
+							},
+							second = { modifier ->
+								LauncherCard(
+									title = stringResource(R.string.plus_launcher_language),
+									icon = Icons.Rounded.Language,
+									modifier = modifier
+								) {
+									ActionRow {
+										OutlinedButton(onClick = { onSetLanguage("es") }, modifier = Modifier.weight(1f)) {
+											Text(stringResource(R.string.plus_launcher_spanish), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										}
+										OutlinedButton(onClick = { onSetLanguage("en") }, modifier = Modifier.weight(1f)) {
+											Text(stringResource(R.string.plus_launcher_english), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										}
+									}
+									Spacer(Modifier.height(12.dp))
+									TextButton(onClick = onOpenGithub, modifier = Modifier.align(Alignment.End)) {
+										Text(stringResource(R.string.plus_launcher_github), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										Spacer(Modifier.width(6.dp))
+										Icon(Icons.AutoMirrored.Rounded.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
+									}
 								}
 							}
-							Spacer(Modifier.height(12.dp))
-							TextButton(onClick = onOpenGithub, modifier = Modifier.align(Alignment.End)) {
-								Text(stringResource(R.string.plus_launcher_github))
-								Spacer(Modifier.width(6.dp))
-								Icon(Icons.AutoMirrored.Rounded.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
-							}
-						}
+						)
 					}
 				}
 			}
@@ -703,60 +801,120 @@ private fun LauncherScreen(
 }
 
 @Composable
-private fun Header(onStartGame: () -> Unit) {
+private fun AdaptiveCardPair(
+	compact: Boolean,
+	first: @Composable (Modifier) -> Unit,
+	second: @Composable (Modifier) -> Unit
+) {
+	if (compact) {
+		Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
+			first(Modifier.fillMaxWidth())
+			second(Modifier.fillMaxWidth())
+		}
+	} else {
+		Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+			first(Modifier.weight(1f))
+			second(Modifier.weight(1f))
+		}
+	}
+}
+
+@Composable
+private fun Header(onStartGame: () -> Unit, compact: Boolean) {
 	Card(
 		modifier = Modifier.fillMaxWidth(),
-		shape = RoundedCornerShape(32.dp),
+		shape = RoundedCornerShape(if (compact) 26.dp else 32.dp),
 		colors = CardDefaults.cardColors(containerColor = Color(0xFF1C2027).copy(alpha = 0.94f)),
 		border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
 		elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
 	) {
-		Row(
-			modifier = Modifier
-				.fillMaxWidth()
-				.padding(22.dp),
-			verticalAlignment = Alignment.CenterVertically,
-			horizontalArrangement = Arrangement.spacedBy(18.dp)
-		) {
-			Box(
+		if (compact) {
+			Column(
 				modifier = Modifier
-					.size(64.dp)
-					.clip(CircleShape)
-					.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
-				contentAlignment = Alignment.Center
+					.fillMaxWidth()
+					.padding(18.dp),
+				verticalArrangement = Arrangement.spacedBy(16.dp)
 			) {
-				Icon(
-					imageVector = Icons.Rounded.PlayArrow,
-					contentDescription = null,
-					tint = MaterialTheme.colorScheme.primary,
-					modifier = Modifier.size(42.dp)
-				)
-			}
+				Row(
+					verticalAlignment = Alignment.CenterVertically,
+					horizontalArrangement = Arrangement.spacedBy(14.dp)
+				) {
+					LauncherIcon(size = 54)
+					Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+						LauncherTitle()
+					}
+				}
 
-			Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-				Text(
-					text = stringResource(R.string.plus_launcher_title),
-					style = MaterialTheme.typography.headlineMedium,
-					fontWeight = FontWeight.Black
-				)
-				Text(
-					text = stringResource(R.string.plus_launcher_subtitle),
-					style = MaterialTheme.typography.bodyLarge,
-					color = MaterialTheme.colorScheme.onSurfaceVariant
-				)
+				StartGameButton(onStartGame, modifier = Modifier.fillMaxWidth())
 			}
-
-			Button(
-				onClick = onStartGame,
-				shape = RoundedCornerShape(24.dp),
-				colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-				contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+		} else {
+			Row(
+				modifier = Modifier
+					.fillMaxWidth()
+					.padding(22.dp),
+				verticalAlignment = Alignment.CenterVertically,
+				horizontalArrangement = Arrangement.spacedBy(18.dp)
 			) {
-				Icon(Icons.Rounded.PlayArrow, contentDescription = null)
-				Spacer(Modifier.width(8.dp))
-				Text(stringResource(R.string.plus_launcher_start_game), fontWeight = FontWeight.Bold)
+				LauncherIcon(size = 64)
+
+				Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+					LauncherTitle()
+				}
+
+				StartGameButton(onStartGame)
 			}
 		}
+	}
+}
+
+@Composable
+private fun LauncherIcon(size: Int) {
+	Box(
+		modifier = Modifier
+			.size(size.dp)
+			.clip(CircleShape)
+			.background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+		contentAlignment = Alignment.Center
+	) {
+		Icon(
+			imageVector = Icons.Rounded.PlayArrow,
+			contentDescription = null,
+			tint = MaterialTheme.colorScheme.primary,
+			modifier = Modifier.size((size * 0.65f).dp)
+		)
+	}
+}
+
+@Composable
+private fun LauncherTitle() {
+	Text(
+		text = stringResource(R.string.plus_launcher_title),
+		style = MaterialTheme.typography.headlineMedium,
+		fontWeight = FontWeight.Black,
+		maxLines = 2,
+		overflow = TextOverflow.Ellipsis
+	)
+	Text(
+		text = stringResource(R.string.plus_launcher_subtitle),
+		style = MaterialTheme.typography.bodyLarge,
+		color = MaterialTheme.colorScheme.onSurfaceVariant,
+		maxLines = 2,
+		overflow = TextOverflow.Ellipsis
+	)
+}
+
+@Composable
+private fun StartGameButton(onStartGame: () -> Unit, modifier: Modifier = Modifier) {
+	Button(
+		onClick = onStartGame,
+		modifier = modifier,
+		shape = RoundedCornerShape(24.dp),
+		colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+		contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+	) {
+		Icon(Icons.Rounded.PlayArrow, contentDescription = null)
+		Spacer(Modifier.width(8.dp))
+		Text(stringResource(R.string.plus_launcher_start_game), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
 	}
 }
 

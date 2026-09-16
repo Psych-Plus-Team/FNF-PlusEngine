@@ -7,6 +7,11 @@
 	::foreach ANDROID_PERMISSIONS::<uses-permission android:name="::__current__::" />
 	::end::
 
+	<queries>
+		<package android:name="com.leninasto.fnfmodinstaler" />
+		<package android:name="com.leninasto.fnfmodinstaller" />
+	</queries>
+
 	<application ::if (ANDROID_TARGET_SDK_VERSION >= 33)::android:enableOnBackInvokedCallback="true" ::end::::foreach ANDROID_APPLICATION::::if ((value != null) && (value != ""))::::key::="::value::" ::end::::end::>
 
 		::if (WIN_ORIENTATION=="portrait")::
@@ -38,8 +43,9 @@
 			android:exported="false"
 			android:label="::APP_TITLE::"
 			android:launchMode="singleTask"
+			android:process=":game"
 			android:resizeableActivity="false"
-			android:screenOrientation="landscape">
+			android:screenOrientation="sensorLandscape">
 
 			::foreach ANDROID_ACCEPT_FILE_INTENT::
 			<intent-filter>

@@ -1289,7 +1289,7 @@ class FreeplayState extends MusicBeatState
 			searchField.focus();
 		}
 
-		if (!searchFocused && (controls.BACK || (touchPad != null && touchActionReleased(touchPad.buttonB))))
+		if (!searchFocused && (controls.BACK || touchPad.buttonB.justPressed #if android || FlxG.android.justReleased.BACK #end))
 		{
 			if (player.playingMusic)
 			{
@@ -1420,7 +1420,7 @@ class FreeplayState extends MusicBeatState
 			}
 		}
 		else if (!searchFocused
-			&& (controls.ACCEPT || (touchPad != null && touchActionReleased(touchPad.buttonA)))
+			&& (controls.ACCEPT || touchPad.buttonA.justPressed)
 			&& !player.playingMusic)
 		{
 			if (!inDifficultySelect)

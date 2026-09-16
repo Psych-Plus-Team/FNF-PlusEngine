@@ -270,7 +270,7 @@ class OptionsState extends MusicBeatState
 				#end
 			}
 
-			if (controls.BACK)
+			if (controls.BACK #if android || FlxG.android.justReleased.BACK #end)
 			{
 				var stop = callOnCompanionScript('onOptionsMenuBack', [curSelected, getSelectedOptionLabel()]);
 				if (stop == Function_Stop)

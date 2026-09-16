@@ -298,7 +298,7 @@ class ModsMenuState extends MusicBeatState {
 		if (searching) {
 			handleSearchInput();
 			#if android
-			if (controls.BACK) {
+			if (controls.BACK #if android || FlxG.android.justReleased.BACK #end) {
 				endSearch();
 				super.update(elapsed);
 				return;

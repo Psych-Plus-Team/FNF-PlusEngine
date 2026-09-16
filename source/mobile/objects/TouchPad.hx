@@ -68,10 +68,7 @@ class TouchPad extends MobileInputManager implements IMobileControls
 
 			for (buttonData in MobileData.dpadModes.get(DPad).buttons)
 			{
-				Reflect.setField(this, buttonData.button,
-					createButton(buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color),
-						Reflect.getProperty(this, buttonData.button).IDs));
-				add(Reflect.field(this, buttonData.button));
+				addButton(buttonData.button, buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color));
 			}
 		}
 
@@ -82,21 +79,18 @@ class TouchPad extends MobileInputManager implements IMobileControls
 
 			for (buttonData in MobileData.actionModes.get(Action).buttons)
 			{
-				Reflect.setField(this, buttonData.button,
-					createButton(buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color),
-						Reflect.getProperty(this, buttonData.button).IDs));
-				add(Reflect.field(this, buttonData.button));
+				addButton(buttonData.button, buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color));
 			}
 		}
 
 		switch (Extra)
 		{
 			case SINGLE:
-				add(buttonExtra = createButton(0, FlxG.height - 137, 's', 0xFF0066FF));
+				buttonExtra = addButton('buttonExtra', 0, FlxG.height - 137, 's', 0xFF0066FF);
 				setExtrasPos();
 			case DOUBLE:
-				add(buttonExtra = createButton(0, FlxG.height - 137, 's', 0xFF0066FF));
-				add(buttonExtra2 = createButton(FlxG.width - 132, FlxG.height - 137, 'g', 0xA6FF00));
+				buttonExtra = addButton('buttonExtra', 0, FlxG.height - 137, 's', 0xFF0066FF);
+				buttonExtra2 = addButton('buttonExtra2', FlxG.width - 132, FlxG.height - 137, 'g', 0xA6FF00);
 				setExtrasPos();
 			case NONE: // nothing
 		}
@@ -160,6 +154,45 @@ class TouchPad extends MobileInputManager implements IMobileControls
 				int++;
 			}
 		}
+	}
+
+	public function addButton(FieldName:String, X:Float, Y:Float, Graphic:String, ?Color:FlxColor = 0xFFFFFF, ?IDs:Array<MobileInputID>):TouchButton
+	{
+		var resolvedIDs = IDs;
+		if (resolvedIDs == null && FieldName != null && FieldName.length > 0)
+		{
+			var currentButton:Dynamic = Reflect.getProperty(this, FieldName);
+			if (Std.isOfType(currentButton, TouchButton))
+				resolvedIDs = cast(currentButton, TouchButton).IDs;
+		}
+
+		return addExistingButton(createButton(X, Y, Graphic, Color, resolvedIDs), FieldName);
+	}
+
+	public function addButtons(Buttons:Array<TouchButton>):Array<TouchButton>
+	{
+		if (Buttons == null)
+			return [];
+
+		for (button in Buttons)
+			addExistingButton(button);
+
+		return Buttons;
+	}
+
+	public function addExistingButton(Button:TouchButton, ?FieldName:String):TouchButton
+	{
+		if (Button == null)
+			return null;
+
+		if (FieldName != null && FieldName.length > 0)
+			Reflect.setField(this, FieldName, Button);
+
+		if (members.indexOf(Button) == -1)
+			add(Button);
+
+		updateTrackedButtons();
+		return Button;
 	}
 
 	private function createButton(X:Float, Y:Float, Graphic:String, ?Color:FlxColor = 0xFFFFFF, ?IDs:Array<MobileInputID>):TouchButton

@@ -186,7 +186,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		if (controls.UI_DOWN_P)
 			changeSelection(1);
 
-		if (controls.BACK)
+		if (controls.BACK #if android || FlxG.android.justReleased.BACK #end)
 		{
 			var backStop = callOnCompanionScript('onOptionsBack', [getCurrentOption(), curSelected]);
 			if (backStop == Function_Stop)
@@ -442,7 +442,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 	function bindingKeyUpdate(elapsed:Float)
 	{
-		if (touchPad.buttonB.pressed || FlxG.keys.pressed.ESCAPE || FlxG.gamepads.anyPressed(B))
+		if (touchPad.buttonB.pressed || FlxG.keys.pressed.ESCAPE || FlxG.gamepads.anyPressed(B) #if android || FlxG.android.justReleased.BACK #end)
 		{
 			holdingEsc += elapsed;
 			if (holdingEsc > 0.5)
@@ -451,7 +451,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 				closeBinding();
 			}
 		}
-		else if (touchPad.buttonC.pressed || FlxG.keys.pressed.BACKSPACE || FlxG.gamepads.anyPressed(BACK))
+		else if (touchPad.buttonC.pressed || FlxG.keys.pressed.BACKSPACE || FlxG.gamepads.anyPressed(BACK) #if android || FlxG.android.justReleased.BACK #end)
 		{
 			holdingEsc += elapsed;
 			if (holdingEsc > 0.5)
@@ -514,12 +514,12 @@ class BaseOptionsMenu extends MusicBeatSubstate
 					}
 				}
 
-				if (keyPressed != NONE && keyPressed != FlxGamepadInputID.BACK && keyPressed != FlxGamepadInputID.B)
+				if (keyPressed != NONE && keyPressed != FlxGamepadInputID.BACK && keyPressed != FlxGamepadInputID.B #if android || FlxG.android.justReleased.BACK #end)
 				{
 					changed = true;
 					curOption.keys.gamepad = keyPressed;
 				}
-				else if (keyReleased != NONE && (keyReleased == FlxGamepadInputID.BACK || keyReleased == FlxGamepadInputID.B))
+				else if (keyReleased != NONE && (keyReleased == FlxGamepadInputID.BACK || keyReleased == FlxGamepadInputID.B) #if android || FlxG.android.justReleased.BACK #end)
 				{
 					changed = true;
 					curOption.keys.gamepad = keyReleased;

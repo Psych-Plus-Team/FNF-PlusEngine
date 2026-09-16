@@ -224,9 +224,6 @@ class TypedTouchButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	override public function update(elapsed:Float):Void
 	{
 		super.update(elapsed);
-		// Advance the previous edge before reading touches so justPressed/justReleased
-		// stay visible to states that poll the explicit button vars next frame.
-		input.update();
 
 		if (visible)
 		{
@@ -235,6 +232,8 @@ class TypedTouchButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 			updateButton();
 			#end
 		}
+
+		input.update();
 	}
 
 	/**

@@ -124,7 +124,7 @@ class MasterEditorMenu extends MusicBeatState
 		}
 		#end
 
-		if (controls.BACK || (touchPad != null && touchPad.buttonB.justPressed))
+		if (controls.BACK || (touchPad != null && touchPad.buttonB.justPressed) #if android || FlxG.android.justReleased.BACK #end)
 		{
 			MusicBeatState.switchState(new MainMenuState());
 		}

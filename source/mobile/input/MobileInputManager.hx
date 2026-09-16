@@ -10,9 +10,10 @@ import haxe.ds.Map;
 class MobileInputManager extends FlxTypedSpriteGroup<TouchButton>
 {
 	/**
-	 * A map to keep track of all the buttons using it's ID
+	 * A map to keep track of all the buttons using their IDs.
+	 * Some layouts bind multiple physical buttons to the same input, so keep them all.
 	 */
-	public var trackedButtons:Map<MobileInputID, TouchButton> = new Map<MobileInputID, TouchButton>();
+	public var trackedButtons:Map<MobileInputID, Array<TouchButton>> = new Map<MobileInputID, Array<TouchButton>>();
 
 	public function new()
 	{
@@ -120,8 +121,8 @@ class MobileInputManager extends FlxTypedSpriteGroup<TouchButton>
 		switch (button)
 		{
 			case MobileInputID.ANY:
-				for (button in trackedButtons.keys())
-					if (checkStatusUnsafe(button, state) == true)
+				for (id in trackedButtons.keys())
+					if (checkButtonListStatus(trackedButtons.get(id), state))
 						return true;
 
 			case MobileInputID.NONE:
@@ -129,7 +130,7 @@ class MobileInputManager extends FlxTypedSpriteGroup<TouchButton>
 
 			default:
 				if (trackedButtons.exists(button))
-					return checkStatusUnsafe(button, state);
+					return checkButtonListStatus(trackedButtons.get(button), state);
 		}
 		return false;
 	}
@@ -153,14 +154,28 @@ class MobileInputManager extends FlxTypedSpriteGroup<TouchButton>
 		return false;
 	}
 
-	function checkStatusUnsafe(button:MobileInputID, state:ButtonsStates = JUST_PRESSED):Bool
+	function checkButtonListStatus(buttons:Array<TouchButton>, state:ButtonsStates = JUST_PRESSED):Bool
+	{
+		if (buttons == null)
+			return false;
+
+		for (button in buttons)
+		{
+			if (button != null && button.exists && checkStatusUnsafe(button, state))
+				return true;
+		}
+
+		return false;
+	}
+
+	function checkStatusUnsafe(button:TouchButton, state:ButtonsStates = JUST_PRESSED):Bool
 	{
 		return switch (state)
 		{
-			case RELEASED: trackedButtons.get(button).released;
-			case JUST_RELEASED: trackedButtons.get(button).justReleased;
-			case PRESSED: trackedButtons.get(button).pressed;
-			case JUST_PRESSED: trackedButtons.get(button).justPressed;
+			case RELEASED: button.released;
+			case JUST_RELEASED: button.justReleased;
+			case PRESSED: button.pressed;
+			case JUST_PRESSED: button.justPressed;
 		}
 	}
 
@@ -175,8 +190,12 @@ class MobileInputManager extends FlxTypedSpriteGroup<TouchButton>
 				{
 					if (!trackedButtons.exists(id))
 					{
-						trackedButtons.set(id, button);
+						trackedButtons.set(id, []);
 					}
+
+					var buttons = trackedButtons.get(id);
+					if (buttons.indexOf(button) == -1)
+						buttons.push(button);
 				}
 			}
 		});

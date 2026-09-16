@@ -354,7 +354,7 @@ class FreeplayState_Psych extends MusicBeatState
 			}
 		}
 
-		if (controls.BACK || touchActionReleased(touchPad.buttonB))
+		if (controls.BACK || touchPad.buttonB.justPressed #if android || FlxG.android.justReleased.BACK #end)
 		{
 			if (player.playingMusic)
 			{
@@ -458,7 +458,7 @@ class FreeplayState_Psych extends MusicBeatState
 				player.pauseOrResume(!player.playing);
 			}
 		}
-		else if ((controls.ACCEPT || touchActionReleased(touchPad.buttonA)) && !player.playingMusic)
+		else if ((controls.ACCEPT || touchPad.buttonB.justPressed) && !player.playingMusic)
 		{
 			persistentUpdate = false;
 
@@ -468,7 +468,7 @@ class FreeplayState_Psych extends MusicBeatState
 			try
 			{
 				Song.loadFromJson(poop, songLowercase);
-				PlayState.isStoryMode = false;
+				PlayState.isStoryMode = false; 
 				PlayState.storyDifficulty = curDifficulty;
 
 				trace('CURRENT WEEK: ' + WeekData.getWeekFileName());
