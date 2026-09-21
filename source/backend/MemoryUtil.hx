@@ -70,7 +70,7 @@ class MemoryUtil
 		{
 			trace('Error reading memory from /proc/status: ${e}');
 		}
-		#elseif linux
+		#elseif (linux || android)
 		try
 		{
 			#if cpp

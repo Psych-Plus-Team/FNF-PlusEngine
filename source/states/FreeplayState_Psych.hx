@@ -283,7 +283,7 @@ class FreeplayState_Psych extends MusicBeatState
 			ratingSplit[1] += '0';
 
 		var shiftMult:Int = 1;
-		if ((FlxG.keys.pressed.SHIFT || touchPad.buttonZ.pressed) && !player.playingMusic)
+		if ((FlxG.keys.pressed.SHIFT || touchPad.buttonZ.justPressed) && !player.playingMusic)
 			shiftMult = 3;
 
 		if (!player.playingMusic)
@@ -377,13 +377,13 @@ class FreeplayState_Psych extends MusicBeatState
 			}
 		}
 
-		if ((FlxG.keys.justPressed.CONTROL || touchActionReleased(touchPad.buttonC)) && !player.playingMusic)
+		if ((FlxG.keys.justPressed.CONTROL || touchPad.buttonC.justPressed) && !player.playingMusic)
 		{
 			persistentUpdate = false;
 			openSubState(new GameplayChangersSubstate());
 			removeTouchPad();
 		}
-		else if (FlxG.keys.justPressed.SPACE || touchActionReleased(touchPad.buttonX))
+		else if (FlxG.keys.justPressed.SPACE || touchPad.buttonX.justPressed)
 		{
 			if (instPlaying != curSelected && !player.playingMusic)
 			{
@@ -458,7 +458,7 @@ class FreeplayState_Psych extends MusicBeatState
 				player.pauseOrResume(!player.playing);
 			}
 		}
-		else if ((controls.ACCEPT || touchPad.buttonB.justPressed) && !player.playingMusic)
+		else if ((controls.ACCEPT || touchPad.buttonA.justPressed) && !player.playingMusic)
 		{
 			persistentUpdate = false;
 
@@ -468,7 +468,7 @@ class FreeplayState_Psych extends MusicBeatState
 			try
 			{
 				Song.loadFromJson(poop, songLowercase);
-				PlayState.isStoryMode = false; 
+				PlayState.isStoryMode = false;
 				PlayState.storyDifficulty = curDifficulty;
 
 				trace('CURRENT WEEK: ' + WeekData.getWeekFileName());
@@ -509,7 +509,7 @@ class FreeplayState_Psych extends MusicBeatState
 			DiscordClient.loadModRPC();
 			#end
 		}
-		else if ((controls.RESET || touchActionReleased(touchPad.buttonY)) && !player.playingMusic)
+		else if ((controls.RESET || touchPad.buttonY.justPressed) && !player.playingMusic)
 		{
 			persistentUpdate = false;
 			openSubState(new ResetScoreSubState(songs[curSelected].songName, curDifficulty, songs[curSelected].songCharacter));

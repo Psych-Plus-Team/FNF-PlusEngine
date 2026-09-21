@@ -298,16 +298,16 @@ class ModsMenuState extends MusicBeatState {
 		if (searching) {
 			handleSearchInput();
 			#if android
-			if (controls.BACK #if android || FlxG.android.justReleased.BACK #end) {
+			if (controls.BACK || touchPad.buttonB.justPressed #if android || FlxG.android.justReleased.BACK #end) {
 				endSearch();
 				super.update(elapsed);
 				return;
 			}
 			#end
 			if (view.length > 0) {
-				if (controls.UI_DOWN_P)
+				if (controls.UI_DOWN_P || touchPad.buttonDown.justPressed)
 					changeSel(1);
-				else if (controls.UI_UP_P)
+				else if (controls.UI_UP_P || touchPad.buttonUp.justPressed)
 					changeSel(-1);
 			}
 			super.update(elapsed);
@@ -322,7 +322,7 @@ class ModsMenuState extends MusicBeatState {
 				cycleFilter();
 		}
 
-		if (controls.BACK) {
+		if (controls.BACK || touchPad.buttonB.justPressed #if android || FlxG.android.justReleased.BACK #end) {
 			if (query.length > 0 || filterMode != 0) {
 				// first BACK clears the filter/search, second leaves
 				query = '';
@@ -341,9 +341,9 @@ class ModsMenuState extends MusicBeatState {
 				|| FlxG.gamepads.anyPressed(LEFT_SHOULDER)
 				|| FlxG.gamepads.anyPressed(RIGHT_SHOULDER)) ? 4 : 1;
 
-			if (controls.UI_DOWN_P)
+			if (controls.UI_DOWN_P || touchPad.buttonDown.justPressed)
 				changeSel(shiftMult);
-			else if (controls.UI_UP_P)
+			else if (controls.UI_UP_P || touchPad.buttonUp.justPressed)
 				changeSel(-shiftMult);
 			else if (FlxG.mouse.wheel != 0)
 				changeSel(-FlxG.mouse.wheel * shiftMult);
@@ -373,9 +373,9 @@ class ModsMenuState extends MusicBeatState {
 
 			// Reorder (only meaningful in the unfiltered/un-searched ALL view).
 			if (filterMode == 0 && query.length == 0) {
-				if (controls.UI_LEFT_P)
+				if (controls.UI_LEFT_P || touchPad.buttonLeft.justPressed)
 					moveSelected(-1);
-				else if (controls.UI_RIGHT_P)
+				else if (controls.UI_RIGHT_P || touchPad.buttonRight.justPressed)
 					moveSelected(1);
 			}
 
@@ -387,7 +387,7 @@ class ModsMenuState extends MusicBeatState {
 					toggleAll();
 				else
 					toggleSelected();
-			} else if (controls.ACCEPT)
+			} else if (controls.ACCEPT || touchPad.buttonA.justPressed)
 				launchSelected();
 			else if (FlxG.keys.justPressed.TAB || FlxG.gamepads.anyJustPressed(X))
 				openSelectedSettings();

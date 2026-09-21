@@ -1189,7 +1189,7 @@ class FreeplayState extends MusicBeatState
 			ratingDisplay = '-' + ratingDisplay;
 
 		var shiftMult:Int = 1;
-		if ((FlxG.keys.pressed.SHIFT || (touchPad != null && touchPad.buttonZ.pressed)) && !player.playingMusic)
+		if ((FlxG.keys.pressed.SHIFT || touchPad.buttonZ.justPressed) && !player.playingMusic)
 			shiftMult = 3;
 
 		if (!searchFocused && !player.playingMusic)
@@ -1212,12 +1212,12 @@ class FreeplayState extends MusicBeatState
 						changeSelection();
 						holdTime = 0;
 					}
-					if (controls.UI_UP_P || (touchPad != null && touchPad.buttonUp.justPressed))
+					if (controls.UI_UP_P || touchPad.buttonUp.justPressed)
 					{
 						changeSelection(-shiftMult);
 						holdTime = 0;
 					}
-					if (controls.UI_DOWN_P || (touchPad != null && touchPad.buttonDown.justPressed))
+					if (controls.UI_DOWN_P || touchPad.buttonDown.justPressed)
 					{
 						changeSelection(shiftMult);
 						holdTime = 0;
@@ -1225,7 +1225,7 @@ class FreeplayState extends MusicBeatState
 
 					if (controls.UI_DOWN
 						|| controls.UI_UP
-						|| (touchPad != null && (touchPad.buttonDown.pressed || touchPad.buttonUp.pressed)))
+						|| (touchPad.buttonDown.justPressed || touchPad.buttonUp.justPressed))
 					{
 						var checkLastHold:Int = Math.floor((holdTime - 0.5) * 10);
 						holdTime += elapsed;
@@ -1233,7 +1233,7 @@ class FreeplayState extends MusicBeatState
 
 						if (holdTime > 0.5 && checkNewHold - checkLastHold > 0)
 						{
-							var isUp:Bool = controls.UI_UP || (touchPad != null && touchPad.buttonUp.pressed);
+							var isUp:Bool = controls.UI_UP || touchPad.buttonUp.justPressed;
 							changeSelection((checkNewHold - checkLastHold) * (isUp ? -shiftMult : shiftMult));
 						}
 					}
@@ -1246,11 +1246,11 @@ class FreeplayState extends MusicBeatState
 			}
 			else
 			{
-				if (controls.UI_UP_P || (touchPad != null && touchPad.buttonUp.justPressed))
+				if (controls.UI_UP_P || touchPad.buttonUp.justPressed)
 				{
 					changeDifficultySelection(-1);
 				}
-				if (controls.UI_DOWN_P || (touchPad != null && touchPad.buttonDown.justPressed))
+				if (controls.UI_DOWN_P || touchPad.buttonDown.justPressed)
 				{
 					changeDifficultySelection(1);
 				}
@@ -1322,14 +1322,14 @@ class FreeplayState extends MusicBeatState
 		}
 
 		if (!searchFocused
-			&& (FlxG.keys.justPressed.CONTROL || (touchPad != null && touchActionReleased(touchPad.buttonC)))
+			&& (FlxG.keys.justPressed.CONTROL || touchPad.buttonC.justPressed)
 			&& !player.playingMusic)
 		{
 			persistentUpdate = false;
 			removeTouchPad();
 			openSubState(backend.ScriptableSubstate.tryCreate('GameplayChangersSubstate', new GameplayChangersSubstate()));
 		}
-		if (!searchFocused && (FlxG.keys.justPressed.SPACE || (touchPad != null && touchActionReleased(touchPad.buttonX))))
+		if (!searchFocused && (FlxG.keys.justPressed.SPACE || touchPad.buttonX.justPressed))
 		{
 			if (instPlaying != curSelected && !player.playingMusic)
 			{
@@ -1532,7 +1532,7 @@ class FreeplayState extends MusicBeatState
 				#end
 			}
 		}
-		else if (!searchFocused && (controls.RESET || (touchPad != null && touchActionReleased(touchPad.buttonY))) && !player.playingMusic)
+		else if (!searchFocused && (controls.RESET || touchPad.buttonY.justPressed) && !player.playingMusic)
 		{
 			persistentUpdate = false;
 			removeTouchPad();

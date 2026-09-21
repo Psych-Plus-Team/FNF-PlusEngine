@@ -61,11 +61,11 @@ class TouchPad extends MobileInputManager implements IMobileControls
 	{
 		super();
 
+		DPad = resolveMode(DPad, MobileData.dpadModes, 'LEFT_FULL', 'd-pad');
+		Action = resolveMode(Action, MobileData.actionModes, 'A', 'action');
+
 		if (DPad != "NONE")
 		{
-			if (!MobileData.dpadModes.exists(DPad))
-				throw Language.getPhrase('touchpad_dpadmode_missing', 'The touchPad dpadMode "{1}" doesn\'t exist.', [DPad]);
-
 			for (buttonData in MobileData.dpadModes.get(DPad).buttons)
 			{
 				addButton(buttonData.button, buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color));
@@ -74,9 +74,6 @@ class TouchPad extends MobileInputManager implements IMobileControls
 
 		if (Action != "NONE")
 		{
-			if (!MobileData.actionModes.exists(Action))
-				throw Language.getPhrase('touchpad_actionmode_missing', 'The touchPad actionMode "{1}" doesn\'t exist.', [DPad]);
-
 			for (buttonData in MobileData.actionModes.get(Action).buttons)
 			{
 				addButton(buttonData.button, buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color));
@@ -100,6 +97,22 @@ class TouchPad extends MobileInputManager implements IMobileControls
 		updateTrackedButtons();
 
 		instance = this;
+	}
+
+	private static function resolveMode(Mode:String, Modes:Dynamic, Fallback:String, Kind:String):String
+	{
+		if (Mode == null || Mode.length == 0)
+			Mode = 'NONE';
+
+		if (Kind == 'd-pad' && Mode == 'FULL')
+			Mode = 'LEFT_FULL';
+
+		if (Mode == 'NONE' || Modes.exists(Mode))
+			return Mode;
+
+		var resolvedFallback = Modes.exists(Fallback) ? Fallback : 'NONE';
+		trace('Warning: touchPad $Kind mode "$Mode" does not exist. Falling back to "$resolvedFallback".');
+		return resolvedFallback;
 	}
 
 	override public function destroy()

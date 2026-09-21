@@ -450,7 +450,7 @@ class LoadingState extends MusicBeatState
 		{
 			for (key => bitmap in pending)
 			{
-				if (bitmap != null && Paths.cacheBitmap(pendingKeys.get(key), bitmap) != null)
+				if (bitmap != null && Paths.cacheBitmap(key, null, bitmap) != null)
 				{
 				} // trace('finished preloading image $key');
 				else

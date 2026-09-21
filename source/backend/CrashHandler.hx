@@ -132,7 +132,11 @@ class CrashHandler
 
 		// Message with a help link
 		var errorMsg = '$m\n\n$stackLabel\n\n========================\nNeed help? Visit:\n$HELP_LINK';
+		#if android
+		showAndroidCrash(errorMsg, "Error!");
+		#else
 		CoolUtil.showPopUp(errorMsg, "Error!");
+		#end
 		#if DISCORD_ALLOWED DiscordClient.shutdown(); #end
 		lime.system.System.exit(1);
 	}
@@ -165,9 +169,29 @@ class CrashHandler
 
 		// Message with a help link
 		var errorMsg = '$errorLog\n\n========================\nNeed help? Visit:\n$HELP_LINK';
+		#if android
+		showAndroidCrash(errorMsg, "Critical Error!");
+		#else
 		CoolUtil.showPopUp(errorMsg, "Critical Error!");
+		#end
 		#if DISCORD_ALLOWED DiscordClient.shutdown(); #end
 		lime.system.System.exit(1);
+	}
+	#end
+
+	#if android
+	private static function showAndroidCrash(message:String, title:String):Void
+	{
+		try
+		{
+			lime.system.JNI.createStaticMethod('org/haxe/lime/LimeCrashHandler', 'showHaxeCrash',
+				'(Ljava/lang/String;Ljava/lang/String;)V', false, true)(title, message);
+		}
+		catch (e:Dynamic)
+		{
+			trace('Android crash activity dispatch failed: $e');
+			CoolUtil.showPopUp(message, title);
+		}
 	}
 	#end
 

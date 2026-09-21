@@ -90,6 +90,9 @@ class PlayState extends MusicBeatState
 {
 	public static var STRUM_X = 42;
 	public static var STRUM_X_MIDDLESCROLL = -278;
+	// Psych mobile/mania mods commonly read PlayState.mania from Lua.
+	// Keep the classic 4K value exposed so old scripts do not crash on hit hooks.
+	public static var mania:Int = 3;
 	static inline final PERF_TRACE_HIT_MS:Float = #if mobile 1.5 #else 4.0 #end;
 	static inline final PERF_TRACE_FRAME_MS:Float = #if mobile 18.5 #else 22.0 #end;
 	static inline final PERF_TRACE_INTERVAL:Float = 1.0;
@@ -5936,10 +5939,30 @@ class PlayState extends MusicBeatState
 
 	private function hasExtraMobileButtonID(button:TouchButton):Bool
 	{
+		if (button == null || button.IDs == null)
+			return false;
+
 		for (id in button.IDs)
-			if (id.toString().startsWith("EXTRA"))
+		{
+			var name:String = id.toString();
+			if (name != null && name.startsWith("EXTRA"))
 				return true;
+		}
 		return false;
+	}
+
+	private function getNoteMobileButtonID(button:TouchButton):Int
+	{
+		if (button == null || button.IDs == null)
+			return -1;
+
+		for (id in button.IDs)
+		{
+			var name:String = id.toString();
+			if (name != null && name.startsWith('NOTE'))
+				return id;
+		}
+		return -1;
 	}
 
 	private function onButtonPress(button:TouchButton):Void
@@ -5947,7 +5970,10 @@ class PlayState extends MusicBeatState
 		if (hasExtraMobileButtonID(button))
 			return;
 
-		var buttonCode:Int = (button.IDs[0].toString().startsWith('NOTE')) ? button.IDs[0] : button.IDs[1];
+		var buttonCode:Int = getNoteMobileButtonID(button);
+		if (buttonCode < 0)
+			return;
+
 		callOnScripts('onButtonPressPre', [buttonCode]);
 		if (button.justPressed)
 			keyPressed(buttonCode);
@@ -5959,7 +5985,10 @@ class PlayState extends MusicBeatState
 		if (hasExtraMobileButtonID(button))
 			return;
 
-		var buttonCode:Int = (button.IDs[0].toString().startsWith('NOTE')) ? button.IDs[0] : button.IDs[1];
+		var buttonCode:Int = getNoteMobileButtonID(button);
+		if (buttonCode < 0)
+			return;
+
 		callOnScripts('onButtonReleasePre', [buttonCode]);
 		if (buttonCode > -1)
 			keyReleased(buttonCode);
