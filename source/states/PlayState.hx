@@ -4348,6 +4348,21 @@ class PlayState extends MusicBeatState
 						iconGF.flipX = true;
 					}
 				}
+
+			case 'Change UI':
+				var skinChanged:Bool = false;
+				if (value1 != null && value1.trim().length > 0)
+				{
+					SONG.arrowSkin = value1.trim();
+					skinChanged = true;
+				}
+				if (value2 != null && value2.trim().length > 0)
+				{
+					SONG.splashSkin = value2.trim();
+					skinChanged = true;
+				}
+				if (skinChanged)
+					reloadAllNotesSkin();
 		}
 
 		stagesFunc(function(stage:BaseStage) stage.eventCalled(eventName, value1, value2, value3, value4, flValue1, flValue2, flValue3, flValue4, strumTime));
@@ -6645,6 +6660,38 @@ class PlayState extends MusicBeatState
 		splash.babyArrow = strum;
 		splash.spawnSplashNote(x, y, data, note);
 		grpNoteSplashes.add(splash);
+	}
+
+	public function reloadAllNotesSkin():Void
+	{
+			var newSkin:String = null;
+			if (PlayState.SONG != null && PlayState.SONG.arrowSkin != null && PlayState.SONG.arrowSkin.length > 1)
+					newSkin = PlayState.SONG.arrowSkin;
+			else
+					newSkin = Note.getDefaultNoteSkinPath(PlayState.isPixelStage);
+			newSkin = Note.resolveNoteSkinPath(newSkin, PlayState.isPixelStage);
+
+			for (note in unspawnNotes)
+					if (note != null)
+							note.reloadNote();
+
+			for (note in notes)
+					if (note != null)
+							note.reloadNote();
+
+			if (newSkin != null && newSkin.length > 0)
+			{
+					for (strum in strumLineNotes)
+							if (strum != null)
+									strum.texture = newSkin;
+			}
+
+			NoteSplash.configs.clear();
+			NoteSplash.clearCache();
+
+			for (splash in grpNoteSplashes)
+					if (splash != null)
+							splash.loadSplash();
 	}
 
 	override function destroy()
