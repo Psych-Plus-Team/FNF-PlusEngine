@@ -212,15 +212,13 @@ class PlayState extends MusicBeatState
 		{
 			Paths.setUIPath(value);
 
-			var baseName = value;
-			var isPixel = false;
-			if (value.endsWith("-pixel"))
-			{
-				baseName = value.substr(0, value.length - 6);
-				isPixel = true;
-			}
-			uiPrefix = baseName + "UI/";
-			if (isPixel || value == "pixel")
+			var baseName:String = Paths.uiBasePath;
+			if (baseName != null && baseName.length > 0)
+				uiPrefix = baseName + "/";
+
+			uiPostfix = (Paths.uiSuffix != null) ? Paths.uiSuffix : "";
+
+			if (value == "pixel")
 				uiPostfix = "-pixel";
 		}
 		else
@@ -1821,16 +1819,13 @@ class PlayState extends MusicBeatState
 
 	function cacheCountdown()
 	{
-		var introAssets:Map<String, Array<String>> = new Map<String, Array<String>>();
-		var introImagesArray:Array<String> = switch (stageUI)
-		{
-			case "pixel": ['pixelUI/ready-pixel', 'pixelUI/set-pixel', 'pixelUI/date-pixel'];
-			case "normal": ["ready", "set", "go"];
-			default: [Paths.getUIPath("ready"), Paths.getUIPath("set"), Paths.getUIPath("go")];
-		}
-		introAssets.set(stageUI, introImagesArray);
-		var introAlts:Array<String> = introAssets.get(stageUI);
-		for (asset in introAlts)
+		var introAssets:Array<String> = [
+			Paths.getUIPath("ready"),
+			Paths.getUIPath("set"),
+			Paths.getUIPath("go")
+		];
+
+		for (asset in introAssets)
 			Paths.image(asset);
 
 		Paths.sound('intro3' + introSoundsSuffix);
@@ -1894,16 +1889,12 @@ class PlayState extends MusicBeatState
 			{
 				characterBopper(tmr.loopsLeft);
 
-				var introAssets:Map<String, Array<String>> = new Map<String, Array<String>>();
-				var introImagesArray:Array<String> = switch (stageUI)
-				{
-					case "pixel": ['pixelUI/ready-pixel', 'pixelUI/set-pixel', 'pixelUI/date-pixel'];
-					case "normal": ["ready", "set", "go"];
-					default: [Paths.getUIPath("ready"), Paths.getUIPath("set"), Paths.getUIPath("go")];
-				}
-				introAssets.set(stageUI, introImagesArray);
-
-				var introAlts:Array<String> = introAssets.get(stageUI);
+				var introImagesArray:Array<String> = [
+					Paths.getUIPath("ready"),
+					Paths.getUIPath("set"),
+					Paths.getUIPath("go")
+				];
+				var introAlts:Array<String> = introImagesArray;
 				var antialias:Bool = (ClientPrefs.data.antialiasing && !isPixelStage);
 				var tick:Countdown = THREE;
 
@@ -2005,16 +1996,12 @@ class PlayState extends MusicBeatState
 			var swagCounter:Int = 0;
 			new FlxTimer().start(Conductor.crochet / 1000 / playbackRate, function(tmr:FlxTimer)
 			{
-				var introAssets:Map<String, Array<String>> = new Map<String, Array<String>>();
-				var introImagesArray:Array<String> = switch (stageUI)
-				{
-					case "pixel": ['pixelUI/ready-pixel', 'pixelUI/set-pixel', 'pixelUI/date-pixel'];
-					case "normal": ["ready", "set", "go"];
-					default: [Paths.getUIPath("ready"), Paths.getUIPath("set"), Paths.getUIPath("go")];
-				}
-				introAssets.set(stageUI, introImagesArray);
-
-				var introAlts:Array<String> = introAssets.get(stageUI);
+				var introImagesArray:Array<String> = [
+					Paths.getUIPath("ready"),
+					Paths.getUIPath("set"),
+					Paths.getUIPath("go")
+				];
+				var introAlts:Array<String> = introImagesArray;
 				var antialias:Bool = (ClientPrefs.data.antialiasing && !isPixelStage);
 				var tick:Countdown = THREE;
 
@@ -2024,15 +2011,15 @@ class PlayState extends MusicBeatState
 						FlxG.sound.play(Paths.sound('intro3' + introSoundsSuffix), 0.6);
 						tick = THREE;
 					case 1:
-						countdownReady = createCountdownSprite(introAlts[1], antialias);
+						countdownReady = createCountdownSprite(introAlts[0], antialias);
 						FlxG.sound.play(Paths.sound('intro2' + introSoundsSuffix), 0.6);
 						tick = TWO;
 					case 2:
-						countdownSet = createCountdownSprite(introAlts[2], antialias);
+						countdownSet = createCountdownSprite(introAlts[1], antialias);
 						FlxG.sound.play(Paths.sound('intro1' + introSoundsSuffix), 0.6);
 						tick = ONE;
 					case 3:
-						countdownGo = createCountdownSprite(introAlts[3], antialias);
+						countdownGo = createCountdownSprite(introAlts[2], antialias);
 						FlxG.sound.play(Paths.sound('introGo' + introSoundsSuffix), 0.6);
 						tick = GO;
 					case 4:
@@ -5190,38 +5177,18 @@ class PlayState extends MusicBeatState
 		if (clean.endsWith('.png'))
 			clean = clean.substr(0, clean.length - 4);
 
-		var candidates:Array<String> = [];
-		function addCandidate(path:String):Void
-		{
-			if (path != null && path.length > 0 && !candidates.contains(path))
-				candidates.push(path);
-		}
-		function addPostfix(path:String):String
-		{
-			return (uiPostfix != null && uiPostfix.length > 0 && !path.endsWith(uiPostfix)) ? path + uiPostfix : path;
-		}
+		var resolved:String = Paths.getUIPath(clean);
+		if (resolved.startsWith('images/'))
+			resolved = resolved.substr(7);
 
-		if (stageUI != "normal")
-		{
-			if (uiPrefix != null && uiPrefix.length > 0)
-				addCandidate(addPostfix(uiPrefix + clean));
+		if (Paths.fileExists('images/$resolved.png', IMAGE))
+			return resolved;
 
-			if (isPixelStage)
-			{
-				addCandidate('pixelUI/' + addPostfix(clean));
-				addCandidate(addPostfix(clean));
-			}
-		}
-		addCandidate(clean);
+		var fallback:String = clean;
+		if (Paths.fileExists('images/$fallback.png', IMAGE))
+			return fallback;
 
-		for (candidate in candidates)
-		{
-			if (Paths.fileExists('images/$candidate.png', IMAGE))
-				return candidate;
-		}
-
-		trace('[PlayState] Missing popup sprite "$asset" for stageUI="$stageUI"; tried ${candidates.join(", ")}');
-		return candidates.length > 0 ? candidates[candidates.length - 1] : clean;
+		return resolved;
 	}
 
 	private function getTimingTagWindowLimit(judgement:Rating):Float
