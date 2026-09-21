@@ -84,29 +84,36 @@ class HealthIcon extends FlxSprite
 						frames = atlas;
 						var hasNormalAnim:Bool = false;
 						var hasLosingAnim:Bool = false;
+						var hasWinningAnim:Bool = false;
 
 						for (frame in frames.frames)
 						{
-							if (frame.name.startsWith('normal'))
-								hasNormalAnim = true;
-							if (frame.name.startsWith('losing'))
-								hasLosingAnim = true;
-							if (hasNormalAnim && hasLosingAnim)
-								break;
+								if (frame.name.startsWith('normal'))
+										hasNormalAnim = true;
+								if (frame.name.startsWith('losing'))
+										hasLosingAnim = true;
+								if (frame.name.startsWith('winning'))
+										hasWinningAnim = true;
+								if (hasNormalAnim && hasLosingAnim && hasWinningAnim)
+										break;
 						}
-						if (hasNormalAnim)
-						{
-							animation.addByPrefix('normal', 'normal', animFPS, true, isPlayer);
-							if (hasLosingAnim)
+							if (hasNormalAnim)
 							{
-								animation.addByPrefix('losing', 'losing', animFPS, true, isPlayer);
-							}
-							animation.play('normal');
+								animation.addByPrefix('normal', 'normal', animFPS, true, isPlayer);
+								if (hasLosingAnim)
+								{
+										animation.addByPrefix('losing', 'losing', animFPS, true, isPlayer);
+								}
+								if (hasWinningAnim)
+								{
+										animation.addByPrefix('winning', 'winning', animFPS, true, isPlayer);
+								}
+								animation.play('normal');
 						}
 						else
 						{
-							animation.addByPrefix(char, '', animFPS, true, isPlayer);
-							animation.play(char);
+								animation.addByPrefix(char, '', animFPS, true, isPlayer);
+								animation.play(char);
 						}
 
 						if (animation.curAnim != null && animation.curAnim.numFrames > 0)
@@ -223,18 +230,20 @@ class HealthIcon extends FlxSprite
 		if (!isAnimated)
 			return;
 
-		if (animation.getByName('losing') != null)
+		var hasLosing:Bool = animation.getByName('losing') != null;
+		var hasWinning:Bool = animation.getByName('winning') != null;
+
+		if (hasLosing || hasWinning)
 		{
-			if (healthPercent < 0.2)
-			{
-				if (animation.curAnim == null || animation.curAnim.name != 'losing')
-					playAnim('losing');
-			}
-			else
-			{
-				if (animation.curAnim == null || animation.curAnim.name != 'normal')
-					playAnim('normal');
-			}
+			var targetAnim:String = 'normal';
+
+			if (hasLosing && healthPercent < 0.2)
+				targetAnim = 'losing';
+			else if (hasWinning && healthPercent > 0.8)
+				targetAnim = 'winning';
+
+			if (animation.curAnim == null || animation.curAnim.name != targetAnim)
+				playAnim(targetAnim);
 		}
 	}
 

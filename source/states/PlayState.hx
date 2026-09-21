@@ -3539,7 +3539,7 @@ class PlayState extends MusicBeatState
 		{
 			iconP1.setGraphicSize(Std.int(FlxMath.lerp(150, iconP1.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
 			iconP2.setGraphicSize(Std.int(FlxMath.lerp(150, iconP2.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
-			iconGF.setGraphicSize(Std.int(FlxMath.lerp(150, iconP2.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
+			iconGF.setGraphicSize(Std.int(FlxMath.lerp(150, iconGF.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
 
 			iconP1.updateHitbox();
 			iconP2.updateHitbox();
@@ -3726,6 +3726,15 @@ class PlayState extends MusicBeatState
 		object.dirty = true;
 	}
 
+	private function getStaticIconFrame(healthPercent:Float, isPlayerSide:Bool):Int
+	{
+		if (healthPercent < 0.2)
+			return 1;
+		if (healthPercent > 0.8)
+			return 2;
+		return 0;
+	}
+
 	public function updateIconAnimations():Void
 	{
 		if (!iconsAnimations || healthBar == null || !healthBar.enabled)
@@ -3743,43 +3752,29 @@ class PlayState extends MusicBeatState
 		}
 		if (iconGF != null && iconGF.visible && iconGF.isAnimated)
 		{
-				if (gfIconSide == 'bf') {
-						iconGF.updateIconState(playOpponent ? healthPercent : 1 - healthPercent);
-				} else {
-						iconGF.updateIconState(playOpponent ? 1 - healthPercent : healthPercent);
-				}
+			if (gfIconSide == 'bf') {
+				iconGF.updateIconState(playOpponent ? healthPercent : 1 - healthPercent);
+			} else {
+				iconGF.updateIconState(playOpponent ? 1 - healthPercent : healthPercent);
+			}
 		}
 
 		if (iconP1 != null && !iconP1.isAnimated)
 		{
-			if (playOpponent)
-			{
-				iconP1.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0;
-				if (iconP2 != null)
-					iconP2.animation.curAnim.curFrame = (healthBar.percent < 20) ? 1 : 0;
-			}
-			else
-			{
-				iconP1.animation.curAnim.curFrame = (healthBar.percent < 20) ? 1 : 0; // If health is under 20%, change player icon to frame 1 (losing icon), otherwise, frame 0 (normal)
-				if (iconP2 != null)
-					iconP2.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0; // If health is over 80%, change opponent icon to frame 1 (losing icon), otherwise, frame 0 (normal)
-			}
+			var p1Health:Float = playOpponent ? healthPercent : 1 - healthPercent;
+			iconP1.animation.curAnim.curFrame = getStaticIconFrame(p1Health, true);
 		}
-
+		if (iconP2 != null && !iconP2.isAnimated)
+		{
+			var p2Health:Float = playOpponent ? 1 - healthPercent : healthPercent;
+			iconP2.animation.curAnim.curFrame = getStaticIconFrame(p2Health, false);
+		}
 		if (iconGF != null && iconGF.visible && !iconGF.isAnimated)
 		{
-			if (playOpponent)
-			{
-				iconGF.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0;
-				if (iconP2 != null)
-					iconGF.animation.curAnim.curFrame = (healthBar.percent < 20) ? 1 : 0;
-			}
-			else
-			{
-				iconGF.animation.curAnim.curFrame = (healthBar.percent < 20) ? 1 : 0;
-				if (iconP2 != null)
-					iconGF.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0;
-			}
+			var gfHealth:Float = (gfIconSide == 'bf')
+				? (playOpponent ? healthPercent : 1 - healthPercent)
+				: (playOpponent ? 1 - healthPercent : healthPercent);
+			iconGF.animation.curAnim.curFrame = getStaticIconFrame(gfHealth, gfIconSide == 'bf');
 		}
 	}
 
