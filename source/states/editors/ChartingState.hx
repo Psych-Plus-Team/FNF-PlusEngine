@@ -130,11 +130,11 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		[
 			'Add Secondary Icon',
 			"Value 1: Side of Health Bar (Dad, BF)\nValue 2: Swap position of BF and GF icons when GF Sing (true, false)"
-		]
+		],
 		[
 			'Change UI',
 			"Change noteskin and notesplash.\nValue 1: Noteskin name (leave blank to keep current)\nValue 2: Notesplash name (leave blank to keep current)"
-		],
+		]
 	];
 
 	public static var keysArray:Array<FlxKey> = [ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT]; // Used for Vortex Editor
