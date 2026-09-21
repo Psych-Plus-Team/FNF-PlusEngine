@@ -385,7 +385,6 @@ class HScript extends Iris
 		#if windows
 		set('WindowTweens', psychlua.backend.WindowTweens);
 		#end
-		set('TouchScroll', mobile.backend.TouchScroll);
 		set('TouchUtil', mobile.backend.TouchUtil);
 		set('MobileControlSelectSubState', mobile.substates.MobileControlSelectSubState);
 		set('MobileSettingsSubState', mobile.options.MobileSettingsSubState);
