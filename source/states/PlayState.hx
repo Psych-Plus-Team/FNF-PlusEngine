@@ -198,6 +198,8 @@ class PlayState extends MusicBeatState
 	public var dadGroup:FlxSpriteGroup;
 	public var gfGroup:FlxSpriteGroup;
 
+	public var temporaryStageUI:String = null;
+
 	public static var curStage:String = '';
 	public static var stageUI(default, set):String = "normal";
 	public static var uiPrefix:String = "";
@@ -4350,6 +4352,36 @@ class PlayState extends MusicBeatState
 				}
 				if (skinChanged)
 					reloadAllNotesSkin();
+
+				if (value3 != null && value3.trim().length > 0)
+				{
+					var newUI:String = value3.trim();
+					if (stageUI != newUI)
+					{
+						if (temporaryStageUI == null)
+							temporaryStageUI = stageUI;
+
+						stageUI = newUI;
+
+						reloadHealthBarColors();
+						reloadGradientColors();
+						refreshBreakTimerVisualStyle();
+
+						if (iconP1 != null)
+							iconP1.alpha = ClientPrefs.data.healthBarAlpha;
+						if (iconP2 != null)
+							iconP2.alpha = ClientPrefs.data.healthBarAlpha;
+						if (iconGF != null)
+							iconGF.alpha = ClientPrefs.data.healthBarAlpha;
+
+						cacheCountdown();
+						cachePopUpScore();
+
+						reloadAllNotesSkin();
+
+						callOnScripts('onUIChanged', [newUI]);
+					}
+				}
 		}
 
 		stagesFunc(function(stage:BaseStage) stage.eventCalled(eventName, value1, value2, value3, value4, flValue1, flValue2, flValue3, flValue4, strumTime));
@@ -6796,6 +6828,12 @@ class PlayState extends MusicBeatState
 			remove(pauseButton);
 			pauseButton.destroy();
 			pauseButton = null;
+		}
+
+		if (temporaryStageUI != null)
+		{
+			stageUI = temporaryStageUI;
+			temporaryStageUI = null;
 		}
 
 		instance = null;

@@ -133,7 +133,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		],
 		[
 			'Change UI',
-			"Change noteskin and notesplash.\nValue 1: Noteskin name (leave blank to keep current)\nValue 2: Notesplash name (leave blank to keep current)"
+			"Change noteskin and notesplash.\nValue 1: Noteskin name (leave blank to keep current)\nValue 2: Notesplash name (leave blank to keep current)\nValue 3: UI style name (leave blank to keep current)"
 		]
 	];
 
