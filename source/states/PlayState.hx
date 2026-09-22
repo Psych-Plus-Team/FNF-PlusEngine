@@ -4641,7 +4641,7 @@ class PlayState extends MusicBeatState
 				{
 					FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7, true);
 
-					FlxG.signals.nextState.add(() -> {
+					new FlxTimer().start(0, function(_) {
 						MusicBeatState.switchState(backend.ScriptableState.tryCreate('ResultsState', new ResultsState({
 							score: songScore,
 							prevHighScore: Highscore.getScore(Song.loadedSongName, storyDifficulty),
