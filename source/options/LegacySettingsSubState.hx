@@ -15,29 +15,13 @@ class LegacySettingsSubState extends BaseOptionsMenu
 			'vanillaTransition', BOOL);
 		addOption(option);
 
-		var option:Option = new Option('Options Menu Style', 'Changes the Options root menu layout.', 'optionsMenuStyle', STRING,
-			['Plus', 'Psych']);
+		var option:Option = new Option('Options Menu Style', 'Changes the Options menus between Plus cards and Psych classic.', 'optionsMenuStyle',
+			STRING, ['Plus', 'Psych']);
 		addOption(option);
 
 		var option:Option = new Option('Instant Window Close', 'If checked, closing the game exits instantly instead of fading the window out.',
 			'instantWindowClose', BOOL);
 		addOption(option);
-
-		#if windows
-		var option:Option = new Option('Max Instance Slots',
-			'Maximum Plus Engine windows that can run at the same time. Changes apply the next time you open the engine.',
-			'maxInstanceSlots', INT);
-		option.minValue = ClientPrefs.MAX_INSTANCE_SLOTS_MIN;
-		option.maxValue = ClientPrefs.MAX_INSTANCE_SLOTS_MAX;
-		option.changeValue = 1;
-		option.scrollSpeed = 4;
-		option.displayFormat = '%v slot(s)';
-		option.onChange = function()
-		{
-			ClientPrefs.data.maxInstanceSlots = ClientPrefs.normalizeMaxInstanceSlots(ClientPrefs.data.maxInstanceSlots);
-		};
-		addOption(option);
-		#end
 
 		var option:Option = new Option('Use Psych Freeplay', 'If checked, uses the classic Psych Engine Freeplay state instead of the PlusEngine Freeplay.',
 			'usePsychFreeplay', BOOL);
@@ -58,6 +42,14 @@ class LegacySettingsSubState extends BaseOptionsMenu
 		};
 		addOption(option);
 		#end
+
+		var option:Option = new Option('Drag Character To Move',
+			'If checked, the character position can be dragged with the cursor, just like in Codename Engine.', 'dragCharacterToMove', BOOL);
+		option.onChange = function()
+		{
+			ClientPrefs.saveSettings();
+		};
+		addOption(option);
 
 		var option:Option = new Option('Results State at End', 'If unchecked, endSong will not transition to ResultsState in Freeplay/Story Mode.',
 			'resultsStateAtEnd', BOOL);

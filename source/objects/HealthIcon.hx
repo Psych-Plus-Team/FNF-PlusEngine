@@ -84,7 +84,10 @@ class HealthIcon extends FlxSprite
 						frames = atlas;
 						var hasNormalAnim:Bool = false;
 						var hasLosingAnim:Bool = false;
-						var hasWinningAnim:Bool = false;
+						// TODO: Verify winning icon animations before pushing this back.
+						// They currently break HealthIcon sizing/offsets on some exported icons,
+						// so the engine falls back to the classic normal/losing behavior for now.
+						// var hasWinningAnim:Bool = false;
 
 						for (frame in frames.frames)
 						{
@@ -92,9 +95,9 @@ class HealthIcon extends FlxSprite
 								hasNormalAnim = true;
 							if (frame.name.startsWith('losing'))
 								hasLosingAnim = true;
-							if (frame.name.startsWith('winning'))
-								hasWinningAnim = true;
-							if (hasNormalAnim && hasLosingAnim && hasWinningAnim)
+							// if (frame.name.startsWith('winning'))
+							// 	hasWinningAnim = true;
+							if (hasNormalAnim && hasLosingAnim)
 								break;
 						}
 
@@ -105,10 +108,10 @@ class HealthIcon extends FlxSprite
 							{
 								animation.addByPrefix('losing', 'losing', animFPS, true, isPlayer);
 							}
-							if (hasWinningAnim)
-							{
-								animation.addByPrefix('winning', 'winning', animFPS, true, isPlayer);
-							}
+							// if (hasWinningAnim)
+							// {
+							// 	animation.addByPrefix('winning', 'winning', animFPS, true, isPlayer);
+							// }
 
 							animation.play('normal');
 
@@ -178,7 +181,8 @@ class HealthIcon extends FlxSprite
 			return;
 		}
 
-		var firstFrame = anim.frames[0];
+		var firstFrameIndex:Int = anim.frames[0];
+		var firstFrame = (frames != null && frames.frames != null && firstFrameIndex >= 0 && firstFrameIndex < frames.frames.length) ? frames.frames[firstFrameIndex] : null;
 		if (firstFrame != null && firstFrame.frame != null)
 		{
 			iconOffsets[0] = (firstFrame.frame.width - 150) / 2;
@@ -239,16 +243,17 @@ class HealthIcon extends FlxSprite
 			return;
 
 		var hasLosing:Bool = animation.getByName('losing') != null;
-		var hasWinning:Bool = animation.getByName('winning') != null;
+		// TODO: Verify winning icon animations before pushing this back; disabled because it is breaking HealthIcon offsets.
+		// var hasWinning:Bool = animation.getByName('winning') != null;
 
-		if (hasLosing || hasWinning)
+		if (hasLosing)
 		{
 			var targetAnim:String = 'normal';
 
 			if (hasLosing && healthPercent < 0.2)
 				targetAnim = 'losing';
-			else if (hasWinning && healthPercent > 0.8)
-				targetAnim = 'winning';
+			// else if (hasWinning && healthPercent > 0.8)
+			// 	targetAnim = 'winning';
 
 			if (animation.curAnim == null || animation.curAnim.name != targetAnim)
 			{

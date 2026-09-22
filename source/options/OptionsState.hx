@@ -1,21 +1,15 @@
 package options;
 
-import backend.StageData;
-import flixel.text.FlxText.FlxTextBorderStyle;
-import flixel.util.FlxSpriteUtil;
 import states.MainMenuState;
+import backend.StageData;
+import flixel.util.FlxSpriteUtil;
 
 class OptionsState extends MusicBeatState
 {
 	public static inline var STYLE_PLUS:String = 'Plus';
 	public static inline var STYLE_PSYCH:String = 'Psych';
-
-	static inline var CARD_W:Float = 500;
-	static inline var CARD_H:Float = 86;
-	static inline var CARD_GAP_X:Float = 24;
-	static inline var CARD_GAP_Y:Float = 18;
-	static inline var GRID_TOP:Float = 82;
-	static inline var INTRO_DURATION:Float = 0.42;
+	public static inline var SUBSTATE_TITLE_X:Float = 75;
+	public static inline var SUBSTATE_TITLE_Y:Float = 45;
 
 	var options:Array<String> = [
 		'Note Colors',
@@ -30,20 +24,13 @@ class OptionsState extends MusicBeatState
 		#if TRANSLATIONS_ALLOWED, 'Language' #end,
 		#if mobile 'Mobile' #end
 	];
-	private var grpOptions:FlxTypedGroup<OptionCard>;
-	private var grpPsychOptions:FlxTypedGroup<Alphabet>;
-	private var psychSelectorLeft:Alphabet;
-	private var psychSelectorRight:Alphabet;
+	private var grpOptions:FlxTypedGroup<Alphabet>;
+	private var plusCards:FlxTypedGroup<PlusOptionCard>;
+
 	private static var curSelected:Int = 0;
 
-	var gridScroll:Float = 0;
-	var targetScroll:Float = 0;
-	var optionsIntroActive:Bool = true;
-	var cardsLayoutSettled:Bool = false;
-	var substateInputBlocked:Bool = false;
-	var lastThemeSignature:String = "";
-	var menuStyle:String = STYLE_PLUS;
-	var mobileTipText:FlxText;
+	var lerpSelected:Float = 0;
+	var menuStyle:String = STYLE_PSYCH;
 
 	public static var menuBG:FlxSprite;
 	public static var onPlayState:Bool = false;
@@ -52,8 +39,16 @@ class OptionsState extends MusicBeatState
 	public static var substateAnchorX:Float = 0;
 	public static var substateAnchorY:Float = 0;
 	public static var substateAnchorLabel:String = null;
-	public static inline var SUBSTATE_TITLE_X:Float = 75;
-	public static inline var SUBSTATE_TITLE_Y:Float = 45;
+	public static inline var SUBSTATE_TITLE_SCALE:Float = 0.6;
+	public static inline var SUBSTATE_TITLE_ALPHA:Float = 0.4;
+	public static inline var SUBSTATE_TITLE_SPAWN_OFFSET:Float = 120;
+	public static inline var OPTION_BASE_Y:Float = 274;
+	public static inline var OPTION_SPACING_Y:Float = 90;
+	public static inline var OPTION_INTRO_SPAWN_X:Float = -420;
+	public static inline var OPTION_INTRO_DURATION:Float = 0.46;
+
+	var optionsIntroActive:Bool = true;
+	var substateInputBlocked:Bool = false;
 
 	public static function normalizeMenuStyle(style:String):String
 	{
@@ -62,11 +57,13 @@ class OptionsState extends MusicBeatState
 
 		return switch (style.toLowerCase().trim())
 		{
-			case 'psych': STYLE_PSYCH;
-			case 'psych mobile' | 'psych-mobile' | 'mobile': STYLE_PSYCH;
+			case 'psych' | 'psych mobile' | 'psych-mobile' | 'mobile': STYLE_PSYCH;
 			default: STYLE_PLUS;
 		}
 	}
+
+	function isPlusStyle():Bool
+		return menuStyle == STYLE_PLUS;
 
 	public static function clearSubstateTransition():Void
 	{
@@ -95,40 +92,60 @@ class OptionsState extends MusicBeatState
 		}
 	}
 
-	function getDescription(label:String):String
+	function getOptionDescription(label:String):String
 	{
 		return switch (label)
 		{
-			case 'Note Colors': Language.getPhrase('options_desc_note_colors', 'Customize note, splash and pixel colors.');
-			case 'Controls': Language.getPhrase('options_desc_controls', 'Edit keyboard, controller and mobile binds.');
-			case 'Adjust Delay and Combo': Language.getPhrase('options_desc_delay_combo', 'Calibrate note offset and combo placement.');
-			case 'Graphics': Language.getPhrase('options_desc_graphics', 'Tune rendering, shaders and performance.');
-			case 'Visuals': Language.getPhrase('options_desc_visuals', 'Change HUD, counters, FPS and presentation.');
-			case 'Gameplay': Language.getPhrase('options_desc_gameplay', 'Adjust play rules, scrolling and assist options.');
-			case 'Legacy': Language.getPhrase('options_desc_legacy', 'Psych compatibility, warnings and classic behavior.');
-			case 'Mod Security': Language.getPhrase('options_desc_mod_security', 'Choose which sensitive script checks are enabled.');
-			case 'Modchart': Language.getPhrase('options_desc_modchart', 'Configure NotITG-style modchart behavior.');
-			case 'Language': Language.getPhrase('options_desc_language', 'Choose the engine language.');
-			case 'Mobile': Language.getPhrase('options_desc_mobile', 'Edit mobile controls and touch settings.');
-			default: Language.getPhrase('options_desc_$label', 'Open this settings page.');
+			case 'Note Colors': Language.getPhrase('description_notes', 'Change note colors and note splash colors.');
+			case 'Controls': Language.getPhrase('description_controls', 'Change keyboard and gamepad binds.');
+			case 'Adjust Delay and Combo': Language.getPhrase('description_adjust_delay', 'Adjust note delay, rating offset, and combo placement.');
+			case 'Graphics': Language.getPhrase('description_graphics_menu', 'Change performance and rendering settings.');
+			case 'Visuals': Language.getPhrase('description_visuals_menu', 'Change HUD, camera, and visual preferences.');
+			case 'Gameplay': Language.getPhrase('description_gameplay_menu', 'Change gameplay modifiers and helpers.');
+			case 'Legacy': Language.getPhrase('description_legacy_menu', 'Change compatibility settings for older Psych/Plus behavior.');
+			case 'Mod Security': Language.getPhrase('description_mod_security_checks_menu', 'Change checks used when loading mods.');
+			case 'Modchart': Language.getPhrase('description_modchart_menu', 'Change modchart behavior and compatibility.');
+			case 'Language': Language.getPhrase('description_language_menu', 'Change the active language.');
+			case 'Mobile': Language.getPhrase('description_mobile_settings', 'Change mobile controls and layout settings.');
+			default: '';
+		}
+	}
+
+	function restoreOptionTexts():Void
+	{
+		if (grpOptions == null || options == null)
+			return;
+		for (i in 0...grpOptions.members.length)
+		{
+			var item = grpOptions.members[i];
+			if (item != null && i < options.length)
+			{
+				item.text = Language.getPhrase('options_${options[i]}', options[i]);
+				item.setScale(1);
+			}
 		}
 	}
 
 	function beginSubstateTransition(label:String):Void
 	{
-		var item:OptionCard = getSelectedCard();
+		var item:Alphabet = (!isPlusStyle() && grpOptions != null && curSelected >= 0 && curSelected < grpOptions.members.length) ? grpOptions.members[curSelected] : null;
+		var card:PlusOptionCard = (isPlusStyle() && plusCards != null && curSelected >= 0 && curSelected < plusCards.members.length) ? plusCards.members[curSelected] : null;
 		substateVisualActive = true;
 		substateReturning = false;
 		substateAnchorLabel = label;
-		substateAnchorX = item != null ? item.x : SUBSTATE_TITLE_X;
-		substateAnchorY = item != null ? item.y : SUBSTATE_TITLE_Y;
+		substateAnchorX = item != null ? item.x : (card != null ? card.x : SUBSTATE_TITLE_X);
+		substateAnchorY = item != null ? item.y : (card != null ? card.y : SUBSTATE_TITLE_Y);
 		substateInputBlocked = true;
-		cardsLayoutSettled = false;
 		if (item != null)
 		{
-			item.setLabel(getDisplayLabel(label), getDescription(label));
+			item.text = getDisplayLabel(label);
+			item.setScale(SUBSTATE_TITLE_SCALE);
+			item.x = SUBSTATE_TITLE_X - SUBSTATE_TITLE_SPAWN_OFFSET;
+			item.y = SUBSTATE_TITLE_Y;
 			item.alpha = 0;
 		}
+		if (card != null)
+			card.alpha = 0;
 	}
 
 	function openSelectedSubstate(label:String)
@@ -143,7 +160,6 @@ class OptionsState extends MusicBeatState
 			persistentUpdate = true;
 			beginSubstateTransition(label);
 		}
-
 		switch (label)
 		{
 			case 'Note Colors':
@@ -168,60 +184,85 @@ class OptionsState extends MusicBeatState
 				clearSubstateTransition();
 				MusicBeatState.switchState(ScriptableState.tryCreate('NoteOffsetState', new options.NoteOffsetState()));
 			case 'Mobile':
-				#if mobile
 				openSubState(ScriptableSubstate.tryCreate('MobileSettingsSubState', new mobile.options.MobileSettingsSubState()));
-				#end
 			case 'Language':
 				openSubState(ScriptableSubstate.tryCreate('LanguageSubState', new options.LanguageSubState()));
 		}
 	}
+
+	var selectorLeft:Alphabet;
+	var selectorRight:Alphabet;
 
 	override function create()
 	{
 		#if DISCORD_ALLOWED
 		DiscordClient.changePresence("Options Menu", null);
 		#end
-
 		OptionsMenuTheme.syncAccent();
 		menuStyle = normalizeMenuStyle(ClientPrefs.data.optionsMenuStyle);
 
-		menuBG = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
-		menuBG.antialiasing = ClientPrefs.data.antialiasing;
-		menuBG.setGraphicSize(FlxG.width, FlxG.height);
-		menuBG.updateHitbox();
-		menuBG.screenCenter();
-		add(menuBG);
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.color = isPlusStyle() ? OptionsMenuTheme.current().accent : 0xFFea71fd;
+		bg.updateHitbox();
+
+		bg.screenCenter();
+		add(bg);
 
 		if (controls.mobileC)
 		{
-			mobileTipText = new FlxText(150, FlxG.height - 24, 0,
+			var tipText:FlxText = new FlxText(150, FlxG.height - 24, 0,
 				Language.getPhrase('mobile_controls_tip', 'Press {1} to Go Mobile Controls Menu', [(FlxG.onMobile ? 'C' : 'CTRL or C')]), 16);
-			mobileTipText.setFormat("VCR OSD Mono", 17, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-			mobileTipText.borderSize = 1.25;
-			mobileTipText.scrollFactor.set();
-			mobileTipText.antialiasing = ClientPrefs.data.antialiasing;
-			add(mobileTipText);
+			tipText.setFormat("VCR OSD Mono", 17, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			tipText.borderSize = 1.25;
+			tipText.scrollFactor.set();
+			tipText.antialiasing = ClientPrefs.data.antialiasing;
+			add(tipText);
 		}
 
-		grpOptions = new FlxTypedGroup<OptionCard>();
+		grpOptions = new FlxTypedGroup<Alphabet>();
 		add(grpOptions);
-		grpPsychOptions = new FlxTypedGroup<Alphabet>();
-		add(grpPsychOptions);
+		plusCards = new FlxTypedGroup<PlusOptionCard>();
+		add(plusCards);
+
+		selectorLeft = new Alphabet(0, 0, '>', true);
+		add(selectorLeft);
+		selectorRight = new Alphabet(0, 0, '<', true);
+		add(selectorRight);
+
 		rebuildOptionsVisuals();
-		gridScroll = targetScroll = computeTargetScroll();
-		refreshThemeVisuals(true);
-		layoutCards(0, true);
+		lerpSelected = curSelected;
+		changeSelection();
 		ClientPrefs.saveSettings();
+
+		// Posicionar elementos sin animación inicial
+		if (isPlusStyle())
+		{
+			selectorLeft.visible = false;
+			selectorRight.visible = false;
+		}
+		else
+			for (num => item in grpOptions.members)
+		{
+			var targetY:Float = item.targetY - lerpSelected;
+			var centeredX:Float = (FlxG.width - item.width) * 0.5;
+			item.x = optionsIntroActive ? Math.min(OPTION_INTRO_SPAWN_X, -item.width - 140) : centeredX;
+			item.y = OPTION_BASE_Y + (targetY * OPTION_SPACING_Y);
+			item.alpha = 0;
+			if (item.targetY == curSelected)
+			{
+				selectorLeft.x = item.x - 63;
+				selectorLeft.y = item.y;
+				selectorRight.x = item.x + item.width + 15;
+				selectorRight.y = item.y;
+			}
+			}
 
 		addTouchPad('UP_DOWN', 'A_B_C');
 
 		super.create();
 		callOnCompanionScript('onOptionsMenuCreatePost', [getOptionsCopy()]);
-		new FlxTimer().start(INTRO_DURATION + 0.06, function(_)
-		{
-			optionsIntroActive = false;
-			cardsLayoutSettled = false;
-		});
+		new FlxTimer().start(OPTION_INTRO_DURATION + 0.06, function(_) optionsIntroActive = false);
 	}
 
 	override function closeSubState()
@@ -235,15 +276,23 @@ class OptionsState extends MusicBeatState
 		substateInputBlocked = false;
 		substateVisualActive = false;
 		substateReturning = true;
-		cardsLayoutSettled = false;
-		restoreCards();
-		for (item in grpOptions.members)
-		{
-			if (item == null)
-				continue;
-			item.x -= 180;
-			item.alpha = 0;
-		}
+		restoreOptionTexts();
+		if (isPlusStyle())
+			for (card in plusCards.members)
+			{
+				if (card == null)
+					continue;
+				card.x -= 180;
+				card.alpha = 0;
+			}
+		else
+			for (item in grpOptions.members)
+			{
+				if (item == null)
+					continue;
+				item.x -= 180;
+				item.alpha = 0;
+			}
 		removeTouchPad();
 		addTouchPad('UP_DOWN', 'A_B_C');
 		persistentUpdate = true;
@@ -255,46 +304,84 @@ class OptionsState extends MusicBeatState
 	{
 		super.update(elapsed);
 
-		if (lastThemeSignature != OptionsMenuTheme.signature())
-			refreshThemeVisuals(true);
-
-		targetScroll = computeTargetScroll();
-		if (isClassicLayout() || !cardsLayoutSettled || Math.abs(gridScroll - targetScroll) > 0.05 || optionsIntroActive || substateReturning)
+		if (isPlusStyle())
 		{
-			gridScroll = FlxMath.lerp(targetScroll, gridScroll, Math.exp(-elapsed * 10.2));
-			if (Math.abs(gridScroll - targetScroll) <= 0.05)
-				gridScroll = targetScroll;
-			cardsLayoutSettled = layoutCards(elapsed, false);
+			updatePlusLayout(elapsed);
+			handleInput();
+			return;
 		}
 
-		var selected = getSelectedCard();
-		if (substateReturning && selected != null && Math.abs(selected.x - cardTargetX(curSelected)) < 4)
+		lerpSelected = FlxMath.lerp(curSelected, lerpSelected, Math.exp(-elapsed * 9.6));
+
+		for (num => item in grpOptions.members)
 		{
+			var targetY:Float = item.targetY - lerpSelected;
+			var targetX:Float = (FlxG.width - item.width) * 0.5;
+			var desiredY:Float = OPTION_BASE_Y + (targetY * OPTION_SPACING_Y);
+			var targetScale:Float = 1;
+			var targetAlpha:Float = 0.6;
+
+			if (substateVisualActive)
+			{
+				if (item.targetY == curSelected)
+				{
+					targetX = SUBSTATE_TITLE_X;
+					desiredY = SUBSTATE_TITLE_Y;
+					targetScale = SUBSTATE_TITLE_SCALE;
+					targetAlpha = SUBSTATE_TITLE_ALPHA;
+				}
+				else
+				{
+					targetX = -item.width - 80;
+					desiredY -= 70;
+					targetAlpha = 0;
+				}
+			}
+			else if (substateReturning)
+			{
+				targetX = (FlxG.width - item.width) * 0.5;
+			}
+			else if (optionsIntroActive)
+			{
+				targetX = (FlxG.width - item.width) * 0.5;
+			}
+			if (item.targetY == curSelected && !substateVisualActive)
+				targetAlpha = 1;
+
+			var moveLerp:Float = Math.exp(-elapsed * (optionsIntroActive ? 7.2 : 10.2));
+			item.x = FlxMath.lerp(targetX, item.x, moveLerp);
+			item.y = FlxMath.lerp(desiredY, item.y, moveLerp);
+			item.setScale(FlxMath.lerp(targetScale, item.scale.x, Math.exp(-elapsed * 10.2)));
+			item.alpha = FlxMath.lerp(targetAlpha, item.alpha, moveLerp);
+			if (item.targetY == curSelected && !substateVisualActive)
+			{
+				selectorLeft.x = item.x - 63;
+				selectorLeft.y = item.y;
+				selectorRight.x = item.x + item.width + 15;
+				selectorRight.y = item.y;
+			}
+		}
+
+		selectorLeft.alpha = substateVisualActive ? 0 : 1;
+		selectorRight.alpha = substateVisualActive ? 0 : 1;
+		if (substateReturning
+			&& Math.abs(grpOptions.members[curSelected].x - ((FlxG.width - grpOptions.members[curSelected].width) * 0.5)) < 4)
 			substateReturning = false;
-			cardsLayoutSettled = false;
-		}
 
 		if (!exiting && !substateInputBlocked)
 		{
-			var verticalChange:Int = isClassicLayout() ? 1 : 2;
 			if (controls.UI_UP_P)
-				changeSelection(-verticalChange);
-			if (controls.UI_DOWN_P)
-				changeSelection(verticalChange);
-			if (!isClassicLayout() && controls.UI_LEFT_P)
 				changeSelection(-1);
-			if (!isClassicLayout() && controls.UI_RIGHT_P)
+			if (controls.UI_DOWN_P)
 				changeSelection(1);
 
-			if (((touchPad != null && touchPad.buttonC.justPressed) || FlxG.keys.justPressed.CONTROL) && controls.mobileC)
+			if (touchPad.buttonC.justPressed || FlxG.keys.justPressed.CONTROL && controls.mobileC)
 			{
-				#if mobile
 				persistentUpdate = false;
 				openSubState(ScriptableSubstate.tryCreate('MobileControlSelectSubState', new mobile.substates.MobileControlSelectSubState()));
-				#end
 			}
 
-			if (controls.BACK #if android || FlxG.android.justReleased.BACK #end)
+			if (controls.BACK)
 			{
 				var stop = callOnCompanionScript('onOptionsMenuBack', [curSelected, getSelectedOptionLabel()]);
 				if (stop == Function_Stop)
@@ -311,7 +398,7 @@ class OptionsState extends MusicBeatState
 				else
 				{
 					clearSubstateTransition();
-					MusicBeatState.switchState(backend.ScriptableState.tryCreate('MainMenuState', new MainMenuState()));
+					MusicBeatState.switchState(new MainMenuState());
 				}
 			}
 			else if (controls.ACCEPT && options != null && options.length > 0)
@@ -319,147 +406,95 @@ class OptionsState extends MusicBeatState
 		}
 	}
 
-	function layoutCards(elapsed:Float, instant:Bool):Bool
+	function handleInput():Void
 	{
-		if (isClassicLayout())
+		if (exiting || substateInputBlocked)
+			return;
+
+		if (controls.UI_UP_P)
+			changeSelection(-2);
+		if (controls.UI_DOWN_P)
+			changeSelection(2);
+		if (controls.UI_LEFT_P)
+			changeSelection(-1);
+		if (controls.UI_RIGHT_P)
+			changeSelection(1);
+
+		if (touchPad.buttonC.justPressed || FlxG.keys.justPressed.CONTROL && controls.mobileC)
 		{
-			refreshPsychLayout(instant);
-			return true;
+			persistentUpdate = false;
+			openSubState(ScriptableSubstate.tryCreate('MobileControlSelectSubState', new mobile.substates.MobileControlSelectSubState()));
 		}
 
-		if (grpOptions == null)
-			return true;
-
-		var allSettled:Bool = true;
-		var moveLerp:Float = instant ? 0 : Math.exp(-elapsed * (optionsIntroActive ? 7.2 : 10.2));
-		for (item in grpOptions.members)
+		if (controls.BACK)
 		{
-			if (item == null)
+			var stop = callOnCompanionScript('onOptionsMenuBack', [curSelected, getSelectedOptionLabel()]);
+			if (stop == Function_Stop)
+				return;
+			exiting = true;
+			FlxG.sound.play(Paths.sound('cancelMenu'));
+			if (onPlayState)
+			{
+				clearSubstateTransition();
+				StageData.loadDirectory(PlayState.SONG);
+				LoadingState.loadAndSwitchState(new PlayState());
+				FlxG.sound.music.volume = 0;
+			}
+			else
+			{
+				clearSubstateTransition();
+				MusicBeatState.switchState(new MainMenuState());
+			}
+		}
+		else if (controls.ACCEPT && options != null && options.length > 0)
+			openSelectedSubstate(options[curSelected]);
+	}
+
+	function updatePlusLayout(elapsed:Float):Void
+	{
+		if (plusCards == null)
+			return;
+
+		var moveLerp:Float = Math.exp(-elapsed * (optionsIntroActive ? 7.2 : 10.2));
+		var selectedRow:Int = Std.int(curSelected / 2);
+		for (card in plusCards.members)
+		{
+			if (card == null)
 				continue;
 
-			var selected:Bool = item.index == curSelected;
-			var headerMode:Bool = substateVisualActive && selected;
-			var targetX:Float = cardTargetX(item.index);
-			var targetY:Float = cardTargetY(item.index) - gridScroll;
-			var targetScale:Float = selected ? (isClassicLayout() ? 1 : 1.035) : 1;
+			var selected:Bool = card.index == curSelected;
+			var col:Int = card.index % 2;
+			var row:Int = Std.int(card.index / 2);
+			var targetX:Float = (FlxG.width - 1024) * 0.5 + col * 524;
+			var targetY:Float = 96 + (row - selectedRow) * 104;
+			var targetScale:Float = selected ? 1.035 : 1;
 			var targetAlpha:Float = selected ? 1 : 0.68;
-			if (isClassicLayout())
-				targetAlpha = selected ? 1 : 0.58;
-			var newX:Float = targetX;
-			var newY:Float = targetY;
-			var newScale:Float = targetScale;
-			var newAlpha:Float = targetAlpha;
-			var itemSettled:Bool = instant;
 
 			if (substateVisualActive)
 			{
 				if (selected)
 				{
-					targetX = selectedCardTargetX();
+					targetX = SUBSTATE_TITLE_X;
 					targetY = SUBSTATE_TITLE_Y;
-					targetScale = 1;
-					targetAlpha = 1;
+					targetScale = SUBSTATE_TITLE_SCALE;
+					targetAlpha = SUBSTATE_TITLE_ALPHA;
 				}
 				else
 				{
-					targetX = -CARD_W - 120;
+					targetX = -card.cardWidth - 90;
 					targetAlpha = 0;
 				}
 			}
-			else if (optionsIntroActive || substateReturning)
-			{
-				targetX = cardTargetX(item.index);
-			}
 
-			if (instant)
-			{
-				newAlpha = optionsIntroActive ? 0 : targetAlpha;
-			}
-			else
-			{
-				itemSettled = Math.abs(item.x - targetX) <= 0.05
-					&& Math.abs(item.y - targetY) <= 0.05
-					&& Math.abs(item.scale.x - targetScale) <= 0.001
-					&& Math.abs(item.alpha - targetAlpha) <= 0.005;
-
-				if (!itemSettled)
-				{
-					newX = FlxMath.lerp(targetX, item.x, moveLerp);
-					newY = FlxMath.lerp(targetY, item.y, moveLerp);
-					newScale = FlxMath.lerp(targetScale, item.scale.x, Math.exp(-elapsed * 10.2));
-					newAlpha = FlxMath.lerp(targetAlpha, item.alpha, moveLerp);
-
-					if (Math.abs(newX - targetX) <= 0.05)
-						newX = targetX;
-					if (Math.abs(newY - targetY) <= 0.05)
-						newY = targetY;
-					if (Math.abs(newScale - targetScale) <= 0.001)
-						newScale = targetScale;
-					if (Math.abs(newAlpha - targetAlpha) <= 0.005)
-						newAlpha = targetAlpha;
-
-					itemSettled = newX == targetX && newY == targetY && newScale == targetScale && newAlpha == targetAlpha;
-				}
-			}
-
-			var visibilityChanged:Bool = item.visible != (newAlpha > 0.01 || targetAlpha > 0.01);
-			item.visible = newAlpha > 0.01 || targetAlpha > 0.01;
-			item.active = item.visible && !itemSettled;
-
-			if (instant
-				|| visibilityChanged
-				|| Math.abs(item.x - newX) > 0.05
-				|| Math.abs(item.y - newY) > 0.05
-				|| Math.abs(item.scale.x - newScale) > 0.001
-				|| Math.abs(item.alpha - newAlpha) > 0.005)
-			{
-				item.x = newX;
-				item.y = newY;
-				item.scale.set(newScale, newScale);
-				item.alpha = newAlpha;
-				item.syncLayout(headerMode);
-			}
-			if (item.headerMode != headerMode)
-				item.applyTheme(selected, false, headerMode);
-
-			if (!itemSettled)
-				allSettled = false;
+			card.x = FlxMath.lerp(targetX, card.x, moveLerp);
+			card.y = FlxMath.lerp(targetY, card.y, moveLerp);
+			card.scale.set(FlxMath.lerp(targetScale, card.scale.x, moveLerp), FlxMath.lerp(targetScale, card.scale.y, moveLerp));
+			card.alpha = FlxMath.lerp(targetAlpha, card.alpha, moveLerp);
+			card.applyTheme(selected, substateVisualActive && selected);
 		}
 
-		return allSettled;
-	}
-
-	function selectedCardTargetX():Float
-		return (FlxG.width - cardWidth()) * 0.5;
-
-	function cardTargetX(index:Int):Float
-	{
-		if (isClassicLayout())
-			return (FlxG.width - cardWidth()) * 0.5;
-
-		var totalW:Float = CARD_W * 2 + CARD_GAP_X;
-		var left:Float = (FlxG.width - totalW) * 0.5;
-		return left + (index % 2) * (CARD_W + CARD_GAP_X);
-	}
-
-	function cardTargetY(index:Int):Float
-	{
-		if (isClassicLayout())
-			return FlxG.height * 0.5 - 8 + (index - curSelected) * 82;
-
-		return GRID_TOP + Std.int(index / 2) * (CARD_H + CARD_GAP_Y);
-	}
-
-	function computeTargetScroll():Float
-	{
-		if (isClassicLayout())
-			return 0;
-
-		var selectedY:Float = cardTargetY(curSelected);
-		var target:Float = selectedY - 278;
-		var rows:Int = Math.ceil(options.length / 2);
-		var maxScroll:Float = Math.max(0, GRID_TOP + rows * (CARD_H + CARD_GAP_Y) - FlxG.height + 40);
-		return FlxMath.bound(target, 0, maxScroll);
+		if (substateReturning && plusCards.members[curSelected] != null && Math.abs(plusCards.members[curSelected].alpha - 1) < 0.05)
+			substateReturning = false;
 	}
 
 	function changeSelection(change:Int = 0)
@@ -468,50 +503,19 @@ class OptionsState extends MusicBeatState
 			return;
 
 		curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
-		cardsLayoutSettled = false;
-		refreshThemeVisuals(false);
+
+		if (!isPlusStyle())
+			for (num => item in grpOptions.members)
+				item.targetY = num;
+		else if (plusCards != null)
+			for (card in plusCards.members)
+				if (card != null)
+					card.applyTheme(card.index == curSelected, false);
 
 		callOnCompanionScript('onOptionsMenuSelectionChange', [curSelected, getSelectedOptionLabel()]);
 		if (change != 0)
 			FlxG.sound.play(Paths.sound('scrollMenu'));
 	}
-
-	function refreshThemeVisuals(force:Bool = false):Void
-	{
-		lastThemeSignature = OptionsMenuTheme.signature();
-		OptionsMenuTheme.syncAccent();
-
-		var accent:Int = OptionsMenuTheme.current().accent;
-		if (menuBG != null)
-			menuBG.color = isClassicLayout() ? 0xFFEA71FD : accent;
-
-		if (grpOptions != null)
-			for (item in grpOptions.members)
-				if (item != null)
-				{
-					var selected:Bool = item.index == curSelected;
-					item.applyTheme(selected, force, substateVisualActive && selected);
-				}
-
-		refreshPsychLayout(force);
-	}
-
-	function restoreCards():Void
-	{
-		if (grpOptions == null || options == null)
-			return;
-		cardsLayoutSettled = false;
-		for (i in 0...grpOptions.members.length)
-		{
-			var item = grpOptions.members[i];
-			if (item != null && i < options.length)
-				item.setLabel(getDisplayLabel(options[i]), getDescription(options[i]));
-		}
-		refreshThemeVisuals(true);
-	}
-
-	function getSelectedCard():OptionCard
-		return (grpOptions != null && curSelected >= 0 && curSelected < grpOptions.members.length) ? grpOptions.members[curSelected] : null;
 
 	public function getOptionsCopy():Array<String>
 		return options != null ? options.copy() : [];
@@ -530,6 +534,7 @@ class OptionsState extends MusicBeatState
 		if (options == null || options.length < 1)
 			return;
 		curSelected = FlxMath.wrap(index, 0, options.length - 1);
+		lerpSelected = curSelected;
 		changeSelection(0);
 	}
 
@@ -585,140 +590,61 @@ class OptionsState extends MusicBeatState
 
 	public function rebuildOptionsVisuals():Void
 	{
-		if (grpOptions == null || grpPsychOptions == null)
+		if (grpOptions == null)
 			return;
-		cardsLayoutSettled = false;
 
-		clearCardVisuals();
-		clearPsychVisuals();
+		while (grpOptions.members.length > 0)
+		{
+			var item = grpOptions.members[0];
+			item.kill();
+			grpOptions.remove(item, true);
+			item.destroy();
+		}
+		if (plusCards != null)
+			while (plusCards.members.length > 0)
+			{
+				var card = plusCards.members[0];
+				card.kill();
+				plusCards.remove(card, true);
+				card.destroy();
+			}
 
 		if (options == null)
 			options = [];
 
-		if (isClassicLayout())
+		if (isPlusStyle())
 			for (num => option in options)
 			{
-				var item = new Alphabet(0, 0, getDisplayLabel(option), true);
-				item.ID = num;
-				item.antialiasing = ClientPrefs.data.antialiasing;
-				grpPsychOptions.add(item);
+				var card = new PlusOptionCard(num, getDisplayLabel(option), getOptionDescription(option));
+				card.x = Math.min(OPTION_INTRO_SPAWN_X, -card.cardWidth - 140);
+				card.y = 96 + Std.int(num / 2) * 104;
+				card.alpha = 0;
+				plusCards.add(card);
 			}
 		else
 			for (num => option in options)
-				grpOptions.add(new OptionCard(num, getDisplayLabel(option), getDescription(option), cardWidth(), cardHeight(), menuStyle));
+			{
+				var optionText:Alphabet = new Alphabet(0, 0, Language.getPhrase('options_$option', option), true);
+				optionText.targetY = num;
+				optionText.isMenuItem = false;
+				optionText.changeX = false;
+				optionText.changeY = false;
+				grpOptions.add(optionText);
+			}
 
 		if (options.length > 0)
 		{
 			curSelected = Std.int(FlxMath.bound(curSelected, 0, options.length - 1));
+			lerpSelected = curSelected;
 			changeSelection(0);
 		}
 		else
+		{
 			curSelected = 0;
+			lerpSelected = 0;
+		}
 
 		callOnCompanionScript('onOptionsMenuRebuild', [getOptionsCopy()]);
-	}
-
-	function clearCardVisuals():Void
-	{
-		while (grpOptions.members.length > 0)
-		{
-			var item = grpOptions.members[0];
-			if (item != null)
-			{
-				item.kill();
-				grpOptions.remove(item, true);
-				item.destroy();
-			}
-			else
-				grpOptions.members.shift();
-		}
-	}
-
-	function clearPsychVisuals():Void
-	{
-		while (grpPsychOptions.members.length > 0)
-		{
-			var item = grpPsychOptions.members[0];
-			if (item != null)
-			{
-				item.kill();
-				grpPsychOptions.remove(item, true);
-				item.destroy();
-			}
-			else
-				grpPsychOptions.members.shift();
-		}
-
-		if (psychSelectorLeft != null)
-		{
-			remove(psychSelectorLeft, true);
-			psychSelectorLeft.destroy();
-			psychSelectorLeft = null;
-		}
-		if (psychSelectorRight != null)
-		{
-			remove(psychSelectorRight, true);
-			psychSelectorRight.destroy();
-			psychSelectorRight = null;
-		}
-
-		if (isClassicLayout())
-		{
-			psychSelectorLeft = new Alphabet(0, 0, ">", true);
-			psychSelectorRight = new Alphabet(0, 0, "<", true);
-			psychSelectorLeft.antialiasing = ClientPrefs.data.antialiasing;
-			psychSelectorRight.antialiasing = ClientPrefs.data.antialiasing;
-			add(psychSelectorLeft);
-			add(psychSelectorRight);
-		}
-	}
-
-	function refreshPsychLayout(instant:Bool = false):Void
-	{
-		if (!isClassicLayout() || grpPsychOptions == null)
-			return;
-
-		var selectedItem:Alphabet = null;
-		var centerY:Float = FlxG.height * 0.5 - 48;
-		for (item in grpPsychOptions.members)
-		{
-			if (item == null)
-				continue;
-
-			var offset:Int = item.ID - curSelected;
-			var selected:Bool = offset == 0;
-			if (!item.isMenuItem)
-			{
-				item.isMenuItem = true;
-				item.changeX = false;
-				item.distancePerItem.set(0, 70);
-			}
-
-			item.targetY = offset;
-			item.visible = !substateVisualActive || selected;
-			item.active = item.visible;
-			item.alpha = selected ? 1 : 0.6;
-			item.updateHitbox();
-			item.screenCenter(X);
-			item.startPosition.set(item.x, centerY);
-			if (instant || optionsIntroActive || substateReturning)
-				item.snapToPosition();
-			if (selected)
-				selectedItem = item;
-		}
-
-		if (psychSelectorLeft != null && psychSelectorRight != null)
-		{
-			var showSelectors:Bool = selectedItem != null && !substateVisualActive;
-			psychSelectorLeft.visible = psychSelectorRight.visible = showSelectors;
-			if (showSelectors)
-			{
-				psychSelectorLeft.alpha = psychSelectorRight.alpha = 1;
-				psychSelectorLeft.y = psychSelectorRight.y = selectedItem.y;
-				psychSelectorLeft.x = selectedItem.x - 62;
-				psychSelectorRight.x = selectedItem.x + selectedItem.width + 28;
-			}
-		}
 	}
 
 	override function destroy()
@@ -726,189 +652,108 @@ class OptionsState extends MusicBeatState
 		ClientPrefs.loadPrefs();
 		super.destroy();
 	}
-
-	function isClassicLayout():Bool
-		return menuStyle == STYLE_PSYCH;
-
-	function cardWidth():Float
-		return isClassicLayout() ? 700 : CARD_W;
-
-	function cardHeight():Float
-		return isClassicLayout() ? 52 : CARD_H;
 }
-
-private class OptionCard extends FlxSpriteGroup
+private class PlusOptionCard extends FlxSpriteGroup
 {
-	static inline var MAX_DESCRIPTION_CHARS:Int = 96;
+	static inline var CARD_W:Float = 500;
+	static inline var CARD_H:Float = 86;
 	static inline var DOT_W:Float = 14;
 	static inline var DOT_H:Float = 34;
 	static inline var DOT_X:Float = 18;
 	static inline var CONTENT_X:Float = 46;
 
 	public var index(default, null):Int;
-	var cardW:Float;
-	var cardH:Float;
+	public var cardWidth(default, null):Float = CARD_W;
 	var bg:FlxSprite;
 	var title:FlxText;
 	var desc:FlxText;
 	var arrow:FlxText;
-	var selectorLeft:FlxText;
-	var selectorRight:FlxText;
-	var style:String;
-	public var headerMode(default, null):Bool = false;
 	var lastSelected:Null<Bool> = null;
-	var lastHeaderMode:Null<Bool> = null;
+	var lastHeader:Null<Bool> = null;
 	var lastTheme:String = "";
 
-	public function new(index:Int, label:String, description:String, w:Float, h:Float, style:String)
+	public function new(index:Int, label:String, description:String)
 	{
 		super();
 		this.index = index;
-		cardW = w;
-		cardH = h;
-		this.style = OptionsState.normalizeMenuStyle(style);
 
-		bg = new FlxSprite().makeGraphic(Std.int(cardW), Std.int(cardH), FlxColor.TRANSPARENT, true);
+		bg = new FlxSprite().makeGraphic(Std.int(CARD_W), Std.int(CARD_H), FlxColor.TRANSPARENT, true);
 		add(bg);
 
-		title = new FlxText(CONTENT_X, 14, cardW - 106, label, 22);
+		title = new FlxText(CONTENT_X, 14, CARD_W - 106, label, 22);
 		title.setFormat(Paths.font("vcr.ttf"), 22, FlxColor.WHITE, LEFT);
 		title.antialiasing = ClientPrefs.data.antialiasing;
 		add(title);
 
-		desc = new FlxText(CONTENT_X, 44, cardW - 106, formatDescription(description), 14);
+		desc = new FlxText(CONTENT_X, 44, CARD_W - 106, compactDescription(description), 14);
 		desc.setFormat(Paths.font("vcr.ttf"), 14, FlxColor.WHITE, LEFT);
 		desc.antialiasing = ClientPrefs.data.antialiasing;
 		add(desc);
 
-		arrow = new FlxText(cardW - 48, 24, 32, ">", 26);
+		arrow = new FlxText(CARD_W - 48, 24, 32, ">", 26);
 		arrow.setFormat(Paths.font("vcr.ttf"), 26, FlxColor.WHITE, CENTER);
 		arrow.antialiasing = ClientPrefs.data.antialiasing;
 		add(arrow);
-
-		selectorLeft = new FlxText(0, 0, 32, ">", 30);
-		selectorLeft.setFormat(Paths.font("vcr.ttf"), 30, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		selectorLeft.antialiasing = ClientPrefs.data.antialiasing;
-		add(selectorLeft);
-
-		selectorRight = new FlxText(0, 0, 32, "<", 30);
-		selectorRight.setFormat(Paths.font("vcr.ttf"), 30, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		selectorRight.antialiasing = ClientPrefs.data.antialiasing;
-		add(selectorRight);
+		applyTheme(false, false);
 	}
 
-	public function setLabel(label:String, description:String):Void
-	{
-		title.text = label;
-		desc.text = formatDescription(description);
-	}
-
-	function formatDescription(value:String):String
-	{
-		if (value == null)
-			return '';
-
-		var text:String = value.trim();
-		if (text.length <= MAX_DESCRIPTION_CHARS)
-			return text;
-
-		return text.substr(0, MAX_DESCRIPTION_CHARS - 3).trim() + '...';
-	}
-
-	public function applyTheme(selected:Bool, force:Bool = false, headerMode:Bool = false):Void
+	public function applyTheme(selected:Bool, headerMode:Bool):Void
 	{
 		var signature = OptionsMenuTheme.signature();
-		if (!force && lastSelected == selected && lastHeaderMode == headerMode && lastTheme == signature)
+		if (lastSelected == selected && lastHeader == headerMode && lastTheme == signature)
 			return;
 		lastSelected = selected;
-		lastHeaderMode = headerMode;
-		this.headerMode = headerMode;
+		lastHeader = headerMode;
 		lastTheme = signature;
 
 		var fill:Int = selected ? OptionsMenuTheme.difficultyCardFill(OptionsMenuTheme.current().accent, true) : OptionsMenuTheme.cardFill(false);
 		var stroke:Int = selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.panelOutlineColor();
-		if (isClassic())
-		{
-			bg.visible = false;
-			title.color = FlxColor.WHITE;
-			desc.visible = false;
-			arrow.visible = false;
-			selectorLeft.visible = selected;
-			selectorRight.visible = selected;
-			selectorLeft.color = selectorRight.color = FlxColor.WHITE;
-			title.borderStyle = FlxTextBorderStyle.OUTLINE;
-			title.borderColor = FlxColor.BLACK;
-			title.borderSize = 1.7;
-			title.size = 30;
-		}
-		else
-		{
-			bg.visible = true;
-			desc.visible = true;
-			bg.makeGraphic(Std.int(cardW), Std.int(cardH), FlxColor.TRANSPARENT, true);
-			bg.setPosition(x, y);
-			FlxSpriteUtil.drawRoundRect(bg, 0, 0, cardW, cardH, 8, 8, fill);
-			FlxSpriteUtil.drawRoundRect(bg, 0, 0, cardW, cardH, 8, 8, FlxColor.TRANSPARENT, {thickness: selected ? 2 : 1, color: stroke});
-			if (!headerMode)
-				FlxSpriteUtil.drawRoundRect(bg, DOT_X, (cardH - DOT_H) * 0.5, DOT_W, DOT_H, DOT_W * 0.5, DOT_W * 0.5,
-					selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.cardAccent(false));
+		bg.makeGraphic(Std.int(CARD_W), Std.int(CARD_H), FlxColor.TRANSPARENT, true);
+		bg.setPosition(x, y);
+		FlxSpriteUtil.drawRoundRect(bg, 0, 0, CARD_W, CARD_H, 8, 8, fill);
+		FlxSpriteUtil.drawRoundRect(bg, 0, 0, CARD_W, CARD_H, 8, 8, FlxColor.TRANSPARENT, {thickness: selected ? 2 : 1, color: stroke});
+		if (!headerMode)
+			FlxSpriteUtil.drawRoundRect(bg, DOT_X, (CARD_H - DOT_H) * 0.5, DOT_W, DOT_H, DOT_W * 0.5, DOT_W * 0.5,
+				selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.cardAccent(false));
 
-			title.borderStyle = FlxTextBorderStyle.NONE;
-			title.color = selected ? OptionsMenuTheme.cardTitleColor(true) : OptionsMenuTheme.cardTitleColor(false);
-			desc.color = selected ? OptionsMenuTheme.cardDescriptionColor(true) : OptionsMenuTheme.cardDescriptionColor(false);
-			arrow.color = selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.footerTextColor();
-			selectorLeft.visible = false;
-			selectorRight.visible = false;
-		}
+		title.color = selected ? OptionsMenuTheme.cardTitleColor(true) : OptionsMenuTheme.cardTitleColor(false);
+		desc.color = selected ? OptionsMenuTheme.cardDescriptionColor(true) : OptionsMenuTheme.cardDescriptionColor(false);
+		arrow.color = selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.footerTextColor();
+		arrow.visible = !headerMode;
 		syncLayout(headerMode);
 	}
 
-	public function syncLayout(headerMode:Bool):Void
+	function syncLayout(headerMode:Bool):Void
 	{
-		if (bg != null)
-			bg.setPosition(x, y);
-
-		if (isClassic())
+		bg.setPosition(x, y);
+		if (headerMode)
 		{
 			title.x = x;
-			title.y = y;
-			title.fieldWidth = cardW;
+			title.y = y + 14;
+			title.fieldWidth = CARD_W;
 			title.alignment = CENTER;
 			desc.visible = false;
 			arrow.visible = false;
-			selectorLeft.x = x + 84;
-			selectorLeft.y = y;
-			selectorRight.x = x + cardW - 116;
-			selectorRight.y = y;
 			return;
 		}
-		else if (headerMode)
-		{
-			title.x = x;
-			title.fieldWidth = cardW;
-			title.alignment = CENTER;
-			desc.x = x + 42;
-			desc.fieldWidth = cardW - 84;
-			desc.alignment = CENTER;
-			arrow.visible = false;
-		}
-		else
-		{
-			title.x = x + CONTENT_X;
-			title.fieldWidth = cardW - 106;
-			title.alignment = LEFT;
-			desc.x = x + CONTENT_X;
-			desc.fieldWidth = cardW - 106;
-			desc.alignment = LEFT;
-			arrow.visible = true;
-			arrow.x = x + cardW - 48;
-		}
 
+		title.x = x + CONTENT_X;
 		title.y = y + 14;
+		title.fieldWidth = CARD_W - 106;
+		title.alignment = LEFT;
+		desc.visible = true;
+		desc.x = x + CONTENT_X;
 		desc.y = y + 44;
+		desc.fieldWidth = CARD_W - 106;
+		arrow.x = x + CARD_W - 48;
 		arrow.y = y + 24;
 	}
 
-	function isClassic():Bool
-		return style == OptionsState.STYLE_PSYCH;
+	static function compactDescription(value:String):String
+	{
+		if (value == null)
+			return '';
+		var text:String = value.trim();
+		return text.length > 96 ? text.substr(0, 93).trim() + '...' : text;
+	}
 }

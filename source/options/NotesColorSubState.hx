@@ -822,4 +822,3 @@ class NotesColorSubState extends MusicBeatSubstate
 		super.destroy();
 	}
 }
-

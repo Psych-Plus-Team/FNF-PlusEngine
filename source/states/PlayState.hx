@@ -3403,24 +3403,27 @@ class PlayState extends MusicBeatState
 
 		if (unspawnNotes[0] != null)
 		{
-			while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < getNoteSpawnTime(unspawnNotes[0]))
+			var spawnedThisFrame:Int = 0;
+			while (spawnedThisFrame < unspawnNotes.length
+				&& unspawnNotes[spawnedThisFrame].strumTime - Conductor.songPosition < getNoteSpawnTime(unspawnNotes[spawnedThisFrame]))
 			{
-				var dunceNote:Note = unspawnNotes[0];
-				notes.insert(0, dunceNote);
+				var dunceNote:Note = unspawnNotes[spawnedThisFrame];
+				notes.add(dunceNote);
 				dunceNote.spawned = true;
+				var spawnedIndex:Int = notes.members.length - 1;
+				spawnedThisFrame++;
 
 				callOnLuas('onSpawnNote', [
-					notes.members.indexOf(dunceNote),
+					spawnedIndex,
 					dunceNote.noteData,
 					dunceNote.noteType,
 					dunceNote.isSustainNote,
 					dunceNote.strumTime
 				]);
 				callOnHScript('onSpawnNote', [dunceNote]);
-
-				var index:Int = unspawnNotes.indexOf(dunceNote);
-				unspawnNotes.splice(index, 1);
 			}
+			if (spawnedThisFrame > 0)
+				unspawnNotes.splice(0, spawnedThisFrame);
 		}
 
 		if (generatedMusic)

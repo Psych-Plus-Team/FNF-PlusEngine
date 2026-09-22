@@ -41,7 +41,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			splashes.add(splash);
 		}
 
-		// options
 		var noteSkins:Array<String> = getNoteSkinsList();
 		if (noteSkins.length > 0)
 		{
@@ -164,9 +163,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		addOption(option);
 		#end
 
-		var option:Option = new Option('Naughtyness', "If unchecked, inappropriate content will be hidden at Results State", "naughtynessResults", BOOL);
-		addOption(option);
-
 		var option:Option = new Option('Combo Stacking',
 			"If unchecked, Ratings and Combo won't stack, saving on System Memory and making them easier to read", 'comboStacking', BOOL);
 		addOption(option);
@@ -197,6 +193,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		addOption(option);
 		option.onChange = function()
 		{
+			// Cambia la cámara en tiempo real si el usuario cambia la opción desde el menú
 			if (PlayState.instance != null && PlayState.instance.comboGroup != null)
 			{
 				PlayState.instance.comboGroup.cameras = [
@@ -318,6 +315,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		note.texture = skin; // Load texture and anims (setter calls reloadNote automatically)
 		note.playAnim('static');
 
+		// Verificar si el skin es NotITG
 		note.checkNotITGSkin();
 	}
 
@@ -502,6 +500,8 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		super.destroy();
 	}
 
+	// function onChangeFPSCounter() eliminado: FPSCounter ahora siempre visible, control solo por F2
+
 	function onChangeWatermark()
 	{
 		if (Main.watermarkSprite != null)
@@ -512,6 +512,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 
 	function onChangeKeyViewerColor()
 	{
+		// Si estamos en PlayState, actualizar el color del keyViewer
 		if (PlayState.instance != null && PlayState.instance.keyViewer != null)
 		{
 			PlayState.instance.keyViewer.updateKeyColors();
