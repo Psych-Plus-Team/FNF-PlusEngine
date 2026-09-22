@@ -71,6 +71,7 @@ final class Manager extends FlxBasic
 	private var __primary:Bool = false;
 	private var __renderRequested:Bool = false;
 	private var __wasRendering:Bool = false;
+	private var __hasRenderableModchartContent:Bool = false;
 
 	/** Exposes renderer stats for debug overlays. */
 	public var rendererStats(get, never):CtxRenderer;
@@ -132,8 +133,12 @@ final class Manager extends FlxBasic
 		__renderRequested = false;
 	}
 
-	public inline function requestRender():Void
+	public inline function requestRender(?hasRenderableContent:Bool = true):Void
+	{
 		__renderRequested = true;
+		if (hasRenderableContent)
+			__hasRenderableModchartContent = true;
+	}
 
 	/**
 	 * Internal helper function to apply a function to each playfield.
@@ -497,10 +502,9 @@ final class Manager extends FlxBasic
 	 */
 	public function addPlayfield(?name:String, ?beat:Float):Int
 	{
-		requestRender();
-
 		if (beat != null && !Math.isNaN(beat))
 		{
+			requestRender();
 			__scheduledPlayfieldOps.push({
 				beat: beat,
 				add: true,
@@ -514,10 +518,12 @@ final class Manager extends FlxBasic
 
 		if (name == null || name.trim().length <= 0)
 		{
+			requestRender(playfields.length > 0);
 			playfields.push(new PlayField());
 			return playfields.length - 1;
 		}
 
+		requestRender();
 		final entry = __getOrCreateNamedPlayfield(name);
 		__activateNamedPlayfield(entry);
 		return __findPlayfieldIndex(entry.playfield);
@@ -624,7 +630,7 @@ final class Manager extends FlxBasic
 		if (state != null && (!state.modchartManagerEnabled || !state.modchartControlsStrumRender))
 			return false;
 
-		return __renderRequested || Config.RENDER_ARROW_PATHS || activePlayfieldCount > 1 || totalEventCount > 0;
+		return Config.RENDER_ARROW_PATHS || activePlayfieldCount > 1 || totalEventCount > 0 || (__renderRequested && __hasRenderableModchartContent);
 	}
 
 	/**

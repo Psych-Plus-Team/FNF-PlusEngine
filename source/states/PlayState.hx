@@ -3722,8 +3722,7 @@ class PlayState extends MusicBeatState
 	{
 		if (healthPercent < 0.2)
 			return 1;
-		if (healthPercent > 0.8)
-			return 2;
+		// TODO: Verify winning icon frames before pushing this back; frame 2 can break icon parity with animated icons.
 		return 0;
 	}
 
@@ -3732,40 +3731,34 @@ class PlayState extends MusicBeatState
 		if (!iconsAnimations || healthBar == null || !healthBar.enabled)
 			return;
 
-		var healthPercent:Float = healthBar.percent / 100;
+		var healthPercent:Float = FlxMath.bound(healthBar.percent / 100, 0, 1);
+		var bfHealth:Float = playOpponent ? 1 - healthPercent : healthPercent;
+		var dadHealth:Float = playOpponent ? healthPercent : 1 - healthPercent;
 
 		if (iconP1 != null && iconP1.isAnimated)
 		{
-			iconP1.updateIconState(playOpponent ? healthPercent : 1 - healthPercent);
+			iconP1.updateIconState(bfHealth);
 		}
 		if (iconP2 != null && iconP2.isAnimated)
 		{
-			iconP2.updateIconState(playOpponent ? 1 - healthPercent : healthPercent);
+			iconP2.updateIconState(dadHealth);
 		}
 		if (iconGF != null && iconGF.visible && iconGF.isAnimated)
 		{
-			if (gfIconSide == 'bf') {
-				iconGF.updateIconState(playOpponent ? healthPercent : 1 - healthPercent);
-			} else {
-				iconGF.updateIconState(playOpponent ? 1 - healthPercent : healthPercent);
-			}
+			iconGF.updateIconState(gfIconSide == 'bf' ? bfHealth : dadHealth);
 		}
 
 		if (iconP1 != null && !iconP1.isAnimated)
 		{
-			var p1Health:Float = playOpponent ? healthPercent : 1 - healthPercent;
-			iconP1.animation.curAnim.curFrame = getStaticIconFrame(p1Health, true);
+			iconP1.animation.curAnim.curFrame = getStaticIconFrame(bfHealth, true);
 		}
 		if (iconP2 != null && !iconP2.isAnimated)
 		{
-			var p2Health:Float = playOpponent ? 1 - healthPercent : healthPercent;
-			iconP2.animation.curAnim.curFrame = getStaticIconFrame(p2Health, false);
+			iconP2.animation.curAnim.curFrame = getStaticIconFrame(dadHealth, false);
 		}
 		if (iconGF != null && iconGF.visible && !iconGF.isAnimated)
 		{
-			var gfHealth:Float = (gfIconSide == 'bf')
-				? (playOpponent ? healthPercent : 1 - healthPercent)
-				: (playOpponent ? 1 - healthPercent : healthPercent);
+			var gfHealth:Float = gfIconSide == 'bf' ? bfHealth : dadHealth;
 			iconGF.animation.curAnim.curFrame = getStaticIconFrame(gfHealth, gfIconSide == 'bf');
 		}
 	}

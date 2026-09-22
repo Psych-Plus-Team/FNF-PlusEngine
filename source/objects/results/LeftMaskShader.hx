@@ -4,6 +4,7 @@ class LeftMaskShader extends FlxShader
 {
 	public var swagMaskX(default, set):Float = 0;
 	public var swagSprX(default, set):Float = 0;
+	public var usable(default, null):Bool = false;
 
 	function set_swagSprX(x:Float):Float
 	{
@@ -22,10 +23,12 @@ class LeftMaskShader extends FlxShader
 	public function new()
 	{
 		super();
-		if (this.data != null && this.data.sprX != null)
+		usable = this.data != null && this.data.sprX != null && this.data.maskX != null;
+		if (usable)
+		{
 			this.data.sprX.value = [0];
-		if (this.data != null && this.data.maskX != null)
 			this.data.maskX.value = [0];
+		}
 	}
 
 	@:glFragmentHeader('

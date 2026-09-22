@@ -109,6 +109,8 @@ class ResultsState extends MusicBeatState
 
 	override function create():Void
 	{
+		super.create();
+
 		if (FlxG.sound.music != null)
 			FlxG.sound.music.stop();
 
@@ -125,7 +127,6 @@ class ResultsState extends MusicBeatState
 		FlxG.cameras.add(cameraBG, false);
 		FlxG.cameras.add(cameraScroll, false);
 		FlxG.cameras.add(cameraEverything, false);
-		FlxG.cameras.setDefaultDrawTarget(cameraEverything, true);
 		camera = cameraEverything;
 		FlxG.camera.zoom = 1.0;
 
@@ -168,9 +169,13 @@ class ResultsState extends MusicBeatState
 		speedOfTween.y = -1.0 * Math.sin(angleRad);
 		timerThenSongName(1.0, false);
 
-		songName.shader = maskShaderSongName;
-		difficulty.shader = maskShaderDifficulty;
-		maskShaderDifficulty.swagMaskX = difficulty.x - 30;
+		if (maskShaderSongName.usable)
+			songName.shader = maskShaderSongName;
+		if (maskShaderDifficulty.usable)
+		{
+			difficulty.shader = maskShaderDifficulty;
+			maskShaderDifficulty.swagMaskX = difficulty.x - 30;
+		}
 
 		resultsAnim.animation.addByPrefix("result", "results instance 1", 24, false);
 		resultsAnim.visible = false;
@@ -232,8 +237,6 @@ class ResultsState extends MusicBeatState
 		rankBg.alpha = 0;
 		addZ(rankBg, 99999);
 		sortByZ();
-
-		super.create();
 	}
 
 	function addTallies():Void
@@ -243,8 +246,15 @@ class ResultsState extends MusicBeatState
 		add(ratingGrp);
 		var hStuf:Int = 50;
 		var extraYOffset:Float = 7;
-		ratingGrp.add(new TallyCounter(375, hStuf * 3, scoreData.tallies.totalNotesHit));
-		ratingGrp.add(new TallyCounter(375, hStuf * 4, scoreData.tallies.maxCombo));
+		var totalHit:TallyCounter = new TallyCounter(375, hStuf * 3, scoreData.tallies.totalNotesHit);
+		var maxCombo:TallyCounter = new TallyCounter(375, hStuf * 4, scoreData.tallies.maxCombo);
+		if (scoreData.tallies.totalNotesHit >= 1000)
+		{
+			totalHit.x -= 30;
+			maxCombo.x -= 30;
+		}
+		ratingGrp.add(totalHit);
+		ratingGrp.add(maxCombo);
 		hStuf += 4;
 		ratingGrp.add(new TallyCounter(230, (hStuf * 5) + extraYOffset, scoreData.tallies.sick, 0xFF89E59E));
 		ratingGrp.add(new TallyCounter(210, (hStuf * 6) + extraYOffset, scoreData.tallies.good, 0xFF89C9E5));
@@ -391,7 +401,8 @@ class ResultsState extends MusicBeatState
 
 	override function update(elapsed:Float):Void
 	{
-		maskShaderDifficulty.swagSprX = difficulty.x;
+		if (maskShaderDifficulty.usable)
+			maskShaderDifficulty.swagSprX = difficulty.x;
 		if (movingSongStuff)
 		{
 			var speedX:Float = speedOfTween.x * 60 * elapsed;
@@ -472,7 +483,6 @@ class ResultsState extends MusicBeatState
 
 		sprite.visible = false;
 		sprite.scale.set(animData.scale, animData.scale);
-		sprite.updateHitbox();
 		characterAnimations.push({sprite: sprite, data: animData, delay: animData.delay, sound: animData.sound});
 		addZ(sprite, animData.zIndex);
 	}
@@ -576,6 +586,8 @@ class ResultsState extends MusicBeatState
 		obj.zIndex = z;
 		if (cameras != null)
 			obj.cameras = cameras;
+		else
+			obj.cameras = [cameraEverything];
 		add(obj);
 		return obj;
 	}
