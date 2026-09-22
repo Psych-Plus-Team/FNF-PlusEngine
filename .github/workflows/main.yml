@@ -129,31 +129,18 @@ jobs:
           from pathlib import Path
           import zipfile
 
+          source = Path("base_game_opt")
           output = Path("dist/Mod-Base-Game-Opt.zip")
           mod_folder = Path("Friday Night Funkin")
-          sources = [
-              (Path("base_game_opt"), Path(".")),
-              (Path("assets/shared_opt"), Path(".")),
-              (Path("assets/songs_opt"), Path("songs")),
-          ]
 
-          for source, _ in sources:
-              if not source.is_dir():
-                  raise SystemExit(f"{source} directory was not found")
+          if not source.is_dir():
+              raise SystemExit("base_game directory was not found")
 
           output.parent.mkdir(parents=True, exist_ok=True)
           with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_STORED) as archive:
-              written = set()
-              for source, target in sources:
-                  for path in sorted(source.rglob("*")):
-                      if not path.is_file():
-                          continue
-                      arcname = mod_folder / target / path.relative_to(source)
-                      key = arcname.as_posix()
-                      if key in written:
-                          continue
-                      archive.write(path, arcname)
-                      written.add(key)
+              for path in sorted(source.rglob("*")):
+                  if path.is_file():
+                      archive.write(path, mod_folder / path.relative_to(source))
           PY
 
       - name: Upload Mod-Base-Game

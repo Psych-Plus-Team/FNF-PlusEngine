@@ -72,7 +72,6 @@
 	<assets path="assets/embed" embed="true"/>
 	<assets path="assets/cursor" rename="assets/images/cursor"/>
 	<assets path="assets/videos" if="VIDEOS_ALLOWED"/>
-	<assets path="assets/songs" />
 	<assets path="assets/week1" />
 	<section if="TITLE_SCREEN_EASTER_EGG">
 		<assets path="assets/secrets" rename="assets/shared"/>
