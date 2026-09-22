@@ -88,50 +88,37 @@ class HealthIcon extends FlxSprite
 
 						for (frame in frames.frames)
 						{
-								if (frame.name.startsWith('normal'))
-										hasNormalAnim = true;
-								if (frame.name.startsWith('losing'))
-										hasLosingAnim = true;
-								if (frame.name.startsWith('winning'))
-										hasWinningAnim = true;
-								if (hasNormalAnim && hasLosingAnim && hasWinningAnim)
-										break;
-						}
-							if (hasNormalAnim)
-							{
-								animation.addByPrefix('normal', 'normal', animFPS, true, isPlayer);
-								if (hasLosingAnim)
-								{
-										animation.addByPrefix('losing', 'losing', animFPS, true, isPlayer);
-								}
-								if (hasWinningAnim)
-								{
-										animation.addByPrefix('winning', 'winning', animFPS, true, isPlayer);
-								}
-								animation.play('normal');
-						}
-						else
-						{
-								animation.addByPrefix(char, '', animFPS, true, isPlayer);
-								animation.play(char);
+							if (frame.name.startsWith('normal'))
+								hasNormalAnim = true;
+							if (frame.name.startsWith('losing'))
+								hasLosingAnim = true;
+							if (frame.name.startsWith('winning'))
+								hasWinningAnim = true;
+							if (hasNormalAnim && hasLosingAnim && hasWinningAnim)
+								break;
 						}
 
-						if (animation.curAnim != null && animation.curAnim.numFrames > 0)
+						if (hasNormalAnim)
 						{
-							var firstFrameData = frames.frames[0];
-							if (firstFrameData != null && firstFrameData.frame != null)
+							animation.addByPrefix('normal', 'normal', animFPS, true, isPlayer);
+							if (hasLosingAnim)
 							{
-								iconOffsets[0] = (firstFrameData.frame.width - 150) / 2;
-								iconOffsets[1] = (firstFrameData.frame.height - 150) / 2;
+								animation.addByPrefix('losing', 'losing', animFPS, true, isPlayer);
 							}
-							else
+							if (hasWinningAnim)
 							{
-								iconOffsets[0] = iconOffsets[1] = 0;
+								animation.addByPrefix('winning', 'winning', animFPS, true, isPlayer);
 							}
+
+							animation.play('normal');
+
+							recalculateOffsetsForAnim('normal');
 						}
 						else
 						{
-							iconOffsets[0] = iconOffsets[1] = 0;
+							animation.addByPrefix(char, '', animFPS, true, isPlayer);
+							animation.play(char);
+							recalculateOffsetsForAnim(char);
 						}
 					}
 					else
@@ -180,6 +167,27 @@ class HealthIcon extends FlxSprite
 	{
 		if (verboseIconLoading)
 			trace('[HealthIcon] ' + message);
+	}
+
+	private function recalculateOffsetsForAnim(animName:String):Void
+	{
+		var anim = animation.getByName(animName);
+		if (anim == null || anim.frames == null || anim.frames.length < 1)
+		{
+			iconOffsets[0] = iconOffsets[1] = 0;
+			return;
+		}
+
+		var firstFrame = anim.frames[0];
+		if (firstFrame != null && firstFrame.frame != null)
+		{
+			iconOffsets[0] = (firstFrame.frame.width - 150) / 2;
+			iconOffsets[1] = (firstFrame.frame.height - 150) / 2;
+		}
+		else
+		{
+			iconOffsets[0] = iconOffsets[1] = 0;
+		}
 	}
 
 	private function loadStaticIcon(name:String, allowGPU:Bool = true):Void
@@ -243,7 +251,11 @@ class HealthIcon extends FlxSprite
 				targetAnim = 'winning';
 
 			if (animation.curAnim == null || animation.curAnim.name != targetAnim)
+			{
 				playAnim(targetAnim);
+				recalculateOffsetsForAnim(targetAnim);
+				updateHitbox();
+			}
 		}
 	}
 
@@ -264,4 +276,3 @@ class HealthIcon extends FlxSprite
 		return char;
 	}
 }
-
