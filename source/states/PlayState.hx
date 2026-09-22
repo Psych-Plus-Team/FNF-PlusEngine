@@ -4609,26 +4609,28 @@ class PlayState extends MusicBeatState
 				{
 					FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7, true);
 
-					MusicBeatState.switchState(backend.ScriptableState.tryCreate('ResultsState', new ResultsState({
-						score: songScore,
-						prevHighScore: Highscore.getScore(Song.loadedSongName, storyDifficulty),
-						accuracy: ratingPercent,
-						flawlesss: Rating.getHits(ratingsData, 'flawless'),
-						sicks: Rating.getHits(ratingsData, 'sick'),
-						goods: Rating.getHits(ratingsData, 'good'),
-						bads: Rating.getHits(ratingsData, 'bad'),
-						shits: Rating.getHits(ratingsData, 'shit'),
-						misses: songMisses,
-						maxCombo: maxCombo,
-						totalNotes: totalNotes,
-						songName: SONG.song,
-						difficulty: Difficulty.getString(),
-						isMod: Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0,
-						modFolder: Mods.currentModDirectory,
-						isPractice: practiceMode,
-						ratingName: ratingName,
-						ratingFC: ratingFC
-					})));
+					FlxG.signals.nextState.add(() -> {
+						MusicBeatState.switchState(backend.ScriptableState.tryCreate('ResultsState', new ResultsState({
+							score: songScore,
+							prevHighScore: Highscore.getScore(Song.loadedSongName, storyDifficulty),
+							accuracy: ratingPercent,
+							flawlesss: Rating.getHits(ratingsData, 'flawless'),
+							sicks: Rating.getHits(ratingsData, 'sick'),
+							goods: Rating.getHits(ratingsData, 'good'),
+							bads: Rating.getHits(ratingsData, 'bad'),
+							shits: Rating.getHits(ratingsData, 'shit'),
+							misses: songMisses,
+							maxCombo: maxCombo,
+							totalNotes: totalNotes,
+							songName: SONG.song,
+							difficulty: Difficulty.getString(),
+							isMod: Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0,
+							modFolder: Mods.currentModDirectory,
+							isPractice: practiceMode,
+							ratingName: ratingName,
+							ratingFC: ratingFC
+						})));
+					});
 					transitioning = true;
 					return true;
 				}
