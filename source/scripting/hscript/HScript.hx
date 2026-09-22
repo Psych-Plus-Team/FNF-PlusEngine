@@ -45,7 +45,7 @@ class HScript {
 
 	public static function setupConfig():Void {
 		hxscript.Config.interpClass = PsychInterp;
-		hxscript.Config.strictAccess = true;
+		hxscript.Config.strictAccess = false;
 
 		for (base in scripting.bridges.Bridges.bases)
 			hxscript.Config.globalImports.set(base, ImportMode.INormal);

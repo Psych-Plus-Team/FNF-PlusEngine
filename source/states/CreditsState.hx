@@ -276,7 +276,7 @@ class CreditsState extends MusicBeatState
 				if (credit[1] != null && credit[1].length > 0)
 				{
 					var icon:AttachedSprite = new AttachedSprite(str);
-					if (str.endsWith('-pixel'))
+					if (StringTools.endsWith(str, '-pixel'))
 						icon.antialiasing = false;
 					icon.xAdd = optionText.width + 10;
 					icon.sprTracker = optionText;
@@ -445,7 +445,7 @@ class CreditsState extends MusicBeatState
 		}
 
 		descText.text = creditsStuff[curSelected][2];
-		if (descText.text.trim().length > 0)
+		if (StringTools.trim(descText.text).length > 0)
 		{
 			descText.visible = true;
 			descBg.visible = true;
@@ -482,7 +482,7 @@ class CreditsState extends MusicBeatState
 			var firstarray:Array<String> = File.getContent(creditsFile).split('\n');
 			for (i in firstarray)
 			{
-				var arr:Array<String> = i.replace('\\n', '\n').split("::");
+				var arr:Array<String> = StringTools.replace(i, '\\n', '\n').split("::");
 				if (arr.length >= 5)
 					arr.push(folder);
 				creditsStuff.push(arr);

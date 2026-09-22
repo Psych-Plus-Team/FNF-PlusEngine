@@ -169,6 +169,7 @@ import states.TitleState;
 	public var newfreeplay:Bool = true;
 	public var resultsStateAtEnd:Bool = true;
 	public var vanillaTransition:Bool = false; // Use vanilla Psych Engine transition instead of custom
+	public var optionsMenuStyle:String = 'Plus'; // Plus, Psych
 	public var pauseCountdown:Bool = false; // Enable countdown when resuming from pause
 	public var heyIntro:Bool = false; // Boyfriend and Girlfriend do Hey! animation on countdown Go!
 	public var breakTimer:Bool = false; // Show timer when next notes are approaching

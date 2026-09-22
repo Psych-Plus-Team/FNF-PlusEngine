@@ -209,6 +209,7 @@
 	<haxedef name="hscriptPos" if="HSCRIPT_ALLOWED" />
 	<haxedef name="custom_classes" if="HSCRIPT_ALLOWED" />
 	<haxeflag name="--macro" value="macros.ScriptedBridgeMacro.generate()" if="HSCRIPT_ALLOWED" />
+	<haxeflag name="--macro" value="macros.ScriptClassExportMacro.syncCoreStates()" if="HSCRIPT_ALLOWED" />
 
 	<!-- Enable all classes compilation for hscript -->
 	<haxeflag name="--macro" value="addMetadata('@:build(macros.PlusFlxMacro.buildFlxBasic())', 'flixel.FlxBasic')" />

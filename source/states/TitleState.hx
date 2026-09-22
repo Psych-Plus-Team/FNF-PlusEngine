@@ -268,6 +268,8 @@ class TitleState extends MusicBeatState
 		if (Paths.fileExists('images/gfDanceTitle.json', TEXT))
 		{
 			var titleRaw:String = Paths.getTextFromFile('images/gfDanceTitle.json');
+			if (titleRaw != null)
+				titleRaw = StringTools.trim(titleRaw);
 			if (titleRaw != null && titleRaw.length > 0)
 			{
 				try
@@ -286,16 +288,16 @@ class TitleState extends MusicBeatState
 						danceRightFrames = titleJSON.dance_right;
 					useIdle = (titleJSON.idle == true);
 
-					if (titleJSON.backgroundSprite != null && titleJSON.backgroundSprite.trim().length > 0)
+					if (titleJSON.backgroundSprite != null && StringTools.trim(titleJSON.backgroundSprite).length > 0)
 					{
 						var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image(titleJSON.backgroundSprite));
 						bg.antialiasing = ClientPrefs.data.antialiasing;
 						add(bg);
 					}
 				}
-				catch (e:haxe.Exception)
+				catch (e:Dynamic)
 				{
-					trace('[WARN] Title JSON might broken, ignoring issue...\n${e.details()}');
+					trace('[WARN] Title JSON might be broken, using default values: $e');
 				}
 			}
 			else
@@ -369,7 +371,7 @@ class TitleState extends MusicBeatState
 
 		for (i in firstArray)
 		{
-			if (i != null && i.trim().length > 0)
+			if (i != null && StringTools.trim(i).length > 0)
 				swagGoodArray.push(i.split('--'));
 		}
 
@@ -473,7 +475,7 @@ class TitleState extends MusicBeatState
 
 					new FlxTimer().start(1, function(tmr:FlxTimer)
 					{
-						MusicBeatState.switchState(backend.ScriptableState.tryCreate('MainMenuState', new MainMenuState()));
+						MusicBeatState.switchState(backend.ScriptableState.tryCreateLazy('MainMenuState', function() return new MainMenuState()));
 						closedState = true;
 					});
 					// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
@@ -493,7 +495,7 @@ class TitleState extends MusicBeatState
 						for (wordRaw in easterEggKeys)
 						{
 							var word:String = wordRaw.toUpperCase(); // just for being sure you're doing it right
-							if (easterEggKeysBuffer.contains(word))
+							if (StringTools.contains(easterEggKeysBuffer, word))
 							{
 								// trace('YOOO! ' + word);
 								if (FlxG.save.data.psychDevsEasterEgg == word)
@@ -515,7 +517,7 @@ class TitleState extends MusicBeatState
 									{
 										FlxTransitionableState.skipNextTransIn = true;
 										FlxTransitionableState.skipNextTransOut = true;
-										MusicBeatState.switchState(backend.ScriptableState.tryCreate('TitleState', new TitleState()));
+										MusicBeatState.switchState(backend.ScriptableState.tryCreateLazy('TitleState', function() return new TitleState()));
 									}
 								});
 								FlxG.sound.music.fadeOut();

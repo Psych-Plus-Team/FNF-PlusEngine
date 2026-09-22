@@ -39,6 +39,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	private var playingIntroTransition:Bool = false;
 	private var closingTransition:Bool = false;
 	private var openedFromOptionsState:Bool = false;
+	private var menuStyle:String = OptionsState.STYLE_PLUS;
 
 	inline function safeOffsetX():Float
 	{
@@ -71,6 +72,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		#end
 
 		OptionsMenuTheme.syncAccent();
+		menuStyle = OptionsState.normalizeMenuStyle(ClientPrefs.data.optionsMenuStyle);
 
 		bg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.alpha = OptionsMenuTheme.menuBackgroundAlpha();
@@ -87,6 +89,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		hintText = new FlxText(safeOffsetX() + 66, 80, 780, Language.getPhrase('options_substate_hint', 'LEFT/RIGHT changes values. ACCEPT toggles or edits binds.'), 16);
 		hintText.setFormat(Paths.font("vcr.ttf"), 16, OptionsMenuTheme.bodyTextColor(), LEFT);
 		hintText.antialiasing = ClientPrefs.data.antialiasing;
+		hintText.visible = !isPsychStyle();
 		add(hintText);
 
 		optionRows = new FlxTypedGroup<OptionRowCard>();
@@ -732,7 +735,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 			if (row == null)
 				continue;
 			var selected:Bool = row.index == curSelected;
-			var targetX:Float = safeOffsetX() + ROW_X + (selected ? 0 : 18);
+			var targetX:Float = isPsychStyle() ? 0 : safeOffsetX() + ROW_X + (selected ? 0 : 18);
 			var targetY:Float = rowTargetY(row.index);
 			var targetScale:Float = 1;
 			var newX:Float = targetX;
@@ -800,6 +803,9 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 	function rowTargetY(index:Int):Float
 	{
+		if (isPsychStyle())
+			return FlxG.height * 0.5 - 42 + (index - curSelected) * 72;
+
 		if (optionRows == null)
 			return ROW_SELECTED_Y;
 
@@ -853,6 +859,9 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	{
 		return (optionRows != null && index >= 0 && index < optionRows.members.length) ? optionRows.members[index] : null;
 	}
+
+	function isPsychStyle():Bool
+		return menuStyle == OptionsState.STYLE_PSYCH;
 
 	public function getOptionsCopy():Array<Option>
 		return optionsArray != null ? optionsArray.copy() : [];
@@ -910,7 +919,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 		for (i in 0...optionsArray.length)
 		{
-			var row:OptionRowCard = new OptionRowCard(i, optionsArray[i], ROW_W, ROW_H);
+			var row:OptionRowCard = new OptionRowCard(i, optionsArray[i], isPsychStyle() ? FlxG.width : ROW_W, ROW_H, isPsychStyle());
 			optionRows.add(row);
 			optionsArray[i].child = row;
 			updateTextFrom(optionsArray[i]);
@@ -968,12 +977,14 @@ private class OptionRowCard extends FlxSpriteGroup
 	var lastName:String = null;
 	var lastDescription:String = null;
 	var heightChanged:Bool = false;
+	var classicStyle:Bool = false;
 
-	public function new(index:Int, option:Option, w:Float, h:Float)
+	public function new(index:Int, option:Option, w:Float, h:Float, classicStyle:Bool = false)
 	{
 		super();
 		this.index = index;
 		this.option = option;
+		this.classicStyle = classicStyle;
 		rowWidth = w;
 		minRowHeight = h;
 		rowHeight = h;
@@ -981,8 +992,10 @@ private class OptionRowCard extends FlxSpriteGroup
 		bg = new FlxSprite().makeGraphic(Std.int(rowWidth), Std.int(rowHeight), FlxColor.TRANSPARENT, true);
 		add(bg);
 
-		title = new FlxText(0, 0, textColumnWidth(), option.name, 21);
-		title.setFormat(Paths.font("vcr.ttf"), 21, FlxColor.WHITE, LEFT);
+		title = new FlxText(0, 0, classicStyle ? rowWidth : textColumnWidth(), option.name, classicStyle ? 30 : 21);
+		title.setFormat(Paths.font("vcr.ttf"), classicStyle ? 30 : 21, FlxColor.WHITE, classicStyle ? CENTER : LEFT,
+			classicStyle ? FlxTextBorderStyle.OUTLINE : FlxTextBorderStyle.NONE, FlxColor.BLACK);
+		title.borderSize = classicStyle ? 1.7 : 1;
 		title.antialiasing = ClientPrefs.data.antialiasing;
 		add(title);
 
@@ -1082,7 +1095,7 @@ private class OptionRowCard extends FlxSpriteGroup
 
 		var oldHeight:Float = rowHeight;
 		var descBottom:Float = description != null ? DESCRIPTION_Y + description.height : 54;
-		rowHeight = FlxMath.bound(descBottom + 14, minRowHeight, MAX_ROW_HEIGHT);
+		rowHeight = classicStyle ? minRowHeight : FlxMath.bound(descBottom + 14, minRowHeight, MAX_ROW_HEIGHT);
 
 		syncLayout();
 
@@ -1094,6 +1107,32 @@ private class OptionRowCard extends FlxSpriteGroup
 	{
 		if (bg != null)
 			bg.setPosition(x, y);
+		if (classicStyle)
+		{
+			if (title != null)
+			{
+				title.x = x;
+				title.y = y + 8;
+				title.fieldWidth = rowWidth;
+				title.alignment = CENTER;
+			}
+			if (description != null)
+				description.visible = false;
+
+			var rowCenter:Float = y + rowHeight * 0.5;
+			if (checkBox != null)
+			{
+				checkBox.x = x + rowWidth - 160;
+				checkBox.y = centeredY(CHECKBOX_SIZE, rowCenter);
+			}
+			if (valueControl != null)
+			{
+				valueControl.x = x + rowWidth - 360;
+				valueControl.y = centeredY(VALUE_CONTROL_H, rowCenter);
+				valueControl.syncLayout();
+			}
+			return;
+		}
 		if (title != null)
 		{
 			title.x = x + CONTENT_X;
@@ -1212,6 +1251,19 @@ private class OptionRowCard extends FlxSpriteGroup
 
 		var fill:Int = selected ? OptionsMenuTheme.difficultyCardFill(OptionsMenuTheme.current().accent, true) : OptionsMenuTheme.cardFill(false);
 		var stroke:Int = selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.panelOutlineColor();
+		if (classicStyle)
+		{
+			bg.visible = false;
+			description.visible = false;
+			title.color = FlxColor.WHITE;
+			title.alpha = selected ? 1 : 0.6;
+			title.borderStyle = FlxTextBorderStyle.OUTLINE;
+			title.borderColor = FlxColor.BLACK;
+			if (valueControl != null)
+				valueControl.applyTheme(selected);
+			syncLayout();
+			return;
+		}
 		bg.makeGraphic(Std.int(rowWidth), Std.int(rowHeight), FlxColor.TRANSPARENT, true);
 		bg.setPosition(x, y);
 		FlxSpriteUtil.drawRoundRect(bg, 0, 0, rowWidth, rowHeight, 8, 8, fill);

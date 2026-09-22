@@ -15,6 +15,10 @@ class LegacySettingsSubState extends BaseOptionsMenu
 			'vanillaTransition', BOOL);
 		addOption(option);
 
+		var option:Option = new Option('Options Menu Style', 'Changes the Options root menu layout.', 'optionsMenuStyle', STRING,
+			['Plus', 'Psych']);
+		addOption(option);
+
 		var option:Option = new Option('Instant Window Close', 'If checked, closing the game exits instantly instead of fading the window out.',
 			'instantWindowClose', BOOL);
 		addOption(option);

@@ -76,7 +76,7 @@ class AndroidPermissionsState extends MusicBeatState
 	{
 		FlxTransitionableState.skipNextTransIn = true;
 		FlxTransitionableState.skipNextTransOut = true;
-		MusicBeatState.switchState(new TitleState());
+		MusicBeatState.switchState(backend.ScriptableState.tryCreate('TitleState', new TitleState()));
 	}
 
 	override function update(elapsed:Float):Void

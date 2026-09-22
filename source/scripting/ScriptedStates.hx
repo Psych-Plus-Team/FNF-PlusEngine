@@ -20,6 +20,7 @@ enum ResolveScope {
 }
 
 typedef ScriptedStateFile = {
+	var full:String;
 	var file:String;
 	var mod:String;
 }
@@ -29,25 +30,25 @@ class ScriptedStates {
 	public static var activeScriptedMod:String = null;
 
 	public static function hasState(name:String, scope:ResolveScope = ANY):Bool
-		return resolveScript(fullName(ScriptRegistry.STATE_PACKAGE, name), scope) != null;
+		return resolveScript(ScriptRegistry.STATE_PACKAGE, name, scope) != null;
 
 	public static function hasSubstate(name:String, scope:ResolveScope = ANY):Bool
-		return resolveScript(fullName(ScriptRegistry.SUBSTATE_PACKAGE, name), scope) != null;
+		return resolveScript(ScriptRegistry.SUBSTATE_PACKAGE, name, scope) != null;
 
 	public static function loadState(name:String, ?args:Array<Dynamic>, scope:ResolveScope = ANY):MusicBeatState {
-		return loadStateFromResolved(name, resolveScript(fullName(ScriptRegistry.STATE_PACKAGE, name), scope), args);
+		return loadStateFromResolved(name, resolveScript(ScriptRegistry.STATE_PACKAGE, name, scope), args);
 	}
 
 	public static function loadStateFromMod(name:String, ?args:Array<Dynamic>, ?mod:String):MusicBeatState {
-		return loadStateFromResolved(name, resolveInMod(fullName(ScriptRegistry.STATE_PACKAGE, name), mod), args);
+		return loadStateFromResolved(name, resolveInModCandidates(candidateFullNames(ScriptRegistry.STATE_PACKAGE, name), mod), args);
 	}
 
 	public static function loadSubstate(name:String, ?args:Array<Dynamic>, scope:ResolveScope = ANY):MusicBeatSubstate {
-		var resolved:ScriptedStateFile = resolveScript(fullName(ScriptRegistry.SUBSTATE_PACKAGE, name), scope);
+		var resolved:ScriptedStateFile = resolveScript(ScriptRegistry.SUBSTATE_PACKAGE, name, scope);
 		if (resolved == null)
 			return null;
 
-		var inst:Dynamic = ScriptRegistry.instantiateResolved(fullName(ScriptRegistry.SUBSTATE_PACKAGE, name), resolved.file, resolved.mod, args);
+		var inst:Dynamic = ScriptRegistry.instantiateResolved(resolved.full, resolved.file, resolved.mod, args);
 		if (inst == null)
 			return null;
 
@@ -129,7 +130,7 @@ class ScriptedStates {
 		if (resolved == null)
 			return null;
 
-		var full:String = fullName(ScriptRegistry.STATE_PACKAGE, name);
+		var full:String = resolved.full;
 		var inst:Dynamic = ScriptRegistry.instantiateResolved(full, resolved.file, resolved.mod, args);
 		if (inst == null)
 			return null;
@@ -148,42 +149,55 @@ class ScriptedStates {
 		return state;
 	}
 
-	static function resolveScript(full:String, scope:ResolveScope):ScriptedStateFile {
+	static function resolveScript(pack:String, name:String, scope:ResolveScope):ScriptedStateFile {
+		var candidates:Array<String> = candidateFullNames(pack, name);
 		return switch (scope) {
 			case LAUNCHED:
-				resolveInMod(full, Mods.launchedMod != null && Mods.launchedMod.length > 0 ? Mods.launchedMod : Mods.currentModDirectory);
+				resolveInModCandidates(candidates, Mods.launchedMod != null && Mods.launchedMod.length > 0 ? Mods.launchedMod : Mods.currentModDirectory);
 			case ANY:
-				var resolved = ScriptRegistry.resolveClassFile(full);
-				resolved == null ? null : {file: resolved.file, mod: resolved.mod};
+				resolveAnyCandidate(candidates);
 		}
 	}
 
-	static function resolveInMod(full:String, ?mod:String):ScriptedStateFile {
+	static function resolveAnyCandidate(candidates:Array<String>):ScriptedStateFile {
+		for (full in candidates) {
+			var resolved = ScriptRegistry.resolveClassFile(full);
+			if (resolved != null)
+				return {full: full, file: resolved.file, mod: resolved.mod};
+		}
+		return null;
+	}
+
+	static function resolveInModCandidates(candidates:Array<String>, ?mod:String):ScriptedStateFile {
 		#if MODS_ALLOWED
 		if (mod != null && mod.length > 0) {
-			for (relative in ScriptRegistry.classPaths(full)) {
-				var file:String = Paths.mods(mod + '/' + relative);
-				if (AssetLoader.exists(file, AssetType.TEXT))
-					return {file: file, mod: mod};
+			for (full in candidates) {
+				for (relative in ScriptRegistry.classPaths(full)) {
+					var file:String = Paths.mods(mod + '/' + relative);
+					if (AssetLoader.exists(file, AssetType.TEXT))
+						return {full: full, file: file, mod: mod};
+				}
 			}
 			return null;
 		}
 		#end
 
-		for (relative in ScriptRegistry.classPaths(full)) {
-			var sharedAssets:String = Paths.getSharedPath(relative);
-			if (AssetLoader.exists(sharedAssets, AssetType.TEXT))
-				return {file: sharedAssets, mod: ScriptRegistry.SHARED_WORLD};
+		for (full in candidates) {
+			for (relative in ScriptRegistry.classPaths(full)) {
+				var sharedAssets:String = Paths.getSharedPath(relative);
+				if (AssetLoader.exists(sharedAssets, AssetType.TEXT))
+					return {full: full, file: sharedAssets, mod: ScriptRegistry.SHARED_WORLD};
 
-			#if MODS_ALLOWED
-			var shared:String = Paths.mods(relative);
-			if (AssetLoader.exists(shared, AssetType.TEXT))
-				return {file: shared, mod: ScriptRegistry.SHARED_WORLD};
+				#if MODS_ALLOWED
+				var shared:String = Paths.mods(relative);
+				if (AssetLoader.exists(shared, AssetType.TEXT))
+					return {full: full, file: shared, mod: ScriptRegistry.SHARED_WORLD};
 
-			var base:String = 'base_game/' + relative;
-			if (AssetLoader.exists(base, AssetType.TEXT))
-				return {file: base, mod: ScriptRegistry.BASE_GAME_MOD};
-			#end
+				var base:String = 'base_game/' + relative;
+				if (AssetLoader.exists(base, AssetType.TEXT))
+					return {full: full, file: base, mod: ScriptRegistry.BASE_GAME_MOD};
+				#end
+			}
 		}
 		return null;
 	}
@@ -205,6 +219,14 @@ class ScriptedStates {
 		if (name.indexOf('.') >= 0)
 			return name;
 		return pack + '.' + className(name);
+	}
+
+	static function candidateFullNames(pack:String, name:String):Array<String> {
+		var exact:String = fullName(pack, name);
+		var parts:Array<String> = exact.split('.');
+		var cls:String = parts.pop();
+		var wrapper:String = parts.concat([cls + 'Script']).join('.');
+		return wrapper == exact ? [exact] : [wrapper, exact];
 	}
 
 	static function className(name:String):String {

@@ -7,6 +7,9 @@ import states.MainMenuState;
 
 class OptionsState extends MusicBeatState
 {
+	public static inline var STYLE_PLUS:String = 'Plus';
+	public static inline var STYLE_PSYCH:String = 'Psych';
+
 	static inline var CARD_W:Float = 500;
 	static inline var CARD_H:Float = 86;
 	static inline var CARD_GAP_X:Float = 24;
@@ -28,6 +31,9 @@ class OptionsState extends MusicBeatState
 		#if mobile 'Mobile' #end
 	];
 	private var grpOptions:FlxTypedGroup<OptionCard>;
+	private var grpPsychOptions:FlxTypedGroup<Alphabet>;
+	private var psychSelectorLeft:Alphabet;
+	private var psychSelectorRight:Alphabet;
 	private static var curSelected:Int = 0;
 
 	var gridScroll:Float = 0;
@@ -36,6 +42,7 @@ class OptionsState extends MusicBeatState
 	var cardsLayoutSettled:Bool = false;
 	var substateInputBlocked:Bool = false;
 	var lastThemeSignature:String = "";
+	var menuStyle:String = STYLE_PLUS;
 	var mobileTipText:FlxText;
 
 	public static var menuBG:FlxSprite;
@@ -47,6 +54,19 @@ class OptionsState extends MusicBeatState
 	public static var substateAnchorLabel:String = null;
 	public static inline var SUBSTATE_TITLE_X:Float = 75;
 	public static inline var SUBSTATE_TITLE_Y:Float = 45;
+
+	public static function normalizeMenuStyle(style:String):String
+	{
+		if (style == null)
+			return STYLE_PLUS;
+
+		return switch (style.toLowerCase().trim())
+		{
+			case 'psych': STYLE_PSYCH;
+			case 'psych mobile' | 'psych-mobile' | 'mobile': STYLE_PSYCH;
+			default: STYLE_PLUS;
+		}
+	}
 
 	public static function clearSubstateTransition():Void
 	{
@@ -163,6 +183,7 @@ class OptionsState extends MusicBeatState
 		#end
 
 		OptionsMenuTheme.syncAccent();
+		menuStyle = normalizeMenuStyle(ClientPrefs.data.optionsMenuStyle);
 
 		menuBG = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		menuBG.antialiasing = ClientPrefs.data.antialiasing;
@@ -184,6 +205,8 @@ class OptionsState extends MusicBeatState
 
 		grpOptions = new FlxTypedGroup<OptionCard>();
 		add(grpOptions);
+		grpPsychOptions = new FlxTypedGroup<Alphabet>();
+		add(grpPsychOptions);
 		rebuildOptionsVisuals();
 		gridScroll = targetScroll = computeTargetScroll();
 		refreshThemeVisuals(true);
@@ -236,7 +259,7 @@ class OptionsState extends MusicBeatState
 			refreshThemeVisuals(true);
 
 		targetScroll = computeTargetScroll();
-		if (!cardsLayoutSettled || Math.abs(gridScroll - targetScroll) > 0.05 || optionsIntroActive || substateReturning)
+		if (isClassicLayout() || !cardsLayoutSettled || Math.abs(gridScroll - targetScroll) > 0.05 || optionsIntroActive || substateReturning)
 		{
 			gridScroll = FlxMath.lerp(targetScroll, gridScroll, Math.exp(-elapsed * 10.2));
 			if (Math.abs(gridScroll - targetScroll) <= 0.05)
@@ -253,16 +276,17 @@ class OptionsState extends MusicBeatState
 
 		if (!exiting && !substateInputBlocked)
 		{
+			var verticalChange:Int = isClassicLayout() ? 1 : 2;
 			if (controls.UI_UP_P)
-				changeSelection(-2);
+				changeSelection(-verticalChange);
 			if (controls.UI_DOWN_P)
-				changeSelection(2);
-			if (controls.UI_LEFT_P)
+				changeSelection(verticalChange);
+			if (!isClassicLayout() && controls.UI_LEFT_P)
 				changeSelection(-1);
-			if (controls.UI_RIGHT_P)
+			if (!isClassicLayout() && controls.UI_RIGHT_P)
 				changeSelection(1);
 
-			if (touchPad.buttonC.justPressed || FlxG.keys.justPressed.CONTROL && controls.mobileC)
+			if (((touchPad != null && touchPad.buttonC.justPressed) || FlxG.keys.justPressed.CONTROL) && controls.mobileC)
 			{
 				#if mobile
 				persistentUpdate = false;
@@ -287,7 +311,7 @@ class OptionsState extends MusicBeatState
 				else
 				{
 					clearSubstateTransition();
-					MusicBeatState.switchState(new MainMenuState());
+					MusicBeatState.switchState(backend.ScriptableState.tryCreate('MainMenuState', new MainMenuState()));
 				}
 			}
 			else if (controls.ACCEPT && options != null && options.length > 0)
@@ -297,6 +321,12 @@ class OptionsState extends MusicBeatState
 
 	function layoutCards(elapsed:Float, instant:Bool):Bool
 	{
+		if (isClassicLayout())
+		{
+			refreshPsychLayout(instant);
+			return true;
+		}
+
 		if (grpOptions == null)
 			return true;
 
@@ -311,8 +341,10 @@ class OptionsState extends MusicBeatState
 			var headerMode:Bool = substateVisualActive && selected;
 			var targetX:Float = cardTargetX(item.index);
 			var targetY:Float = cardTargetY(item.index) - gridScroll;
-			var targetScale:Float = selected ? 1.035 : 1;
+			var targetScale:Float = selected ? (isClassicLayout() ? 1 : 1.035) : 1;
 			var targetAlpha:Float = selected ? 1 : 0.68;
+			if (isClassicLayout())
+				targetAlpha = selected ? 1 : 0.58;
 			var newX:Float = targetX;
 			var newY:Float = targetY;
 			var newScale:Float = targetScale;
@@ -398,20 +430,31 @@ class OptionsState extends MusicBeatState
 	}
 
 	function selectedCardTargetX():Float
-		return (FlxG.width - CARD_W) * 0.5;
+		return (FlxG.width - cardWidth()) * 0.5;
 
 	function cardTargetX(index:Int):Float
 	{
+		if (isClassicLayout())
+			return (FlxG.width - cardWidth()) * 0.5;
+
 		var totalW:Float = CARD_W * 2 + CARD_GAP_X;
 		var left:Float = (FlxG.width - totalW) * 0.5;
 		return left + (index % 2) * (CARD_W + CARD_GAP_X);
 	}
 
 	function cardTargetY(index:Int):Float
+	{
+		if (isClassicLayout())
+			return FlxG.height * 0.5 - 8 + (index - curSelected) * 82;
+
 		return GRID_TOP + Std.int(index / 2) * (CARD_H + CARD_GAP_Y);
+	}
 
 	function computeTargetScroll():Float
 	{
+		if (isClassicLayout())
+			return 0;
+
 		var selectedY:Float = cardTargetY(curSelected);
 		var target:Float = selectedY - 278;
 		var rows:Int = Math.ceil(options.length / 2);
@@ -440,7 +483,7 @@ class OptionsState extends MusicBeatState
 
 		var accent:Int = OptionsMenuTheme.current().accent;
 		if (menuBG != null)
-			menuBG.color = accent;
+			menuBG.color = isClassicLayout() ? 0xFFEA71FD : accent;
 
 		if (grpOptions != null)
 			for (item in grpOptions.members)
@@ -449,6 +492,8 @@ class OptionsState extends MusicBeatState
 					var selected:Bool = item.index == curSelected;
 					item.applyTheme(selected, force, substateVisualActive && selected);
 				}
+
+		refreshPsychLayout(force);
 	}
 
 	function restoreCards():Void
@@ -540,28 +585,27 @@ class OptionsState extends MusicBeatState
 
 	public function rebuildOptionsVisuals():Void
 	{
-		if (grpOptions == null)
+		if (grpOptions == null || grpPsychOptions == null)
 			return;
 		cardsLayoutSettled = false;
 
-		while (grpOptions.members.length > 0)
-		{
-			var item = grpOptions.members[0];
-			if (item != null)
-			{
-				item.kill();
-				grpOptions.remove(item, true);
-				item.destroy();
-			}
-			else
-				grpOptions.members.shift();
-		}
+		clearCardVisuals();
+		clearPsychVisuals();
 
 		if (options == null)
 			options = [];
 
-		for (num => option in options)
-			grpOptions.add(new OptionCard(num, getDisplayLabel(option), getDescription(option), CARD_W, CARD_H));
+		if (isClassicLayout())
+			for (num => option in options)
+			{
+				var item = new Alphabet(0, 0, getDisplayLabel(option), true);
+				item.ID = num;
+				item.antialiasing = ClientPrefs.data.antialiasing;
+				grpPsychOptions.add(item);
+			}
+		else
+			for (num => option in options)
+				grpOptions.add(new OptionCard(num, getDisplayLabel(option), getDescription(option), cardWidth(), cardHeight(), menuStyle));
 
 		if (options.length > 0)
 		{
@@ -574,11 +618,123 @@ class OptionsState extends MusicBeatState
 		callOnCompanionScript('onOptionsMenuRebuild', [getOptionsCopy()]);
 	}
 
+	function clearCardVisuals():Void
+	{
+		while (grpOptions.members.length > 0)
+		{
+			var item = grpOptions.members[0];
+			if (item != null)
+			{
+				item.kill();
+				grpOptions.remove(item, true);
+				item.destroy();
+			}
+			else
+				grpOptions.members.shift();
+		}
+	}
+
+	function clearPsychVisuals():Void
+	{
+		while (grpPsychOptions.members.length > 0)
+		{
+			var item = grpPsychOptions.members[0];
+			if (item != null)
+			{
+				item.kill();
+				grpPsychOptions.remove(item, true);
+				item.destroy();
+			}
+			else
+				grpPsychOptions.members.shift();
+		}
+
+		if (psychSelectorLeft != null)
+		{
+			remove(psychSelectorLeft, true);
+			psychSelectorLeft.destroy();
+			psychSelectorLeft = null;
+		}
+		if (psychSelectorRight != null)
+		{
+			remove(psychSelectorRight, true);
+			psychSelectorRight.destroy();
+			psychSelectorRight = null;
+		}
+
+		if (isClassicLayout())
+		{
+			psychSelectorLeft = new Alphabet(0, 0, ">", true);
+			psychSelectorRight = new Alphabet(0, 0, "<", true);
+			psychSelectorLeft.antialiasing = ClientPrefs.data.antialiasing;
+			psychSelectorRight.antialiasing = ClientPrefs.data.antialiasing;
+			add(psychSelectorLeft);
+			add(psychSelectorRight);
+		}
+	}
+
+	function refreshPsychLayout(instant:Bool = false):Void
+	{
+		if (!isClassicLayout() || grpPsychOptions == null)
+			return;
+
+		var selectedItem:Alphabet = null;
+		var centerY:Float = FlxG.height * 0.5 - 48;
+		for (item in grpPsychOptions.members)
+		{
+			if (item == null)
+				continue;
+
+			var offset:Int = item.ID - curSelected;
+			var selected:Bool = offset == 0;
+			if (!item.isMenuItem)
+			{
+				item.isMenuItem = true;
+				item.changeX = false;
+				item.distancePerItem.set(0, 70);
+			}
+
+			item.targetY = offset;
+			item.visible = !substateVisualActive || selected;
+			item.active = item.visible;
+			item.alpha = selected ? 1 : 0.6;
+			item.updateHitbox();
+			item.screenCenter(X);
+			item.startPosition.set(item.x, centerY);
+			if (instant || optionsIntroActive || substateReturning)
+				item.snapToPosition();
+			if (selected)
+				selectedItem = item;
+		}
+
+		if (psychSelectorLeft != null && psychSelectorRight != null)
+		{
+			var showSelectors:Bool = selectedItem != null && !substateVisualActive;
+			psychSelectorLeft.visible = psychSelectorRight.visible = showSelectors;
+			if (showSelectors)
+			{
+				psychSelectorLeft.alpha = psychSelectorRight.alpha = 1;
+				psychSelectorLeft.y = psychSelectorRight.y = selectedItem.y;
+				psychSelectorLeft.x = selectedItem.x - 62;
+				psychSelectorRight.x = selectedItem.x + selectedItem.width + 28;
+			}
+		}
+	}
+
 	override function destroy()
 	{
 		ClientPrefs.loadPrefs();
 		super.destroy();
 	}
+
+	function isClassicLayout():Bool
+		return menuStyle == STYLE_PSYCH;
+
+	function cardWidth():Float
+		return isClassicLayout() ? 700 : CARD_W;
+
+	function cardHeight():Float
+		return isClassicLayout() ? 52 : CARD_H;
 }
 
 private class OptionCard extends FlxSpriteGroup
@@ -596,17 +752,21 @@ private class OptionCard extends FlxSpriteGroup
 	var title:FlxText;
 	var desc:FlxText;
 	var arrow:FlxText;
+	var selectorLeft:FlxText;
+	var selectorRight:FlxText;
+	var style:String;
 	public var headerMode(default, null):Bool = false;
 	var lastSelected:Null<Bool> = null;
 	var lastHeaderMode:Null<Bool> = null;
 	var lastTheme:String = "";
 
-	public function new(index:Int, label:String, description:String, w:Float, h:Float)
+	public function new(index:Int, label:String, description:String, w:Float, h:Float, style:String)
 	{
 		super();
 		this.index = index;
 		cardW = w;
 		cardH = h;
+		this.style = OptionsState.normalizeMenuStyle(style);
 
 		bg = new FlxSprite().makeGraphic(Std.int(cardW), Std.int(cardH), FlxColor.TRANSPARENT, true);
 		add(bg);
@@ -625,6 +785,16 @@ private class OptionCard extends FlxSpriteGroup
 		arrow.setFormat(Paths.font("vcr.ttf"), 26, FlxColor.WHITE, CENTER);
 		arrow.antialiasing = ClientPrefs.data.antialiasing;
 		add(arrow);
+
+		selectorLeft = new FlxText(0, 0, 32, ">", 30);
+		selectorLeft.setFormat(Paths.font("vcr.ttf"), 30, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		selectorLeft.antialiasing = ClientPrefs.data.antialiasing;
+		add(selectorLeft);
+
+		selectorRight = new FlxText(0, 0, 32, "<", 30);
+		selectorRight.setFormat(Paths.font("vcr.ttf"), 30, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		selectorRight.antialiasing = ClientPrefs.data.antialiasing;
+		add(selectorRight);
 	}
 
 	public function setLabel(label:String, description:String):Void
@@ -657,17 +827,39 @@ private class OptionCard extends FlxSpriteGroup
 
 		var fill:Int = selected ? OptionsMenuTheme.difficultyCardFill(OptionsMenuTheme.current().accent, true) : OptionsMenuTheme.cardFill(false);
 		var stroke:Int = selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.panelOutlineColor();
-		bg.makeGraphic(Std.int(cardW), Std.int(cardH), FlxColor.TRANSPARENT, true);
-		bg.setPosition(x, y);
-		FlxSpriteUtil.drawRoundRect(bg, 0, 0, cardW, cardH, 8, 8, fill);
-		FlxSpriteUtil.drawRoundRect(bg, 0, 0, cardW, cardH, 8, 8, FlxColor.TRANSPARENT, {thickness: selected ? 2 : 1, color: stroke});
-		if (!headerMode)
-			FlxSpriteUtil.drawRoundRect(bg, DOT_X, (cardH - DOT_H) * 0.5, DOT_W, DOT_H, DOT_W * 0.5, DOT_W * 0.5,
-				selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.cardAccent(false));
+		if (isClassic())
+		{
+			bg.visible = false;
+			title.color = FlxColor.WHITE;
+			desc.visible = false;
+			arrow.visible = false;
+			selectorLeft.visible = selected;
+			selectorRight.visible = selected;
+			selectorLeft.color = selectorRight.color = FlxColor.WHITE;
+			title.borderStyle = FlxTextBorderStyle.OUTLINE;
+			title.borderColor = FlxColor.BLACK;
+			title.borderSize = 1.7;
+			title.size = 30;
+		}
+		else
+		{
+			bg.visible = true;
+			desc.visible = true;
+			bg.makeGraphic(Std.int(cardW), Std.int(cardH), FlxColor.TRANSPARENT, true);
+			bg.setPosition(x, y);
+			FlxSpriteUtil.drawRoundRect(bg, 0, 0, cardW, cardH, 8, 8, fill);
+			FlxSpriteUtil.drawRoundRect(bg, 0, 0, cardW, cardH, 8, 8, FlxColor.TRANSPARENT, {thickness: selected ? 2 : 1, color: stroke});
+			if (!headerMode)
+				FlxSpriteUtil.drawRoundRect(bg, DOT_X, (cardH - DOT_H) * 0.5, DOT_W, DOT_H, DOT_W * 0.5, DOT_W * 0.5,
+					selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.cardAccent(false));
 
-		title.color = selected ? OptionsMenuTheme.cardTitleColor(true) : OptionsMenuTheme.cardTitleColor(false);
-		desc.color = selected ? OptionsMenuTheme.cardDescriptionColor(true) : OptionsMenuTheme.cardDescriptionColor(false);
-		arrow.color = selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.footerTextColor();
+			title.borderStyle = FlxTextBorderStyle.NONE;
+			title.color = selected ? OptionsMenuTheme.cardTitleColor(true) : OptionsMenuTheme.cardTitleColor(false);
+			desc.color = selected ? OptionsMenuTheme.cardDescriptionColor(true) : OptionsMenuTheme.cardDescriptionColor(false);
+			arrow.color = selected ? OptionsMenuTheme.current().accent : OptionsMenuTheme.footerTextColor();
+			selectorLeft.visible = false;
+			selectorRight.visible = false;
+		}
 		syncLayout(headerMode);
 	}
 
@@ -676,7 +868,21 @@ private class OptionCard extends FlxSpriteGroup
 		if (bg != null)
 			bg.setPosition(x, y);
 
-		if (headerMode)
+		if (isClassic())
+		{
+			title.x = x;
+			title.y = y;
+			title.fieldWidth = cardW;
+			title.alignment = CENTER;
+			desc.visible = false;
+			arrow.visible = false;
+			selectorLeft.x = x + 84;
+			selectorLeft.y = y;
+			selectorRight.x = x + cardW - 116;
+			selectorRight.y = y;
+			return;
+		}
+		else if (headerMode)
 		{
 			title.x = x;
 			title.fieldWidth = cardW;
@@ -702,4 +908,7 @@ private class OptionCard extends FlxSpriteGroup
 		desc.y = y + 44;
 		arrow.y = y + 24;
 	}
+
+	function isClassic():Bool
+		return style == OptionsState.STYLE_PSYCH;
 }

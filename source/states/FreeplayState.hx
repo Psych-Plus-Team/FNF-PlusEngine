@@ -1327,7 +1327,7 @@ class FreeplayState extends MusicBeatState
 		{
 			persistentUpdate = false;
 			removeTouchPad();
-			openSubState(backend.ScriptableSubstate.tryCreate('GameplayChangersSubstate', new GameplayChangersSubstate()));
+			openSubState(backend.ScriptableSubstate.tryCreate('options.GameplayChangersSubstate', new GameplayChangersSubstate()));
 		}
 		if (!searchFocused && (FlxG.keys.justPressed.SPACE || touchPad.buttonX.justPressed))
 		{

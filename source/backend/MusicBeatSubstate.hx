@@ -50,6 +50,8 @@ class MusicBeatSubstate extends BaseMusicBeatSubstate
 	#if HSCRIPT_ALLOWED
 	public var companionScript:HScript = null;
 	#end
+	var substateScriptDebugPanel:psychlua.backend.DebugLuaText = null;
+
 	public function new()
 	{
 		super();
@@ -69,6 +71,18 @@ class MusicBeatSubstate extends BaseMusicBeatSubstate
 		callOnCompanionScript('onCreate', []);
 		callOnCompanionScript('onCreatePost', []);
 	}
+
+	#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
+	public function addSubstateScriptTextToDebug(text:String, color:FlxColor):Void
+	{
+		if (substateScriptDebugPanel == null)
+		{
+			substateScriptDebugPanel = new psychlua.backend.DebugLuaText();
+			add(substateScriptDebugPanel);
+		}
+		substateScriptDebugPanel.pushMessage(text, color);
+	}
+	#end
 
 	public static function getSubstate():MusicBeatSubstate
 	{
@@ -157,6 +171,12 @@ class MusicBeatSubstate extends BaseMusicBeatSubstate
 		super.destroy();
 		callOnCompanionScript('onDestroyPost', []);
 
+		if (substateScriptDebugPanel != null)
+		{
+			substateScriptDebugPanel.destroy();
+			substateScriptDebugPanel = null;
+		}
+
 		#if HSCRIPT_ALLOWED
 		if (companionScript != null)
 		{
@@ -235,8 +255,7 @@ class MusicBeatSubstate extends BaseMusicBeatSubstate
 		{
 			var msg = crowplexus.hscript.Printer.errorToString(e, false);
 			trace('[CompanionSubstate] HScript error in $path:\n$msg');
-			if (debug.TraceDisplay.instance != null)
-				debug.TraceDisplay.addHScriptError(msg, path);
+			addSubstateScriptTextToDebug('$path: $msg', FlxColor.RED);
 		}
 		catch (e:Dynamic)
 		{
@@ -275,6 +294,9 @@ class MusicBeatSubstate extends BaseMusicBeatSubstate
 			catch (e:Dynamic)
 			{
 				trace('[CompanionSubstate] Runtime error calling $funcName: $e');
+				@:privateAccess
+				var fileName = companionScript.origin != null ? companionScript.origin : "CompanionSubstate";
+				addSubstateScriptTextToDebug('$fileName: Runtime error in $funcName: $e', FlxColor.RED);
 			}
 		}
 		#end

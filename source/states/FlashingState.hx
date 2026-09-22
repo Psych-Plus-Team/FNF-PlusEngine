@@ -82,7 +82,7 @@ class FlashingState extends MusicBeatState
 					new FlxTimer().start(0.5, function(tmr:FlxTimer)
 					{
 						FlxTween.tween(texts, {alpha: 0}, 0.2, {
-							onComplete: (_) -> MusicBeatState.switchState(backend.ScriptableState.tryCreate('TitleState', new TitleState()))
+							onComplete: (_) -> MusicBeatState.switchState(backend.ScriptableState.tryCreateLazy('TitleState', function() return new TitleState()))
 						});
 						FlxTween.tween(touchPad, {alpha: 0}, 0.2);
 					});
@@ -92,7 +92,7 @@ class FlashingState extends MusicBeatState
 			{
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 				FlxTween.tween(texts, {alpha: 0}, 1, {
-					onComplete: (_) -> MusicBeatState.switchState(backend.ScriptableState.tryCreate('TitleState', new TitleState()))
+					onComplete: (_) -> MusicBeatState.switchState(backend.ScriptableState.tryCreateLazy('TitleState', function() return new TitleState()))
 				});
 				FlxTween.tween(touchPad, {alpha: 0}, 1);
 			}

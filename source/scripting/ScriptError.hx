@@ -9,6 +9,11 @@ class ScriptError {
 		var finalColor:FlxColor = color == null ? FlxColor.WHITE : color;
 		if (states.PlayState.instance != null)
 			states.PlayState.instance.addTextToDebug(text, finalColor);
+		else if (backend.MusicBeatState.addScriptTextToDebug(text, finalColor)) {
+			#if sys
+			Sys.println(text);
+			#end
+		}
 		else
 			FlxG.log.warn(text);
 		trace(text);

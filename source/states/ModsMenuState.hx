@@ -322,7 +322,12 @@ class ModsMenuState extends MusicBeatState {
 				cycleFilter();
 		}
 
-		if (controls.BACK || touchPad.buttonB.justPressed #if android || FlxG.android.justReleased.BACK #end) {
+		var backPressed:Bool = controls.BACK || (touchPad != null && touchPad.buttonB.justPressed);
+		#if android
+		backPressed = backPressed || FlxG.android.justReleased.BACK;
+		#end
+
+		if (backPressed) {
 			if (query.length > 0 || filterMode != 0) {
 				// first BACK clears the filter/search, second leaves
 				query = '';
@@ -651,7 +656,7 @@ class ModsMenuState extends MusicBeatState {
 		FlxG.mouse.visible = false;
 		FlxG.autoPause = ClientPrefs.data.autoPause;
 		if (!scripting.ScriptedStates.launchMod(m.folder))
-			MusicBeatState.switchState(new MainMenuState());
+			MusicBeatState.switchState(backend.ScriptableState.tryCreate('MainMenuState', new MainMenuState()));
 		#else
 		FlxG.sound.play(Paths.sound('cancelMenu'));
 		#end
@@ -892,7 +897,7 @@ class ModsMenuState extends MusicBeatState {
 		FlxTransitionableState.skipNextTransIn = true;
 		FlxTransitionableState.skipNextTransOut = true;
 		var m = currentMod();
-		MusicBeatState.switchState(new ModsMenuState(m != null ? m.folder : null));
+		MusicBeatState.switchState(backend.ScriptableState.tryCreate('ModsMenuState', new ModsMenuState(m != null ? m.folder : null), [m != null ? m.folder : null]));
 	}
 
 	function exitMenu() {
@@ -908,7 +913,7 @@ class ModsMenuState extends MusicBeatState {
 			}
 			FlxG.camera.fade(FlxColor.BLACK, 0.5, false, FlxG.resetGame, false);
 		} else {
-			MusicBeatState.switchState(new MainMenuState());
+			MusicBeatState.switchState(backend.ScriptableState.tryCreate('MainMenuState', new MainMenuState()));
 		}
 
 		persistentUpdate = false;
@@ -1009,19 +1014,27 @@ class ModItem extends FlxSpriteGroup {
 
 		this.name = folder;
 		if (pack != null) {
-			if (pack.name != null)
-				this.name = pack.name;
-			if (pack.title != null)
-				this.name = pack.title;
-			if (pack.description != null)
-				this.desc = pack.description;
-			if (pack.iconFramerate != null)
-				this.iconFps = pack.iconFramerate;
-			if (pack.color != null) {
-				this.bgColor = FlxColor.fromRGB(pack.color[0] != null ? pack.color[0] : 170, pack.color[1] != null ? pack.color[1] : 0,
-					pack.color[2] != null ? pack.color[2] : 255);
+			var packName:Dynamic = Reflect.field(pack, 'name');
+			var packTitle:Dynamic = Reflect.field(pack, 'title');
+			var packDescription:Dynamic = Reflect.field(pack, 'description');
+			var packIconFps:Dynamic = Reflect.field(pack, 'iconFramerate');
+			var packColor:Dynamic = Reflect.field(pack, 'color');
+			var packRestart:Dynamic = Reflect.field(pack, 'restart');
+
+			if (packName != null)
+				this.name = Std.string(packName);
+			if (packTitle != null)
+				this.name = Std.string(packTitle);
+			if (packDescription != null)
+				this.desc = Std.string(packDescription);
+			if (packIconFps != null)
+				this.iconFps = Std.int(packIconFps);
+			if (packColor != null) {
+				var color:Array<Dynamic> = cast packColor;
+				this.bgColor = FlxColor.fromRGB(color[0] != null ? color[0] : 170, color[1] != null ? color[1] : 0,
+					color[2] != null ? color[2] : 255);
 			}
-			this.mustRestart = (pack.restart == true);
+			this.mustRestart = (packRestart == true);
 		}
 		text.text = this.name;
 
@@ -1037,15 +1050,19 @@ class ModItem extends FlxSpriteGroup {
 		var featFile:String = Paths.mods('$folder/features.txt');
 		if (FileSystem.exists(featFile))
 			features = File.getContent(featFile);
-		else if (pack != null && pack.features != null)
-			features = (pack.features is Array) ? (cast(pack.features, Array<Dynamic>)).join('\n') : Std.string(pack.features);
+		else if (pack != null && Reflect.field(pack, 'features') != null) {
+			var packFeatures:Dynamic = Reflect.field(pack, 'features');
+			features = (packFeatures is Array) ? (cast(packFeatures, Array<Dynamic>)).join('\n') : Std.string(packFeatures);
+		}
 
 		// Changelog: changelog.txt, else pack.json "changelog".
 		var clFile:String = Paths.mods('$folder/changelog.txt');
 		if (FileSystem.exists(clFile))
 			changelog = File.getContent(clFile);
-		else if (pack != null && pack.changelog != null)
-			changelog = (pack.changelog is Array) ? (cast(pack.changelog, Array<Dynamic>)).join('\n') : Std.string(pack.changelog);
+		else if (pack != null && Reflect.field(pack, 'changelog') != null) {
+			var packChangelog:Dynamic = Reflect.field(pack, 'changelog');
+			changelog = (packChangelog is Array) ? (cast(packChangelog, Array<Dynamic>)).join('\n') : Std.string(packChangelog);
+		}
 
 		#if HSCRIPT_ALLOWED
 		launchable = Mods.isLaunchable(folder);

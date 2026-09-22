@@ -123,15 +123,19 @@ class CrashHandler
 		}
 		stackLabel = stackLabelArr.join('\r\n');
 
+		var errorMsg = formatCrashText("Hardcoded Error", m, stackLabel, [
+			"This crashed outside hxscript, so it is probably engine/source code or a compiled library path.",
+			"Check the first source line in the stack before the engine loop; that is usually the useful culprit.",
+			"If this only happens after editing scripts/classes, rebuild and make sure the exported assets are not stale."
+		]);
+
 		// Display the error in the console/terminal
-		trace('\n\n$m\n\n$stackLabel\n======================\nFor help, visit: $HELP_LINK');
+		trace('\n\n$errorMsg');
 
 		#if sys
-		saveErrorMessage('$m\n$stackLabel');
+		saveErrorMessage(errorMsg);
 		#end
 
-		// Message with a help link
-		var errorMsg = '$m\n\n$stackLabel\n\n========================\nNeed help? Visit:\n$HELP_LINK';
 		#if android
 		showAndroidCrash(errorMsg, "Error!");
 		#else
@@ -144,18 +148,18 @@ class CrashHandler
 	#if (cpp || hl)
 	private static function onError(message:Dynamic):Void
 	{
-		final log:Array<String> = [];
-
+		var crashMessage:String = "Unknown critical error";
 		if (message != null && message.length > 0)
 		{
 			// Add funny message for null errors
-			var funnyMessage = funnyNullMessage(Std.string(message));
-			log.push(funnyMessage);
+			crashMessage = funnyNullMessage(Std.string(message));
 		}
 
-		log.push(haxe.CallStack.toString(haxe.CallStack.exceptionStack(true)));
-
-		var errorLog = log.join('\n');
+		var errorLog = formatCrashText("Critical Hardcoded Error", crashMessage, haxe.CallStack.toString(haxe.CallStack.exceptionStack(true)), [
+			"This is a native/critical crash path, so the app could not recover cleanly.",
+			"If this appeared during build testing, close every running PlusEngine.exe before rebuilding.",
+			"If mods are enabled, retry with scripts disabled to separate engine crashes from mod-side crashes."
+		]);
 
 		// Display the error in the console/terminal
 		trace('=== CRITICAL ERROR ===');
@@ -167,17 +171,44 @@ class CrashHandler
 		saveErrorMessage(errorLog);
 		#end
 
-		// Message with a help link
-		var errorMsg = '$errorLog\n\n========================\nNeed help? Visit:\n$HELP_LINK';
 		#if android
-		showAndroidCrash(errorMsg, "Critical Error!");
+		showAndroidCrash(errorLog, "Critical Error!");
 		#else
-		CoolUtil.showPopUp(errorMsg, "Critical Error!");
+		CoolUtil.showPopUp(errorLog, "Critical Error!");
 		#end
 		#if DISCORD_ALLOWED DiscordClient.shutdown(); #end
 		lime.system.System.exit(1);
 	}
 	#end
+
+	private static function formatCrashText(kind:String, message:String, stack:String, tips:Array<String>):String
+	{
+		var out:Array<String> = [];
+		out.push('ERROR: $kind');
+		out.push('');
+		out.push('Message:');
+		out.push(message == null || message.length < 1 ? 'Unknown error' : message);
+
+		if (stack != null && stack.trim().length > 0)
+		{
+			out.push('');
+			out.push('Trace:');
+			out.push(stack);
+		}
+
+		if (tips != null && tips.length > 0)
+		{
+			out.push('');
+			out.push('Tips:');
+			for (tip in tips)
+				out.push('- ' + tip);
+		}
+
+		out.push('');
+		out.push('Need help? Visit:');
+		out.push(HELP_LINK);
+		return out.join('\n');
+	}
 
 	#if android
 	private static function showAndroidCrash(message:String, title:String):Void

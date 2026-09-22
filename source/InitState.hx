@@ -31,7 +31,13 @@ class InitialState extends MusicBeatState
 		FlxG.autoPause = ClientPrefs.data.autoPause;
 		#end
 
+		#if HSCRIPT_ALLOWED
+		trace("scripted?");
+		MusicBeatState.switchState(backend.ScriptableState.tryCreateLazy('TitleState', function() return new TitleState()));
+		#else
+		trace("meh, hardcoded");
 		MusicBeatState.switchState(new TitleState());
+		#end
 	}
 }
 

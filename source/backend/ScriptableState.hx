@@ -19,7 +19,16 @@ class ScriptableState extends MusicBeatState {
 
 	public static function tryCreate(name:String, ?fallback:FlxState, ?args:Array<Dynamic>):FlxState {
 		var state:MusicBeatState = scripting.ScriptedStates.loadState(name, args, hasLaunchedMod() ? scripting.ScriptedStates.ResolveScope.LAUNCHED : scripting.ScriptedStates.ResolveScope.ANY);
+		if (state == null && hasScript(name))
+			scripting.ScriptError.warn('ScriptableState', 'Scripted state "$name" exists but could not be created; using hardcoded fallback.');
 		return state != null ? state : fallback;
+	}
+
+	public static function tryCreateLazy(name:String, fallback:Void->FlxState, ?args:Array<Dynamic>):FlxState {
+		var state:MusicBeatState = scripting.ScriptedStates.loadState(name, args, hasLaunchedMod() ? scripting.ScriptedStates.ResolveScope.LAUNCHED : scripting.ScriptedStates.ResolveScope.ANY);
+		if (state == null && hasScript(name))
+			scripting.ScriptError.warn('ScriptableState', 'Scripted state "$name" exists but could not be created; using hardcoded fallback.');
+		return state != null ? state : (fallback != null ? fallback() : null);
 	}
 
 	public static function tryOverride(state:FlxState):Null<FlxState> {

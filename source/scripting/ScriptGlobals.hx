@@ -12,8 +12,14 @@ class ScriptGlobals {
 	static var keepScriptBytes:Class<ScriptBytes> = ScriptBytes;
 	static var keepScriptDraw:Class<ScriptDraw> = ScriptDraw;
 	static var keepAssetLoader:Class<backend.AssetLoader> = backend.AssetLoader;
+	static var keepBuildInfo:Class<backend.BuildInfo> = backend.BuildInfo;
+	static var keepSecurityReview:Class<backend.SecurityReview> = backend.SecurityReview;
+	static var keepTouchUtil:Class<mobile.backend.TouchUtil> = mobile.backend.TouchUtil;
 	static var keepABotSpectrum:Class<objects.ABotSpectrum> = objects.ABotSpectrum;
 	static var keepPsychFlxAnimate:Class<backend.PsychFlxAnimate> = backend.PsychFlxAnimate;
+	#if DISCORD_ALLOWED
+	static var keepDiscordClient:Class<backend.DiscordClient> = backend.DiscordClient;
+	#end
 	static var keepCutsceneHandler:Class<cutscenes.CutsceneHandler> = cutscenes.CutsceneHandler;
 	static var keepRainShader:Class<shaders.RainShader> = shaders.RainShader;
 	static var keepGameOverSubstate:Class<substates.GameOverSubstate> = substates.GameOverSubstate;
@@ -31,7 +37,12 @@ class ScriptGlobals {
 
 	public static final TYPE_IMPORTS:Array<String> = [
 		'backend.Paths',
+		'backend.Achievements',
 		'backend.AssetLoader',
+		'backend.BuildInfo',
+		'backend.SecurityReview',
+		'mobile.backend.TouchUtil',
+		'mobile.backend.MobileData',
 		'backend.Controls',
 		'backend.CoolUtil',
 		'backend.MusicBeatState',
@@ -41,6 +52,9 @@ class ScriptGlobals {
 		'backend.Conductor',
 		'backend.BaseStage',
 		'backend.PsychFlxAnimate',
+		#if DISCORD_ALLOWED
+		'backend.DiscordClient',
+		#end
 		'backend.Difficulty',
 		'backend.Mods',
 		'backend.Language',
@@ -68,6 +82,7 @@ class ScriptGlobals {
 		'states.TitleState',
 		'states.MainMenuState',
 		'states.StoryMenuState',
+		'states.ModsMenuState',
 		'states.PlayState',
 		'states.FreeplayState',
 		'states.FreeplayStateSelector',
@@ -89,6 +104,7 @@ class ScriptGlobals {
 		'flixel.math.FlxPoint',
 		'flixel.util.FlxTimer',
 		'flixel.util.FlxColor',
+		'flixel.util.FlxAxes',
 		'flixel.util.FlxSort',
 		'flixel.util.FlxStringUtil',
 		'flixel.text.FlxText',
@@ -105,6 +121,7 @@ class ScriptGlobals {
 		'flixel.addons.display.FlxRuntimeShader',
 		'flixel.effects.FlxFlicker',
 		'flixel.addons.transition.FlxTransitionableState',
+		'openfl.utils.AssetType',
 		'openfl.display.Sprite',
 		'openfl.display.Bitmap',
 		'openfl.display.BitmapData',
@@ -170,6 +187,21 @@ class ScriptGlobals {
 
 		set('controls', backend.Controls.instance);
 		set('buildTarget', buildTarget);
+		set('BuildInfo', backend.BuildInfo);
+		set('TouchUtil', mobile.backend.TouchUtil);
+		set('X', flixel.util.FlxAxes.X);
+		set('Y', flixel.util.FlxAxes.Y);
+		set('XY', flixel.util.FlxAxes.XY);
+		set('TEXT', openfl.utils.AssetType.TEXT);
+		set('IMAGE', openfl.utils.AssetType.IMAGE);
+		set('SOUND', openfl.utils.AssetType.SOUND);
+		set('MUSIC', openfl.utils.AssetType.MUSIC);
+		set('BINARY', openfl.utils.AssetType.BINARY);
+		set('FONT', openfl.utils.AssetType.FONT);
+		#if DISCORD_ALLOWED
+		set('DiscordClient', backend.DiscordClient);
+		set('Discord', backend.DiscordClient);
+		#end
 		set('getVar', getVar);
 		set('setVar', setVar);
 		set('removeVar', removeVar);

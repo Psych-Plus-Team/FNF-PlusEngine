@@ -380,7 +380,7 @@ class FreeplayState_Psych extends MusicBeatState
 		if ((FlxG.keys.justPressed.CONTROL || touchPad.buttonC.justPressed) && !player.playingMusic)
 		{
 			persistentUpdate = false;
-			openSubState(new GameplayChangersSubstate());
+			openSubState(backend.ScriptableSubstate.tryCreate('options.GameplayChangersSubstate', new GameplayChangersSubstate()));
 			removeTouchPad();
 		}
 		else if (FlxG.keys.justPressed.SPACE || touchPad.buttonX.justPressed)
