@@ -55,6 +55,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 	var cameraPosition:Point = new Point();
 	var isDragging:Bool = false;
+	var draggingCharacter:Bool = false;
 
 	public function new(char:String = null, goToPlayState:Bool = true)
 	{
@@ -932,6 +933,47 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	var holdingFrameElapsed:Float = 0;
 	var undoOffsets:Array<Float> = null;
 
+	function handleMouseDrag():Void
+	{
+		if (character == null || character.scale.x == 0 || character.scale.y == 0)
+			return;
+
+		if (!draggingCharacter)
+		{
+			if (!isMouseOverUI() && FlxG.mouse.justPressed && FlxG.mouse.overlaps(character, camEditor))
+				draggingCharacter = true;
+			return;
+		}
+
+		var anim:AnimArray = (curAnim >= 0 && curAnim < anims.length) ? anims[curAnim] : null;
+		if (anim == null || anim.offsets == null)
+		{
+			draggingCharacter = false;
+			return;
+		}
+
+		var zoom:Float = FlxG.camera.zoom;
+		if (zoom <= 0) zoom = 1;
+
+		var dx:Float = (FlxG.mouse.deltaScreenX / zoom) / character.scale.x;
+		var dy:Float = (FlxG.mouse.deltaScreenY / zoom) / character.scale.y;
+
+		if (character.flipX)
+			dx *= -1;
+
+		character.offset.x -= dx;
+		character.offset.y -= dy;
+
+		anim.offsets[0] = Std.int(character.offset.x);
+		anim.offsets[1] = Std.int(character.offset.y);
+
+		character.addOffset(anim.anim, character.offset.x, character.offset.y);
+		updateText();
+
+		if (FlxG.mouse.justReleased)
+			draggingCharacter = false;
+	}
+
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
@@ -1082,6 +1124,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			character.offset.y = copiedOffset[1];
 			changedOffset = true;
 		}
+
+		if (ClientPrefs.data.dragCharacterToMove)
+			handleMouseDrag();
 
 		var anim = anims[curAnim];
 		if (changedOffset && anim != null && anim.offsets != null)
@@ -1563,10 +1608,17 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			case MouseEvent.MOUSE_DOWN:
 				if (!isMouseOverUI())
 				{
-					var mouse = new Point(e.stageX, e.stageY);
-					cameraPosition.x = FlxG.camera.scroll.x + mouse.x;
-					cameraPosition.y = FlxG.camera.scroll.y + mouse.y;
-					isDragging = true;
+					var overChar:Bool = ClientPrefs.data.dragCharacterToMove
+						&& character != null
+						&& FlxG.mouse.overlaps(character, camEditor);
+
+					if (!overChar)
+					{
+						var mouse = new Point(e.stageX, e.stageY);
+						cameraPosition.x = FlxG.camera.scroll.x + mouse.x;
+						cameraPosition.y = FlxG.camera.scroll.y + mouse.y;
+						isDragging = true;
+					}
 				}
 
 			case MouseEvent.MOUSE_MOVE if (isDragging):
@@ -1589,6 +1641,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		}
 
 		isDragging = false;
+		draggingCharacter = false;
 		super.destroy();
 	}
 }

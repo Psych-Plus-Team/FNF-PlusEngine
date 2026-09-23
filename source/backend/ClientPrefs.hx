@@ -120,6 +120,7 @@ import states.TitleState;
 	public var healthBarAlpha:Float = 1;
 	public var smoothHealthBar:Bool = true;
 	public var usePsychScoreText:Bool = true;
+        public var dragCharacterToMove:Bool = false;
 	public var hitsoundVolume:Float = 0;
 	public var hitSounds:String = "None";
 	public var hitsoundType:String = "None";
