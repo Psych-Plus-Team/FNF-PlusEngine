@@ -19,6 +19,7 @@ class Bar extends FlxSpriteGroup
 	public var barOffset:FlxPoint = new FlxPoint(3, 3);
 
 	public var smoothPercent:Float = 0;
+	public var numDivisions(default, set):Int = 10;
 
 	public function new(x:Float, y:Float, image:String = 'healthBar', valueFunction:Void->Float = null, boundX:Float = 0, boundY:Float = 1)
 	{
@@ -209,6 +210,18 @@ class Bar extends FlxSpriteGroup
 	{
 		barHeight = value;
 		regenerateClips();
+		return value;
+	}
+
+	private function set_numDivisions(value:Int)
+	{
+		numDivisions = value;
+		if (leftBar != null)
+			Reflect.setProperty(leftBar, 'numDivisions', value);
+		if (rightBar != null)
+			Reflect.setProperty(rightBar, 'numDivisions', value);
+		if (bg != null)
+			Reflect.setProperty(bg, 'numDivisions', value);
 		return value;
 	}
 }

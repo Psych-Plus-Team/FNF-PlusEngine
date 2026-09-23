@@ -11,6 +11,7 @@ import flixel.FlxBasic;
 import flixel.FlxObject;
 import flixel.FlxSubState;
 import flixel.math.FlxRect;
+import flixel.math.FlxPoint;
 import flixel.math.FlxMath;
 import flixel.util.FlxSort;
 import flixel.util.FlxStringUtil;
@@ -34,6 +35,7 @@ import states.editors.ChartingState;
 import states.editors.CharacterEditorState;
 import substates.PauseSubState;
 import substates.GameOverSubstate;
+import substates.PlayStateLoadingSubState;
 #if !flash
 import openfl.filters.ShaderFilter;
 #end
@@ -96,6 +98,7 @@ class PlayState extends MusicBeatState
 	static inline final PERF_TRACE_HIT_MS:Float = #if mobile 1.5 #else 4.0 #end;
 	static inline final PERF_TRACE_FRAME_MS:Float = #if mobile 18.5 #else 22.0 #end;
 	static inline final PERF_TRACE_INTERVAL:Float = 1.0;
+	static inline final PLAYSTATE_LOAD_STEP_DELAY:Float = 0.02;
 
 	public static var ratingStuff:Array<Dynamic> = [
 		['You Suck!', 0.2], // From 0% to 19%
@@ -490,6 +493,10 @@ class PlayState extends MusicBeatState
 	#end
 
 	public var introSoundsSuffix:String = '';
+	var playStateLoadingSubState:PlayStateLoadingSubState = null;
+	var playStateLoadingStep:Int = 0;
+	var playStateLoadingIsNotITG:Bool = false;
+	var playStateLoadingCamPos:FlxPoint = null;
 
 	// Less laggy controls
 	private var keysArray:Array<String>;
@@ -640,6 +647,50 @@ class PlayState extends MusicBeatState
 		Conductor.mapBPMChanges(SONG);
 		Conductor.bpm = SONG.bpm;
 
+		super.create();
+		beginPlayStateLoadingSequence();
+	}
+
+	function beginPlayStateLoadingSequence():Void
+	{
+		playStateLoadingStep = 0;
+		playStateLoadingSubState = new PlayStateLoadingSubState();
+		openSubState(playStateLoadingSubState);
+		scheduleNextPlayStateLoadingStep('Preparing gameplay...');
+	}
+
+	function scheduleNextPlayStateLoadingStep(status:String):Void
+	{
+		if (playStateLoadingSubState != null)
+			playStateLoadingSubState.updateStatus(status);
+		new FlxTimer().start(PLAYSTATE_LOAD_STEP_DELAY, function(_:FlxTimer) runPlayStateLoadingStep());
+	}
+
+	function runPlayStateLoadingStep():Void
+	{
+		switch (playStateLoadingStep++)
+		{
+			case 0:
+				createPlayStateStageAndBaseUi();
+				scheduleNextPlayStateLoadingStep('Generating notes and events...');
+			case 1:
+				generateSong();
+				scheduleNextPlayStateLoadingStep('Loading final scripts, HUD and modcharts...');
+			case 2:
+				finishPlayStateCreateAfterSong();
+				if (playStateLoadingSubState != null)
+				{
+					playStateLoadingSubState.close();
+					playStateLoadingSubState = null;
+				}
+		}
+	}
+
+	function createPlayStateStageAndBaseUi():Void
+	{
+		Conductor.mapBPMChanges(SONG);
+		Conductor.bpm = SONG.bpm;
+
 		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 		luaDebugGroup = new FlxTypedGroup<psychlua.backend.DebugLuaText>();
 		luaDebugGroup.cameras = [camOther];
@@ -673,7 +724,7 @@ class PlayState extends MusicBeatState
 		curStage = SONG.stage;
 
 		// Flag para etapas NotITG (StepMania) donde ocultamos HUD y personajes
-		var isNotITG:Bool = (curStage == 'notitg');
+		playStateLoadingIsNotITG = (curStage == 'notitg');
 
 		var stageData:StageFile = StageData.getStageFile(curStage);
 		defaultCamZoom = stageData.defaultZoom;
@@ -725,13 +776,14 @@ class PlayState extends MusicBeatState
 			case 'stage':
 				new StageWeek1(); // Week 1
 			default:
-				new StageWeek1();
+				// Mod stages without an HScript class are handled by stage JSON/Lua below.
+				{}
 			}
 		}
 		if (isPixelStage)
 			introSoundsSuffix = '-pixel';
 
-		if (!isNotITG)
+		if (!playStateLoadingIsNotITG)
 		{
 			if (!stageData.hide_girlfriend)
 			{
@@ -783,7 +835,7 @@ class PlayState extends MusicBeatState
 		else
 		{
 			// Sólo añadir grupos si no es NotITG (mantener stage vacío para StepMania)
-			if (!isNotITG)
+			if (!playStateLoadingIsNotITG)
 			{
 				add(gfGroup);
 				add(dadGroup);
@@ -812,11 +864,11 @@ class PlayState extends MusicBeatState
 		}
 		#end
 
-		var camPos:FlxPoint = FlxPoint.get(girlfriendCameraOffset[0], girlfriendCameraOffset[1]);
+		playStateLoadingCamPos = FlxPoint.get(girlfriendCameraOffset[0], girlfriendCameraOffset[1]);
 		if (gf != null)
 		{
-			camPos.x += gf.getGraphicMidpoint().x + gf.cameraPosition[0];
-			camPos.y += gf.getGraphicMidpoint().y + gf.cameraPosition[1];
+			playStateLoadingCamPos.x += gf.getGraphicMidpoint().x + gf.cameraPosition[0];
+			playStateLoadingCamPos.y += gf.getGraphicMidpoint().y + gf.cameraPosition[1];
 		}
 
 		if (dad.curCharacter.startsWith('gf'))
@@ -901,15 +953,18 @@ class PlayState extends MusicBeatState
 			timeTxt.y += 3;
 		}
 
-		generateSong();
+	}
+
+	function finishPlayStateCreateAfterSong():Void
+	{
 		initBreakTimerHud();
 
 		noteGroup.add(grpNoteSplashes);
 		noteGroup.add(grpHoldSplashes);
 
 		camFollow = new FlxObject();
-		camFollow.setPosition(camPos.x, camPos.y);
-		camPos.put();
+		camFollow.setPosition(playStateLoadingCamPos.x, playStateLoadingCamPos.y);
+		playStateLoadingCamPos.put();
 
 		if (prevCamFollow != null)
 		{
@@ -934,10 +989,10 @@ class PlayState extends MusicBeatState
 		healthBar.x = getGameplaySafeX() + (getGameplaySafeWidth() - healthBar.width) / 2;
 		healthBar.leftToRight = false;
 		healthBar.scrollFactor.set();
-		healthBar.visible = !ClientPrefs.data.hideHud && !isNotITG;
+		healthBar.visible = !ClientPrefs.data.hideHud && !playStateLoadingIsNotITG;
 		healthBar.alpha = ClientPrefs.data.healthBarAlpha;
 		reloadHealthBarColors();
-		if (!isNotITG)
+		if (!playStateLoadingIsNotITG)
 			uiGroup.add(healthBar);
 
 		// Cargar íconos con soporte para animación
@@ -957,9 +1012,9 @@ class PlayState extends MusicBeatState
 			iconP1.y = healthBar.y - 75;
 		}
 		// Ocultar iconos en NotITG
-		iconP1.visible = !ClientPrefs.data.hideHud && !isNotITG;
+		iconP1.visible = !ClientPrefs.data.hideHud && !playStateLoadingIsNotITG;
 		iconP1.alpha = ClientPrefs.data.healthBarAlpha;
-		if (!isNotITG)
+		if (!playStateLoadingIsNotITG)
 			uiGroup.add(iconP1);
 
 		iconP2 = new HealthIcon(dad != null ? dad.healthIcon : 'dad', false);
@@ -973,9 +1028,9 @@ class PlayState extends MusicBeatState
 		{
 			iconP2.y = healthBar.y - 75;
 		}
-		iconP2.visible = !ClientPrefs.data.hideHud && !isNotITG;
+		iconP2.visible = !ClientPrefs.data.hideHud && !playStateLoadingIsNotITG;
 		iconP2.alpha = ClientPrefs.data.healthBarAlpha;
-		if (!isNotITG)
+		if (!playStateLoadingIsNotITG)
 			uiGroup.add(iconP2);
 
 		iconGF = new HealthIcon(gf != null ? gf.healthIcon : 'gf', true, false);
@@ -991,7 +1046,7 @@ class PlayState extends MusicBeatState
 		}
 		iconGF.visible = false;
 		iconGF.alpha = ClientPrefs.data.healthBarAlpha;
-		if (!isNotITG)
+		if (!playStateLoadingIsNotITG)
 			uiGroup.add(iconGF);
 
 		function reloadHealthBarColors()
@@ -1231,7 +1286,6 @@ class PlayState extends MusicBeatState
 		addTouchPadCamera();
 		#end
 
-		super.create();
 		initGameplayRuntimeBridgeIfNeeded();
 
 		updateScriptStats();
@@ -3202,6 +3256,12 @@ class PlayState extends MusicBeatState
 
 	override public function update(elapsed:Float)
 	{
+		if (playStateLoadingSubState != null)
+		{
+			super.update(elapsed);
+			return;
+		}
+
 		if (!inCutscene && !paused && !freezeCamera)
 		{
 			FlxG.camera.followLerp = 0.04 * cameraSpeed * playbackRate;
@@ -6876,6 +6936,9 @@ class PlayState extends MusicBeatState
 
 	override function stepHit()
 	{
+		if (playStateLoadingSubState != null)
+			return;
+
 		super.stepHit();
 
 		if (curStep == lastStepHit)
@@ -6892,6 +6955,9 @@ class PlayState extends MusicBeatState
 
 	override function beatHit()
 	{
+		if (playStateLoadingSubState != null)
+			return;
+
 		if (lastBeatHit >= curBeat)
 		{
 			// trace('BEAT HIT: ' + curBeat + ', LAST HIT: ' + lastBeatHit);

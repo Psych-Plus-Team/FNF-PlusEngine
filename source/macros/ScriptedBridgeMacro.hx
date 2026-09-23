@@ -12,13 +12,13 @@ class ScriptedBridgeMacro {
 		{base: 'flixel.group.FlxGroup'},
 		{base: 'flixel.group.FlxSpriteGroup'},
 		{base: 'flixel.text.FlxText'},
-		{base: 'backend.MusicBeatState'},
+		{base: 'backend.MusicBeatState', state: true},
 		{base: 'backend.MusicBeatSubstate'},
-		{base: 'states.TitleState'},
-		{base: 'states.MainMenuState'},
-		{base: 'states.FreeplayState'},
-		{base: 'states.FreeplayState_Psych'},
-		{base: 'states.PlayState'},
+		{base: 'states.TitleState', state: true},
+		{base: 'states.MainMenuState', state: true},
+		{base: 'states.FreeplayState', state: true},
+		{base: 'states.FreeplayState_Psych', state: true},
+		{base: 'states.PlayState', state: true},
 		{base: 'substates.PauseSubState'},
 		{base: 'substates.GameOverSubstate'},
 		{base: 'objects.Character'},
@@ -52,7 +52,7 @@ class ScriptedBridgeMacro {
 				pos: pos,
 				meta: [{name: ':keep', pos: pos}],
 				kind: TDClass(superPath, interfaces, false, false, false),
-				fields: []
+				fields: entry.state == true ? [stateTryUpdateField(pos)] : []
 			}]);
 
 			bridgeRefs.push(macro $p{pack.concat([name])});
@@ -89,9 +89,39 @@ class ScriptedBridgeMacro {
 		var name:String = parts.pop();
 		return {pack: parts, name: name};
 	}
+
+	static function stateTryUpdateField(pos:Position):Field {
+		return {
+			name: 'tryUpdate',
+			access: [AOverride],
+			pos: pos,
+			kind: FFun({
+				args: [{name: 'elapsed', type: macro :Float}],
+				ret: macro :Void,
+				expr: macro {
+					@:privateAccess
+					{
+						if (!persistentUpdate && subState != null)
+						{
+							if (_requestSubStateReset)
+							{
+								_requestSubStateReset = false;
+								resetSubState();
+							}
+							if (subState != null)
+								subState.tryUpdate(elapsed);
+							return;
+						}
+					}
+					super.tryUpdate(elapsed);
+				}
+			})
+		};
+	}
 }
 
 typedef BridgeEntry = {
 	var base:String;
+	@:optional var state:Bool;
 }
 #end

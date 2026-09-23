@@ -454,7 +454,14 @@ class ModSecuritySubstate extends MusicBeatSubstate {
 	override function update(elapsed:Float):Void {
 		super.update(elapsed);
 
-		if (controls.BACK || touchPad.buttonB.justPressed #if android || FlxG.android.justReleased.BACK #end) {
+		var touchBack:Bool = touchPad != null && touchPad.buttonB.justPressed;
+		var touchLeft:Bool = touchPad != null && touchPad.buttonLeft.justPressed;
+		var touchRight:Bool = touchPad != null && touchPad.buttonRight.justPressed;
+		var touchUp:Bool = touchPad != null && touchPad.buttonUp.justPressed;
+		var touchDown:Bool = touchPad != null && touchPad.buttonDown.justPressed;
+		var touchAccept:Bool = touchPad != null && touchPad.buttonA.justPressed;
+
+		if (controls.BACK || touchBack #if android || FlxG.android.justReleased.BACK #end) {
 			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
 			if (activationPrompt && onDecision != null && currentIdx < pending.length)
 				onDecision(pending[currentIdx], false);
@@ -462,7 +469,7 @@ class ModSecuritySubstate extends MusicBeatSubstate {
 			return;
 		}
 
-		if (controls.UI_LEFT_P || controls.UI_RIGHT_P || touchPad.buttonLeft.justPressed || touchPad.buttonRight.justPressed) {
+		if (controls.UI_LEFT_P || controls.UI_RIGHT_P || touchLeft || touchRight) {
 			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
 			onTrust = !onTrust;
 			updateOptions();
@@ -470,10 +477,10 @@ class ModSecuritySubstate extends MusicBeatSubstate {
 
 		// Findings list scrolling -- UP/DOWN keys (held works via _P? we want
 		// repeating, so use the non-_P variant gated by a simple cooldown).
-		if (controls.UI_UP_P || touchPad.buttonUp.justPressed) {
+		if (controls.UI_UP_P || touchUp) {
 			listScroll--;
 			refreshList();
-		} else if (controls.UI_DOWN_P || touchPad.buttonDown.justPressed) {
+		} else if (controls.UI_DOWN_P || touchDown) {
 			listScroll++;
 			refreshList();
 		}
@@ -482,7 +489,7 @@ class ModSecuritySubstate extends MusicBeatSubstate {
 			refreshList();
 		}
 
-		if (controls.ACCEPT || touchPad.buttonA.justPressed) {
+		if (controls.ACCEPT || touchAccept) {
 			FlxG.sound.play(Paths.sound('confirmMenu'), 0.6);
 			var folder = pending[currentIdx];
 			ModSecurity.setDecision(folder, onTrust);

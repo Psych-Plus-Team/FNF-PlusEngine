@@ -500,6 +500,7 @@ class FreeplayState extends MusicBeatState
 		FlxG.mouse.visible = true;
 
 		instance = this;
+		freeplayMenuMusicActive = isFreeplayMenuMusicPlaying();
 		persistentUpdate = true;
 		PlayState.isStoryMode = false;
 		WeekData.reloadWeekFiles(false);
@@ -947,7 +948,45 @@ class FreeplayState extends MusicBeatState
 			&& (!StoryMenuState.weekCompleted.exists(leWeek.weekBefore) || !StoryMenuState.weekCompleted.get(leWeek.weekBefore)));
 	}
 
+	function isFreeplayMenuMusicPlaying():Bool
+	{
+		var menuSound:openfl.media.Sound = getFreeplayMenuMusicSound();
+		return FlxG.sound.music != null
+			&& FlxG.sound.music.playing
+			&& menuSound != null
+			&& @:privateAccess FlxG.sound.music._sound == menuSound;
+	}
+
+	function playFreeplayMenuMusic(volume:Float = 0, fadeDuration:Float = 0, targetVolume:Float = 0.7, forceRestart:Bool = false):Void
+	{
+		if (!forceRestart && isFreeplayMenuMusicPlaying())
+		{
+			freeplayMenuMusicActive = true;
+			instSound = null;
+			if (FlxG.sound.music != null && fadeDuration > 0)
+				FlxG.sound.music.fadeIn(fadeDuration, FlxG.sound.music.volume, targetVolume);
+			return;
+		}
+
+		FlxG.sound.playMusic(getFreeplayMenuMusicSound(), volume, true);
+		freeplayMenuMusicActive = true;
+		instSound = null;
+
+		if (FlxG.sound.music != null && fadeDuration > 0)
+			FlxG.sound.music.fadeIn(fadeDuration, volume, targetVolume);
+	}
+
+	static function getFreeplayMenuMusicSound():openfl.media.Sound
+	{
+		var sound:openfl.media.Sound = Paths.music('freakyMenu');
+		if (sound != null)
+			freeplayMenuMusicSound = sound;
+		return freeplayMenuMusicSound;
+	}
+
 	var instPlaying:Int = -1;
+	var freeplayMenuMusicActive:Bool = false;
+	static var freeplayMenuMusicSound:openfl.media.Sound = null;
 
 	public static var vocals:FlxSound = null;
 	public static var opponentVocals:FlxSound = null;
@@ -1010,6 +1049,7 @@ class FreeplayState extends MusicBeatState
 					Paths.localTrackedAssets.push(cacheKey);
 				}
 
+				freeplayMenuMusicActive = false;
 				FlxG.sound.playMusic(pendingSound, 0, true);
 				applySongPreviewStart(songs[pendingIndex]);
 				FlxG.sound.music.fadeIn(1.0, 0, 0.7);
@@ -1034,7 +1074,7 @@ class FreeplayState extends MusicBeatState
 			catch (e:Dynamic)
 			{
 				trace('[FreePlay] Error playing async-loaded inst: $e');
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
+				playFreeplayMenuMusic(0.7);
 			}
 		}
 		#end
@@ -1149,7 +1189,7 @@ class FreeplayState extends MusicBeatState
 			return;
 
 		if (FlxG.sound.music == null)
-			FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7, true);
+			playFreeplayMenuMusic(0.7);
 
 		if (FlxG.sound.music == null)
 			return;
@@ -1293,16 +1333,18 @@ class FreeplayState extends MusicBeatState
 		{
 			if (player.playingMusic)
 			{
-				FlxG.sound.music.stop();
+				var menuAlreadyPlaying:Bool = isFreeplayMenuMusicPlaying();
+				if (!menuAlreadyPlaying && FlxG.sound.music != null)
+					FlxG.sound.music.stop();
 				destroyFreeplayVocals();
-				FlxG.sound.music.volume = 0;
+				if (!menuAlreadyPlaying && FlxG.sound.music != null)
+					FlxG.sound.music.volume = 0;
 				instPlaying = -1;
 
 				player.playingMusic = false;
 				player.switchPlayMusic();
 
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0);
-				FlxTween.tween(FlxG.sound.music, {volume: 1}, 1);
+				playFreeplayMenuMusic(0, 1, 1);
 			}
 			else if (inDifficultySelect)
 			{
@@ -1314,8 +1356,13 @@ class FreeplayState extends MusicBeatState
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 				stopInstPreview(false);
 				destroyFreeplayVocals();
-				FlxG.sound.music.stop();
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7, true);
+				var menuAlreadyPlaying:Bool = isFreeplayMenuMusicPlaying();
+				if (!menuAlreadyPlaying && FlxG.sound.music != null)
+				{
+					FlxG.sound.music.stop();
+					freeplayMenuMusicActive = false;
+				}
+				playFreeplayMenuMusic(0.7);
 				stopMusicPlay = true;
 				MusicBeatState.switchState(backend.ScriptableState.tryCreate('MainMenuState', new MainMenuState()));
 			}
@@ -1406,6 +1453,7 @@ class FreeplayState extends MusicBeatState
 						opponentVocals = FlxDestroyUtil.destroy(opponentVocals);
 					}
 				}
+				freeplayMenuMusicActive = false;
 				FlxG.sound.music.pause();
 				instPlaying = curSelected;
 
@@ -3152,6 +3200,7 @@ class FreeplayState extends MusicBeatState
 			// Fallback for single-threaded targets (web, etc.): load synchronously.
 			try
 			{
+				freeplayMenuMusicActive = false;
 				FlxG.sound.playMusic(Paths.inst(Paths.formatToSongPath(songs[requestedIndex].songName)), 0, true);
 				applySongPreviewStart(songs[requestedIndex]);
 				FlxG.sound.music.fadeIn(1.0, 0, 0.7);
@@ -3169,7 +3218,7 @@ class FreeplayState extends MusicBeatState
 			catch (e:Dynamic)
 			{
 				trace('Error loading inst for $songName: $e');
-				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
+				playFreeplayMenuMusic(0.7);
 			}
 			#end
 		});
@@ -3205,8 +3254,7 @@ class FreeplayState extends MusicBeatState
 		{
 			// Restore freeplay menu music — playMusic creates a fresh stream so
 			// the SpectralAnalyzer can re-attach to it on the next frame.
-			FlxG.sound.playMusic(Paths.music('freakyMenu'), 0, true);
-			FlxG.sound.music.fadeIn(0.5, 0, 0.7);
+			playFreeplayMenuMusic(0, 0.5, 0.7);
 		}
 
 		#if funkin.vis
@@ -3669,7 +3717,7 @@ class FreeplayState extends MusicBeatState
 
 		FlxG.autoPause = ClientPrefs.data.autoPause;
 		if (!stopMusicPlay && (FlxG.sound.music == null || !FlxG.sound.music.playing))
-			FlxG.sound.playMusic(Paths.music('freakyMenu'));
+			playFreeplayMenuMusic(1);
 	}
 }
 

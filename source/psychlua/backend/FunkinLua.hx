@@ -653,7 +653,7 @@ class FunkinLua
 						return -1;
 					}
 				}
-				var groupOrArray:Dynamic = CustomSubstate.instance != null ? CustomSubstate.instance : LuaUtils.getTargetInstance();
+				var groupOrArray:Dynamic = getOrderParentGroup(leObj, CustomSubstate.instance != null ? CustomSubstate.instance : LuaUtils.getTargetInstance());
 				return groupOrArray.members.indexOf(leObj);
 			}
 			luaTrace('getObjectOrder: Object $obj doesn\'t exist!', false, false, FlxColor.RED);
@@ -684,7 +684,8 @@ class FunkinLua
 				}
 				else
 				{
-					var groupOrArray:Dynamic = CustomSubstate.instance != null ? CustomSubstate.instance : LuaUtils.getTargetInstance();
+					var groupOrArray:Dynamic = getOrderParentGroup(leObj, CustomSubstate.instance != null ? CustomSubstate.instance : LuaUtils.getTargetInstance());
+					position = getCompatibleHudOrder(leObj, groupOrArray, position);
 					groupOrArray.remove(leObj, true);
 					groupOrArray.insert(position, leObj);
 				}
@@ -2651,6 +2652,54 @@ class FunkinLua
 		luaTrace('This platform doesn\'t support Runtime Shaders!', false, false, FlxColor.RED);
 		#end
 		return false;
+	}
+
+	static function getOrderParentGroup(leObj:FlxBasic, fallback:Dynamic):Dynamic
+	{
+		if (fallback == null)
+			return fallback;
+
+		var fallbackMembers:Array<FlxBasic> = Reflect.getProperty(fallback, 'members');
+		if (fallbackMembers != null && fallbackMembers.indexOf(leObj) > -1)
+			return fallback;
+
+		var game:PlayState = PlayState.instance;
+		if (game != null)
+		{
+			var groups:Array<Dynamic> = [game.uiGroup, game.comboGroup, game.noteGroup];
+			for (group in groups)
+			{
+				if (group == null)
+					continue;
+
+				var members:Array<FlxBasic> = Reflect.getProperty(group, 'members');
+				if (members != null && members.indexOf(leObj) > -1)
+					return group;
+			}
+		}
+
+		return fallback;
+	}
+
+	static function getCompatibleHudOrder(leObj:FlxBasic, groupOrArray:Dynamic, position:Int):Int
+	{
+		var game:PlayState = PlayState.instance;
+		if (game == null || groupOrArray != game || game.uiGroup == null || !Std.isOfType(leObj, FlxSprite))
+			return position;
+
+		var sprite:FlxSprite = cast leObj;
+		if (sprite.cameras == null || sprite.cameras.indexOf(game.camHUD) < 0)
+			return position;
+
+		var members:Array<FlxBasic> = Reflect.getProperty(groupOrArray, 'members');
+		if (members == null)
+			return position;
+
+		var uiIndex:Int = members.indexOf(game.uiGroup);
+		if (uiIndex > -1 && position <= uiIndex)
+			return uiIndex + 1;
+
+		return position;
 	}
 }
 #end

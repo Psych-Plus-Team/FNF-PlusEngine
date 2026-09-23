@@ -62,6 +62,13 @@ class LuaUtils
 
 	public static function setVarInArray(instance:Dynamic, variable:String, value:Dynamic, allowMaps:Bool = false):Any
 	{
+		var legacyBar:Dynamic = getLegacyBarSprite(instance, variable);
+		if(legacyBar != null)
+		{
+			// Keep old Psych Lua scripts working with healthBarBG/timeBarBG aliases.
+			return legacyBar;
+		}
+
 		var splitProps:Array<String> = variable.split('[');
 		if(splitProps.length > 1)
 		{
@@ -105,6 +112,10 @@ class LuaUtils
 	}
 	public static function getVarInArray(instance:Dynamic, variable:String, allowMaps:Bool = false):Any
 	{
+		var legacyBar:Dynamic = getLegacyBarSprite(instance, variable);
+		if(legacyBar != null)
+			return legacyBar;
+
 		var splitProps:Array<String> = variable.split('[');
 		if(splitProps.length > 1)
 		{
@@ -323,6 +334,10 @@ class LuaUtils
 		{
 			case 'this' | 'instance' | 'game':
 				return getTargetInstance();
+			case 'healthBarBG':
+				return getLegacyBarSprite(getTargetInstance(), 'healthBarBG');
+			case 'timeBarBG':
+				return getLegacyBarSprite(getTargetInstance(), 'timeBarBG');
 
 			default:
 				var obj:Dynamic = MusicBeatState.getVariables().get(objectName);
@@ -334,6 +349,24 @@ class LuaUtils
 				}
 				if(obj == null) obj = getVarInArray(getTargetInstance(), objectName, allowMaps);
 				return obj;
+		}
+	}
+
+	static function getLegacyBarSprite(instance:Dynamic, variable:String):Dynamic
+	{
+		if(instance == null)
+			return null;
+
+		switch(variable)
+		{
+			case 'healthBarBG':
+				var healthBar:Dynamic = Reflect.getProperty(instance, 'healthBar');
+				return healthBar != null ? Reflect.getProperty(healthBar, 'bg') : null;
+			case 'timeBarBG':
+				var timeBar:Dynamic = Reflect.getProperty(instance, 'timeBar');
+				return timeBar != null ? Reflect.getProperty(timeBar, 'bg') : null;
+			default:
+				return null;
 		}
 	}
 

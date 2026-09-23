@@ -283,6 +283,13 @@ class ModsMenuState extends MusicBeatState {
 
 	// ───────────────────────────────────────────────────────── update ──
 	override function update(elapsed:Float) {
+		var touchBack:Bool = touchPad != null && touchPad.buttonB.justPressed;
+		var touchDown:Bool = touchPad != null && touchPad.buttonDown.justPressed;
+		var touchUp:Bool = touchPad != null && touchPad.buttonUp.justPressed;
+		var touchLeft:Bool = touchPad != null && touchPad.buttonLeft.justPressed;
+		var touchRight:Bool = touchPad != null && touchPad.buttonRight.justPressed;
+		var touchAccept:Bool = touchPad != null && touchPad.buttonA.justPressed;
+
 		if (Math.abs(FlxG.mouse.deltaX) > 10 || Math.abs(FlxG.mouse.deltaY) > 10) {
 			controls.controllerMode = false;
 			if (!FlxG.mouse.visible)
@@ -298,16 +305,16 @@ class ModsMenuState extends MusicBeatState {
 		if (searching) {
 			handleSearchInput();
 			#if android
-			if (controls.BACK || touchPad.buttonB.justPressed #if android || FlxG.android.justReleased.BACK #end) {
+			if (controls.BACK || touchBack #if android || FlxG.android.justReleased.BACK #end) {
 				endSearch();
 				super.update(elapsed);
 				return;
 			}
 			#end
 			if (view.length > 0) {
-				if (controls.UI_DOWN_P || touchPad.buttonDown.justPressed)
+				if (controls.UI_DOWN_P || touchDown)
 					changeSel(1);
-				else if (controls.UI_UP_P || touchPad.buttonUp.justPressed)
+				else if (controls.UI_UP_P || touchUp)
 					changeSel(-1);
 			}
 			super.update(elapsed);
@@ -322,7 +329,7 @@ class ModsMenuState extends MusicBeatState {
 				cycleFilter();
 		}
 
-		var backPressed:Bool = controls.BACK || (touchPad != null && touchPad.buttonB.justPressed);
+		var backPressed:Bool = controls.BACK || touchBack;
 		#if android
 		backPressed = backPressed || FlxG.android.justReleased.BACK;
 		#end
@@ -346,9 +353,9 @@ class ModsMenuState extends MusicBeatState {
 				|| FlxG.gamepads.anyPressed(LEFT_SHOULDER)
 				|| FlxG.gamepads.anyPressed(RIGHT_SHOULDER)) ? 4 : 1;
 
-			if (controls.UI_DOWN_P || touchPad.buttonDown.justPressed)
+			if (controls.UI_DOWN_P || touchDown)
 				changeSel(shiftMult);
-			else if (controls.UI_UP_P || touchPad.buttonUp.justPressed)
+			else if (controls.UI_UP_P || touchUp)
 				changeSel(-shiftMult);
 			else if (FlxG.mouse.wheel != 0)
 				changeSel(-FlxG.mouse.wheel * shiftMult);
@@ -378,9 +385,9 @@ class ModsMenuState extends MusicBeatState {
 
 			// Reorder (only meaningful in the unfiltered/un-searched ALL view).
 			if (filterMode == 0 && query.length == 0) {
-				if (controls.UI_LEFT_P || touchPad.buttonLeft.justPressed)
+				if (controls.UI_LEFT_P || touchLeft)
 					moveSelected(-1);
-				else if (controls.UI_RIGHT_P || touchPad.buttonRight.justPressed)
+				else if (controls.UI_RIGHT_P || touchRight)
 					moveSelected(1);
 			}
 
@@ -392,7 +399,7 @@ class ModsMenuState extends MusicBeatState {
 					toggleAll();
 				else
 					toggleSelected();
-			} else if (controls.ACCEPT || touchPad.buttonA.justPressed)
+			} else if (controls.ACCEPT || touchAccept)
 				launchSelected();
 			else if (FlxG.keys.justPressed.TAB || FlxG.gamepads.anyJustPressed(X))
 				openSelectedSettings();
