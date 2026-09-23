@@ -3382,6 +3382,9 @@ class FreeplayState extends MusicBeatState
 	function reloadModsFromFreeplay():Void
 	{
 		FlxG.sound.play(Paths.sound('scrollMenu'));
+		#if HSCRIPT_ALLOWED
+		scripting.ScriptRegistry.dispose();
+		#end
 		WeekData.reloadWeekFiles(false);
 		Mods.loadTopMod();
 		persistentUpdate = false;

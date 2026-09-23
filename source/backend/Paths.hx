@@ -168,7 +168,7 @@ class Paths
 		if (!cacheAnimateAtlasData(key))
 			return [];
 
-		return animateAtlasPageKeysCache.get(key.trim()).copy();
+		return animateAtlasPageKeysCache.get(animateAtlasCacheKey(key)).copy();
 	}
 
 	static function getAnimateAtlasSpriteJsons(key:String):Array<String>
@@ -176,7 +176,7 @@ class Paths
 		if (!cacheAnimateAtlasData(key))
 			return [];
 
-		return animateAtlasSpriteJsonCache.get(key.trim()).copy();
+		return animateAtlasSpriteJsonCache.get(animateAtlasCacheKey(key)).copy();
 	}
 
 	static function getAnimateAtlasAnimationJson(key:String):String
@@ -184,7 +184,16 @@ class Paths
 		if (!cacheAnimateAtlasData(key))
 			return null;
 
-		return animateAtlasAnimationCache.get(key.trim());
+		return animateAtlasAnimationCache.get(animateAtlasCacheKey(key));
+	}
+
+	static function animateAtlasCacheKey(key:String):String
+	{
+		var mod:String = '';
+		#if MODS_ALLOWED
+		mod = Mods.currentModDirectory == null ? '' : Mods.currentModDirectory;
+		#end
+		return mod + '::' + key.trim();
 	}
 
 	static function cacheAnimateAtlasData(key:String):Bool
@@ -196,13 +205,15 @@ class Paths
 		if (key.length == 0)
 			return false;
 
-		if (animateAtlasExistenceCache.exists(key))
-			return animateAtlasExistenceCache.get(key);
+		var cacheKey:String = animateAtlasCacheKey(key);
+
+		if (animateAtlasExistenceCache.exists(cacheKey))
+			return animateAtlasExistenceCache.get(cacheKey);
 
 		var animationJson:String = getTextFromFile('images/$key/Animation.json');
 		if (animationJson == null)
 		{
-			animateAtlasExistenceCache.set(key, false);
+			animateAtlasExistenceCache.set(cacheKey, false);
 			return false;
 		}
 
@@ -228,13 +239,13 @@ class Paths
 		}
 
 		var exists:Bool = pageKeys.length > 0;
-		animateAtlasExistenceCache.set(key, exists);
+		animateAtlasExistenceCache.set(cacheKey, exists);
 		if (!exists)
 			return false;
 
-		animateAtlasAnimationCache.set(key, animationJson);
-		animateAtlasSpriteJsonCache.set(key, spriteJsons);
-		animateAtlasPageKeysCache.set(key, pageKeys);
+		animateAtlasAnimationCache.set(cacheKey, animationJson);
+		animateAtlasSpriteJsonCache.set(cacheKey, spriteJsons);
+		animateAtlasPageKeysCache.set(cacheKey, pageKeys);
 		return true;
 	}
 
@@ -1165,12 +1176,25 @@ class Paths
 		for (sprite in sprites)
 		{
 			var limb:Dynamic = sprite.SPRITE;
+			if (limb == null)
+				continue;
+
+			// Use flxanimate's canonical parser for Adobe Animate spritemaps.
+			// It handles rotated and zero-sized atlas entries consistently with
+			// the library's regular fromSpriteMap() path.
 			var rotated:Bool = limb.rotated == true;
-			var rect:FlxRect = FlxRect.get(limb.x, limb.y, limb.w, limb.h);
+			var rect:FlxRect = FlxRect.get(Std.int(limb.x), Std.int(limb.y), Std.int(limb.w), Std.int(limb.h));
 			if (rotated)
 				rect.setSize(rect.height, rect.width);
 
-			frames.addAtlasFrame(rect, FlxPoint.get(limb.w, limb.h), FlxPoint.get(), limb.name, rotated ? FlxFrameAngle.ANGLE_NEG_90 : FlxFrameAngle.ANGLE_0);
+			flxanimate.frames.FlxAnimateFrames.sliceFrame(
+				Std.string(limb.name),
+				rotated,
+				rect,
+				null,
+				null,
+				frames
+			);
 		}
 
 		return frames;

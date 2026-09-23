@@ -712,6 +712,9 @@ class PlayState extends MusicBeatState
 
 		var loadedScriptedStage:Bool = false;
 		#if HSCRIPT_ALLOWED
+		// Scripted classes are cached by ScriptRegistry. Clear them when entering
+		// gameplay so edited class scripts are picked up without restarting.
+		scripting.ScriptRegistry.dispose();
 		loadedScriptedStage = scripting.ScriptedStages.load(curStage) != null;
 		#end
 
@@ -3465,7 +3468,15 @@ class PlayState extends MusicBeatState
 									&& !daNote.blockHit
 									&& daNote.canBeHit
 									&& (daNote.isSustainNote || daNote.strumTime <= Conductor.songPosition))
+								{
+									// Botplay must be a real perfect hit, not a fake "0ms" label.
+									var botSongPosition:Float = Conductor.songPosition;
+									// Include the configured rating offset so popUpScore() also
+									// calculates an actual zero difference.
+									Conductor.songPosition = daNote.strumTime + ClientPrefs.data.ratingOffset;
 									goodNoteHit(daNote);
+									Conductor.songPosition = botSongPosition;
+								}
 							}
 							else if (!daNote.hitByOpponent && !daNote.ignoreNote && daNote.strumTime <= Conductor.songPosition)
 							{
@@ -5286,7 +5297,7 @@ class PlayState extends MusicBeatState
 
 			var timingText:FlxText = acquirePopupText();
 			activeTimingText = timingText;
-			timingText.text = Std.string(Std.int(Math.round(Math.abs(signedHitDiff)))) + 'ms';
+			timingText.text = Std.string(Std.int(Math.round(signedHitDiff))) + 'ms';
 			timingText.setFormat(Paths.font("vcr.ttf"), 18, timingColor, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			timingText.borderSize = 1.25;
 			timingText.fieldWidth = 96;

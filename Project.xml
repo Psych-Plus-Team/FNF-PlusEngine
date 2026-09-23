@@ -87,6 +87,9 @@
 		<!-- WARNING: The base game mod is packaged by CI as Mod-Base-Game.zip.
 		     Keep it out of engine builds so release archives stay separated. -->
 		<assets path='example_mods' rename='mods' embed='false' />
+		<!-- Ship the base game as the canonical global mod. This keeps the packaged
+		     mod copy in sync with base_game and lets it override shared assets/scripts. -->
+		<assets path='base_game' rename='mods/Friday Night Funkin' embed='false' />
 		<assets path='example_sm' rename='sm' embed='false' />
 		<assets path='list.txt' rename='modsList.txt' />
 	</section>

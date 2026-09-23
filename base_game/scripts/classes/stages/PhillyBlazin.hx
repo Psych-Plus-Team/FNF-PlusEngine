@@ -188,8 +188,12 @@ class PhillyBlazin extends BaseStage {
 		lightningTimer -= elapsed;
 		if (lightningTimer <= 0) {
 			applyLightning();
-			lightningTimer = FlxG.random.float(7, 15);
+			lightningTimer = randomFloat(7, 15);
 		}
+	}
+
+	function randomFloat(min:Float, max:Float):Float {
+		return min + (FlxG.random.int(0, 1000000) / 1000000) * (max - min);
 	}
 
 	function applyLightning():Void {
