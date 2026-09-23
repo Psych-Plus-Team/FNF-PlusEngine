@@ -6,6 +6,8 @@ import flixel.input.keyboard.FlxKey;
 import flixel.graphics.frames.FlxFrame;
 import flixel.group.FlxGroup;
 import flixel.input.gamepad.FlxGamepad;
+import objects.VideoSprite;
+import openfl.utils.AssetType;
 import shaders.ColorSwap;
 import states.StoryMenuState;
 import states.MainMenuState;
@@ -37,6 +39,7 @@ class TitleState extends MusicBeatState
 	public static var volumeUpKeys:Array<FlxKey> = [FlxKey.NUMPADPLUS, FlxKey.PLUS];
 
 	public static var initialized:Bool = false;
+	public static var introVideoPlayed:Bool = false;
 
 	public var forceShowIntro:Bool = false; // Si debe forzar mostrar la intro
 
@@ -63,6 +66,8 @@ class TitleState extends MusicBeatState
 	public var introFinished:Bool = false;
 	public var skipTimer:Float = 0;
 	public var canSkip:Bool = true;
+	var introVideo:VideoSprite;
+	var waitingForIntroVideo:Bool = false;
 
 	override public function create():Void
 	{
@@ -83,7 +88,6 @@ class TitleState extends MusicBeatState
 		#if CHECK_FOR_UPDATES
 		if (ClientPrefs.data.checkForUpdates)
 		{
-			// Verificación de actualizaciones en TitleState
 			try
 			{
 				var updateVersion = CoolUtil.checkForUpdates();
@@ -131,10 +135,62 @@ class TitleState extends MusicBeatState
 		}
 		else
 		{
-			startIntro();
+			startIntroAfterVideoGate();
 		}
 		#end
 	}
+
+	function startIntroAfterVideoGate():Void
+	{
+		#if VIDEOS_ALLOWED
+		if (shouldPlayIntroVideo())
+		{
+			playIntroVideo();
+			return;
+		}
+		#end
+
+		startIntro();
+	}
+
+	#if VIDEOS_ALLOWED
+	function shouldPlayIntroVideo():Bool
+	{
+		return ClientPrefs.data.titleIntroVideo && !introVideoPlayed && Paths.fileExists('videos/intro.${Paths.VIDEO_EXT}', AssetType.BINARY, true);
+	}
+
+	function playIntroVideo():Void
+	{
+		introVideoPlayed = true;
+		waitingForIntroVideo = true;
+		persistentUpdate = true;
+		FlxG.camera.bgColor = FlxColor.BLACK;
+
+		if (FlxG.sound.music != null)
+			FlxG.sound.music.stop();
+
+		introVideo = new VideoSprite(Paths.video('intro'), false, true, false);
+		introVideo.finishCallback = finishIntroVideo;
+		introVideo.onSkip = finishIntroVideo;
+		add(introVideo);
+		introVideo.play();
+	}
+
+	function finishIntroVideo():Void
+	{
+		if (!waitingForIntroVideo)
+			return;
+
+		waitingForIntroVideo = false;
+		var video:VideoSprite = introVideo;
+		introVideo = null;
+		if (video != null)
+		{
+			remove(video, true);
+		}
+		startIntro();
+	}
+	#end
 
 	var logoBl:FlxSprite;
 	var gfDance:FlxSprite;
@@ -398,6 +454,14 @@ class TitleState extends MusicBeatState
 		}
 		#end
 
+		#if VIDEOS_ALLOWED
+		if (waitingForIntroVideo)
+		{
+			super.update(elapsed);
+			return;
+		}
+		#end
+
 		if (showingIntro && canSkip)
 		{
 			var pressedSkip:Bool = false;
@@ -421,7 +485,10 @@ class TitleState extends MusicBeatState
 				Conductor.songPosition = FlxG.sound.music.time;
 			// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
 
-			var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT || TouchUtil.justPressed;
+			var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT;
+			#if mobile
+			pressedEnter = pressedEnter || TouchUtil.justPressed;
+			#end
 
 			var gamepad:FlxGamepad = FlxG.gamepads.lastActive;
 
@@ -750,6 +817,21 @@ class TitleState extends MusicBeatState
 			}
 			skippedIntro = true;
 		}
+	}
+
+	override function destroy()
+	{
+		#if VIDEOS_ALLOWED
+		if (introVideo != null)
+		{
+			var video:VideoSprite = introVideo;
+			introVideo = null;
+			waitingForIntroVideo = false;
+			remove(video, true);
+			video.destroy();
+		}
+		#end
+		super.destroy();
 	}
 }
 

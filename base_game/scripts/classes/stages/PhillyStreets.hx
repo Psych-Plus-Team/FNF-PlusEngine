@@ -4,6 +4,7 @@ import backend.BaseStage;
 import backend.ClientPrefs;
 import backend.Conductor;
 import backend.Paths;
+import backend.PsychFlxAnimate;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.transition.FlxTransitionableState;
@@ -102,6 +103,9 @@ class PhillyStreets extends BaseStage {
 	var car2Interruptable:Bool = true;
 
 	var picoFlicker:FlxTimer = null;
+	var litUpNeneConfused:PsychFlxAnimate;
+	var litUpForegroundCity:PsychFlxAnimate;
+	var litUpEasterEggTriggered:Bool = false;
 
 	override function create():Void {
 		if (!ClientPrefs.data.lowQuality) {
@@ -122,6 +126,8 @@ class PhillyStreets extends BaseStage {
 			add(phillyForegroundCity);
 			darkenable.push(phillyForegroundCity);
 		}
+
+		setupLitUpEasterEggForeground();
 
 		var phillyConstruction:FlxSprite = backdrop('phillyStreets/phillyConstruction', 1800, 364, 0.7, 1);
 		add(phillyConstruction);
@@ -243,6 +249,8 @@ class PhillyStreets extends BaseStage {
 				}
 			};
 		}
+
+		setupLitUpEasterEggNene();
 	}
 
 	// override animations for note types
@@ -582,6 +590,8 @@ class PhillyStreets extends BaseStage {
 			rainShader.update(elapsed);
 		}
 
+		updateLitUpEasterEgg();
+
 		if (gf == null || !PlayState.instance.startedCountdown) {
 			return;
 		}
@@ -641,6 +651,10 @@ class PhillyStreets extends BaseStage {
 			}
 		}
 
+		if (curBeat == 210 && songName == 'lit-up' && !litUpEasterEggTriggered && FlxG.random.bool(32)) {
+			triggerLitUpEasterEgg();
+		}
+
 		if (ClientPrefs.data.lowQuality) {
 			return;
 		}
@@ -659,6 +673,71 @@ class PhillyStreets extends BaseStage {
 
 		if (curBeat == (lastChange + changeInterval)) {
 			changeLights(curBeat);
+		}
+	}
+
+	// Week 8 Easter Egg Psych Engine Port by Juann123: https://www.youtube.com/@Juann123
+	function setupLitUpEasterEggForeground():Void {
+		if (songName != 'lit-up' || litUpForegroundCity != null) {
+			return;
+		}
+
+		litUpForegroundCity = new PsychFlxAnimate(1100, 500);
+		Paths.loadAnimateAtlas(litUpForegroundCity, 'characters/philly-foreground-city');
+		litUpForegroundCity.antialiasing = ClientPrefs.data.antialiasing;
+		litUpForegroundCity.anim.addBySymbolIndices('idle2', 'fg city', [0], 24, false);
+		litUpForegroundCity.anim.addBySymbol('attack', 'fg city', 24, false);
+		litUpForegroundCity.anim.play('idle2', true);
+		add(litUpForegroundCity);
+	}
+
+	function setupLitUpEasterEggNene():Void {
+		if (songName != 'lit-up' || gf == null || litUpNeneConfused != null) {
+			return;
+		}
+
+		litUpNeneConfused = new PsychFlxAnimate(gf.x + 360, gf.y + 380);
+		Paths.loadAnimateAtlas(litUpNeneConfused, 'characters/neneConfused');
+		litUpNeneConfused.antialiasing = ClientPrefs.data.antialiasing;
+		litUpNeneConfused.anim.addBySymbol('turnback', 'Nene Turn Back', 24, false);
+		litUpNeneConfused.visible = false;
+		addBehindGF(litUpNeneConfused);
+	}
+
+	function triggerLitUpEasterEgg():Void {
+		if (litUpForegroundCity == null || litUpNeneConfused == null) {
+			return;
+		}
+
+		litUpEasterEggTriggered = true;
+		litUpForegroundCity.anim.play('attack', true);
+		FlxG.sound.play(Paths.sound('jump'), 0.5);
+		new FlxTimer().start(2, function(tmr:FlxTimer):Void {
+			if (litUpNeneConfused == null || gf == null) {
+				return;
+			}
+			litUpNeneConfused.visible = true;
+			litUpNeneConfused.anim.play('turnback', true);
+			gf.visible = false;
+		});
+	}
+
+	function updateLitUpEasterEgg():Void {
+		if (songName != 'lit-up') {
+			return;
+		}
+
+		if (litUpForegroundCity != null && litUpForegroundCity.anim.finished && litUpForegroundCity.anim.name != 'idle2') {
+			litUpForegroundCity.anim.play('idle2', true);
+		}
+
+		if (litUpNeneConfused != null && litUpNeneConfused.visible && litUpNeneConfused.anim.finished) {
+			if (gf != null) {
+				gf.dance();
+				gf.visible = true;
+			}
+			remove(litUpNeneConfused, true);
+			litUpNeneConfused = null;
 		}
 	}
 
@@ -687,10 +766,10 @@ class PhillyStreets extends BaseStage {
 
 	function finishCarLights(sprite:FlxSprite):Void {
 		carWaiting = false;
-		var duration:Float = FlxG.random.float(1.8, 3);
+		var duration:Float = randomFloat(1.8, 3);
 		var rotations:Array<Int> = [-5, 18];
 		var offset:Array<Float> = [306.6, 168.3];
-		var startdelay:Float = FlxG.random.float(0.2, 1.2);
+		var startdelay:Float = randomFloat(0.2, 1.2);
 
 		var path:Array<FlxBasePoint> = [
 			point(1950 - offset[0] - 80, 980 - offset[1] + 15),
@@ -717,16 +796,16 @@ class PhillyStreets extends BaseStage {
 		var duration:Float = 2;
 
 		if (variant == 1) {
-			duration = FlxG.random.float(1, 1.7);
+			duration = randomFloat(1, 1.7);
 		} else if (variant == 2) {
 			extraOffset = [20, -15];
-			duration = FlxG.random.float(0.9, 1.5);
+			duration = randomFloat(0.9, 1.5);
 		} else if (variant == 3) {
 			extraOffset = [30, 50];
-			duration = FlxG.random.float(1.5, 2.5);
+			duration = randomFloat(1.5, 2.5);
 		} else if (variant == 4) {
 			extraOffset = [10, 60];
-			duration = FlxG.random.float(1.5, 2.5);
+			duration = randomFloat(1.5, 2.5);
 		}
 
 		var rotations:Array<Int> = [-7, -5];
@@ -760,16 +839,16 @@ class PhillyStreets extends BaseStage {
 		var extraOffset:Array<Float> = [0, 0];
 		var duration:Float = 2;
 		if (variant == 1) {
-			duration = FlxG.random.float(1, 1.7);
+			duration = randomFloat(1, 1.7);
 		} else if (variant == 2) {
 			extraOffset = [20, -15];
-			duration = FlxG.random.float(0.6, 1.2);
+			duration = randomFloat(0.6, 1.2);
 		} else if (variant == 3) {
 			extraOffset = [30, 50];
-			duration = FlxG.random.float(1.5, 2.5);
+			duration = randomFloat(1.5, 2.5);
 		} else if (variant == 4) {
 			extraOffset = [10, 60];
-			duration = FlxG.random.float(1.5, 2.5);
+			duration = randomFloat(1.5, 2.5);
 		}
 
 		var offset:Array<Float> = [306.6, 168.3];
@@ -799,16 +878,16 @@ class PhillyStreets extends BaseStage {
 		var extraOffset:Array<Float> = [0, 0];
 		var duration:Float = 2;
 		if (variant == 1) {
-			duration = FlxG.random.float(1, 1.7);
+			duration = randomFloat(1, 1.7);
 		} else if (variant == 2) {
 			extraOffset = [20, -15];
-			duration = FlxG.random.float(0.6, 1.2);
+			duration = randomFloat(0.6, 1.2);
 		} else if (variant == 3) {
 			extraOffset = [30, 50];
-			duration = FlxG.random.float(1.5, 2.5);
+			duration = randomFloat(1.5, 2.5);
 		} else if (variant == 4) {
 			extraOffset = [10, 60];
-			duration = FlxG.random.float(1.5, 2.5);
+			duration = randomFloat(1.5, 2.5);
 		}
 
 		var offset:Array<Float> = [306.6, 168.3];
@@ -908,8 +987,8 @@ class PhillyStreets extends BaseStage {
 				casing.angle = 125.1; // Copied from FLA
 
 				// Velocity and angular acceleration make it roll without editing update().
-				var randomFactorA:Float = FlxG.random.float(3, 10);
-				var randomFactorB:Float = FlxG.random.float(1.0, 2.0);
+				var randomFactorA:Float = randomFloat(3, 10);
+				var randomFactorB:Float = randomFloat(1.0, 2.0);
 				casing.velocity.x = 20 * randomFactorB;
 				casing.drag.x = randomFactorA * randomFactorB;
 
@@ -1055,6 +1134,10 @@ class PhillyStreets extends BaseStage {
 		}
 		var time:Dynamic = Reflect.field(note, 'time');
 		return time != null ? time : Conductor.songPosition;
+	}
+
+	function randomFloat(min:Float, max:Float):Float {
+		return min + (FlxG.random.int(0, 1000000) / 1000000) * (max - min);
 	}
 
 	function unlockFiregunNotes():Void {

@@ -48,6 +48,7 @@ import states.TitleState;
 	public var fpsDebugLevel:Int = #if mobile 1 #else 2 #end; // Legacy FPSCounter debug level (persistent)
 	public var showWatermark:Bool = false;
 	public var flashing:Bool = true;
+	public var titleIntroVideo:Bool = true;
 	public var autoPause:Bool = true;
 	public var instantWindowClose:Bool = true;
 	public var antialiasing:Bool = true;

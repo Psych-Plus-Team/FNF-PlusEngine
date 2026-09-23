@@ -1140,7 +1140,6 @@ class PlayState extends MusicBeatState
 				if (lowerFile.endsWith('.lua'))
 					new FunkinLua(folder + file);
 				#end
-
 				#if HSCRIPT_ALLOWED
 				if (file.toLowerCase().endsWith('.hx'))
 					initHScript(folder + file);
@@ -4635,8 +4634,7 @@ class PlayState extends MusicBeatState
 			{
 				if (ClientPrefs.data.resultsStateAtEnd && !cpuControlled)
 				{
-					FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7, true);
-
+					trace('WENT BACK TO RESULTS??');
 					new FlxTimer().start(0, function(_) {
 						MusicBeatState.switchState(backend.ScriptableState.tryCreate('ResultsState', new ResultsState({
 							score: songScore,

@@ -70,6 +70,14 @@ class Philly extends BaseStage {
 			return;
 		}
 
+		ensurePhillyGlowEventObjects();
+	}
+
+	function ensurePhillyGlowEventObjects():Void {
+		if (phillyGlowGradient != null) {
+			return;
+		}
+
 		blammedLightsBlack = new FlxSprite(FlxG.width * -0.5, FlxG.height * -0.5);
 		blammedLightsBlack.makeGraphic(Std.int(FlxG.width * 2), Std.int(FlxG.height * 2), FlxColor.BLACK);
 		blammedLightsBlack.visible = false;
@@ -118,6 +126,8 @@ class Philly extends BaseStage {
 		if (eventName != 'Philly Glow') {
 			return;
 		}
+
+		ensurePhillyGlowEventObjects();
 
 		var value:Float = (flValue1 == null || flValue1 <= 0) ? 0 : flValue1;
 		var lightId:Int = Math.round(value);
@@ -191,6 +201,9 @@ class Philly extends BaseStage {
 				phillyStreet.color = streetColor;
 
 			case 2: // spawn particles
+				if (curLightEvent < 0) {
+					return;
+				}
 				if (!ClientPrefs.data.lowQuality) {
 					var particlesNum:Int = FlxG.random.int(8, 12);
 					var width:Float = (2000 / particlesNum);

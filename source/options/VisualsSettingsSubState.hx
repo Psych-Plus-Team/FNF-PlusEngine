@@ -103,6 +103,12 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		var option:Option = new Option('Flashing Lights', "Uncheck this if you're sensitive to flashing lights!", 'flashing', BOOL);
 		addOption(option);
 
+		#if VIDEOS_ALLOWED
+		var option:Option = new Option('Title Intro Video', 'If checked, plays the intro video before the title intro once per launch.',
+			'titleIntroVideo', BOOL);
+		addOption(option);
+		#end
+
 		var option:Option = new Option('Camera Zooms', "If unchecked, the camera won't zoom in on a beat hit.", 'camZooms', BOOL);
 		addOption(option);
 

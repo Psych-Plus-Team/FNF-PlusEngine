@@ -66,6 +66,7 @@ class NoteSplash extends FlxSprite
 
 	public function loadSplash(?splash:String)
 	{
+		var useSkinPostfix:Bool = true;
 		config = null;
 		maxAnims = 0;
 		spawned = false;
@@ -77,9 +78,12 @@ class NoteSplash extends FlxSprite
 		{
 			splash = null;
 			if (PlayState.SONG != null && PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0)
+			{
 				splash = PlayState.SONG.splashSkin;
+				useSkinPostfix = false;
+			}
 		}
-		splash = resolveNoteSplashPath(splash, PlayState.isPixelStage);
+		splash = resolveNoteSplashPath(splash, PlayState.isPixelStage, useSkinPostfix);
 
 		texture = splash;
 		frames = null;
@@ -484,8 +488,10 @@ class NoteSplash extends FlxSprite
 	public static function getSplashSkinPostfix()
 	{
 		var skin:String = '';
-		if (ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin)
-			skin = '-' + ClientPrefs.data.splashSkin.trim().toLowerCase().replace(' ', '-');
+		var normalized:String = splashNameToPath(ClientPrefs.data.splashSkin);
+		var defaultNormalized:String = splashNameToPath(ClientPrefs.defaultData.splashSkin);
+		if (normalized != defaultNormalized && normalized.startsWith(defaultNoteSplash + '-'))
+			skin = normalized.substr(defaultNoteSplash.length);
 		return skin;
 	}
 
@@ -564,6 +570,8 @@ class NoteSplash extends FlxSprite
 	{
 		if (splash == null || splash.length < 1)
 			splash = getDefaultNoteSplashPath(pixel);
+		else
+			splash = splashNameToPath(splash);
 
 		if (useSkinPostfix)
 		{
@@ -582,6 +590,27 @@ class NoteSplash extends FlxSprite
 			return resolved;
 
 		return getDefaultNoteSplashPath(pixel);
+	}
+
+	public static function splashNameToPath(splash:String):String
+	{
+		if (splash == null)
+			return null;
+
+		splash = splash.trim();
+		if (splash.length < 1 || splash.indexOf('/') >= 0)
+			return splash;
+
+		var normalized:String = splash.toLowerCase().replace(' ', '-').replace('_', '-');
+		if (normalized == 'psych' || normalized == 'default')
+			return defaultNoteSplash;
+		if (normalized.startsWith('notesplashes-'))
+			normalized = normalized.substr('notesplashes-'.length);
+		if (normalized.startsWith('note-splashes-'))
+			normalized = normalized.substr('note-splashes-'.length);
+		if (normalized.startsWith('note-splash-'))
+			normalized = normalized.substr('note-splash-'.length);
+		return defaultNoteSplash + '-' + normalized;
 	}
 
 	public static function createConfig():NoteSplashConfig
