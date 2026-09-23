@@ -1,8 +1,12 @@
 package objects;
 
+import backend.AssetLoader;
+import backend.Mods;
+import backend.Paths;
 import lime.app.Future;
 import openfl.Assets;
 import openfl.display.BitmapData;
+import openfl.utils.AssetType;
 
 /**
  * Global cursor system shared by Plus/Psych and the VSlice runtime.
@@ -11,6 +15,7 @@ import openfl.display.BitmapData;
 class Cursor
 {
 	public static var cursorMode(default, set):Null<CursorMode> = null;
+	static var customCursorCache:Map<String, BitmapData> = new Map();
 
 	public static inline function show():Void
 	{
@@ -141,6 +146,98 @@ class Cursor
 		return 'assets/images/cursor/$name.png';
 	}
 
+	public static function setCustom(name:String, scale:Float = 1.0, offsetX:Int = 0, offsetY:Int = 0, ?mod:String):Bool
+	{
+		var graphic:String = resolveCustomCursor(name, mod);
+		if (graphic == null)
+		{
+			trace('Failed to load custom cursor "$name": no matching asset');
+			return false;
+		}
+
+		var bitmapData:BitmapData = customCursorCache.get(graphic);
+		if (bitmapData == null)
+		{
+			bitmapData = AssetLoader.loadBitmap(graphic);
+			if (bitmapData == null)
+			{
+				trace('Failed to load custom cursor "$name": $graphic');
+				return false;
+			}
+			customCursorCache.set(graphic, bitmapData);
+		}
+
+		FlxG.mouse.visible = true;
+		applyGraphic(bitmapData, {
+			graphic: graphic,
+			scale: scale,
+			offsetX: offsetX,
+			offsetY: offsetY
+		});
+		return true;
+	}
+
+	public static function resetCustom():Void
+	{
+		cursorMode = Default;
+	}
+
+	static function resolveCustomCursor(name:String, ?mod:String):String
+	{
+		if (name == null || name.length < 1)
+			return null;
+
+		var key:String = name.split('\\').join('/');
+		var candidates:Array<String> = [];
+		var hasExtension:Bool = key.endsWith('.png');
+
+		function add(path:String):Void
+		{
+			if (path != null && path.length > 0 && !candidates.contains(path))
+				candidates.push(path);
+		}
+
+		if (key.indexOf('/') > -1 || key.indexOf(':') > -1)
+		{
+			add(key);
+		}
+		else
+		{
+			var file:String = hasExtension ? key : '$key.png';
+			var modsToTry:Array<String> = [];
+			function addMod(candidate:String):Void
+			{
+				if (candidate != null && candidate.length > 0 && !modsToTry.contains(candidate))
+					modsToTry.push(candidate);
+			}
+
+			addMod(mod);
+			#if MODS_ALLOWED
+			addMod(Mods.launchedMod);
+			addMod(Mods.currentModDirectory);
+			for (global in Mods.getGlobalMods())
+				addMod(global);
+			#end
+
+			for (folder in modsToTry)
+				add(Paths.mods(folder + '/images/cursor/' + file));
+
+			add(Paths.mods('images/cursor/' + file));
+			add('assets/images/cursor/' + file);
+			if (!key.startsWith('cursor-'))
+			{
+				add(Paths.mods('images/cursor/cursor-' + file));
+				add('assets/images/cursor/cursor-' + file);
+			}
+		}
+
+		for (candidate in candidates)
+			if (AssetLoader.exists(candidate, AssetType.IMAGE))
+				return candidate;
+
+		return null;
+	}
+
 	static function set_cursorMode(value:Null<CursorMode>):Null<CursorMode>
 	{
 		if (cursorMode == value)
@@ -249,6 +346,7 @@ class Cursor
 		assetCursorCrosshair = null;
 		assetCursorCell = null;
 		assetCursorScroll = null;
+		customCursorCache = new Map();
 	}
 }
 

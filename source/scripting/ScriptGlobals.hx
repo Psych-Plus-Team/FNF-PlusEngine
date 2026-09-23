@@ -3,6 +3,7 @@ package scripting;
 #if HSCRIPT_ALLOWED
 import hxscript.syntax.Expr.ImportMode;
 import hxscript.types.TypeCollection;
+import flixel.FlxG;
 
 class ScriptGlobals {
 	public static var registeredCount(default, null):Int = 0;
@@ -12,10 +13,12 @@ class ScriptGlobals {
 	static var keepScriptBytes:Class<ScriptBytes> = ScriptBytes;
 	static var keepScriptDraw:Class<ScriptDraw> = ScriptDraw;
 	static var keepAssetLoader:Class<backend.AssetLoader> = backend.AssetLoader;
+	static var keepScriptHttp:Class<backend.ScriptHttp> = backend.ScriptHttp;
 	static var keepBuildInfo:Class<backend.BuildInfo> = backend.BuildInfo;
 	static var keepSecurityReview:Class<backend.SecurityReview> = backend.SecurityReview;
 	static var keepTouchUtil:Class<mobile.backend.TouchUtil> = mobile.backend.TouchUtil;
 	static var keepABotSpectrum:Class<objects.ABotSpectrum> = objects.ABotSpectrum;
+	static var keepCursor:Class<objects.Cursor> = objects.Cursor;
 	static var keepPsychFlxAnimate:Class<backend.PsychFlxAnimate> = backend.PsychFlxAnimate;
 	#if DISCORD_ALLOWED
 	static var keepDiscordClient:Class<backend.DiscordClient> = backend.DiscordClient;
@@ -34,11 +37,16 @@ class ScriptGlobals {
 	static var keepResetScoreSubState:Class<substates.ResetScoreSubState> = substates.ResetScoreSubState;
 	static var keepOptionsState:Class<options.OptionsState> = options.OptionsState;
 	static var keepGameplayChangersSubstate:Class<options.GameplayChangersSubstate> = options.GameplayChangersSubstate;
+	static var keepFlxBitmapText:Class<flixel.text.FlxBitmapText> = flixel.text.FlxBitmapText;
+	static var keepFlxMouseEvent:Dynamic = flixel.input.mouse.FlxMouseEvent;
+	static var keepFlxVideoSprite:Class<hxvlc.flixel.FlxVideoSprite> = hxvlc.flixel.FlxVideoSprite;
 
 	public static final TYPE_IMPORTS:Array<String> = [
 		'backend.Paths',
 		'backend.Achievements',
 		'backend.AssetLoader',
+			'backend.ScriptHttp',
+		'haxe.Json',
 		'backend.BuildInfo',
 		'backend.SecurityReview',
 		'mobile.backend.TouchUtil',
@@ -68,6 +76,7 @@ class ScriptGlobals {
 		'objects.Character',
 		'objects.HealthIcon',
 		'objects.ABotSpectrum',
+		'objects.Cursor',
 		'objects.Note',
 		'objects.NoteSplash',
 		'objects.StrumNote',
@@ -94,6 +103,11 @@ class ScriptGlobals {
 		'substates.GameOverSubstate',
 		'substates.ResetScoreSubState',
 		'substates.StickerSubState',
+		'flixel.text.FlxBitmapText',
+		'flixel.input.mouse.FlxMouseEvent',
+		'hxvlc.flixel.FlxVideoSprite',
+		'states.ModsMenuState',
+		'states.editors.MasterEditorMenu',
 		'flixel.FlxG',
 		'flixel.FlxBasic',
 		'flixel.FlxObject',
@@ -140,6 +154,7 @@ class ScriptGlobals {
 		'openfl.text.TextField',
 		'openfl.text.TextFormat',
 		'openfl.utils.Assets',
+		'openfl.filters.ShaderFilter',
 		'openfl.media.Sound',
 		'openfl.events.Event',
 		'openfl.events.MouseEvent',
@@ -147,7 +162,7 @@ class ScriptGlobals {
 		'lime.system.System',
 		'lime.utils.Assets',
 		'lime.math.Rectangle',
-		'lime.math.Vector2'
+		'lime.math.Vector2',
 	];
 
 	public static final buildTarget:String = psychlua.backend.LuaUtils.getBuildTarget();
@@ -188,6 +203,12 @@ class ScriptGlobals {
 		set('controls', backend.Controls.instance);
 		set('buildTarget', buildTarget);
 		set('BuildInfo', backend.BuildInfo);
+		set('Json', haxe.Json);
+		set('ScriptHttp', backend.ScriptHttp);
+		set('Http', backend.ScriptHttp);
+		set('Cursor', objects.Cursor);
+		set('setCursor', function(name:String, ?scale:Float = 1.0, ?offsetX:Int = 0, ?offsetY:Int = 0):Bool return objects.Cursor.setCustom(name, scale, offsetX, offsetY, mod));
+		set('resetCursor', function():Void objects.Cursor.resetCustom());
 		set('TouchUtil', mobile.backend.TouchUtil);
 		set('X', flixel.util.FlxAxes.X);
 		set('Y', flixel.util.FlxAxes.Y);
@@ -206,6 +227,9 @@ class ScriptGlobals {
 		set('setVar', setVar);
 		set('removeVar', removeVar);
 		set('debugPrint', debugPrint);
+		set('lerp', lerp);
+		set('clamp', clamp);
+		set('randomFloat', randomFloat);
 		set('switchState', switchState);
 		set('switchToState', function(name:String, ?args:Array<Dynamic>):Bool return ScriptedStates.switchToState(name, args));
 		set('openScriptedSubstate', function(name:String, ?args:Array<Dynamic>):Bool return ScriptedStates.openSubstate(name, args));
@@ -253,6 +277,15 @@ class ScriptGlobals {
 
 	public static function debugPrint(text:String, ?color:FlxColor):Void
 		ScriptError.show(text, color == null ? FlxColor.WHITE : color);
+
+	public static inline function lerp(a:Float, b:Float, ratio:Float):Float
+		return a + (b - a) * ratio;
+
+	public static inline function clamp(value:Float, min:Float, max:Float):Float
+		return Math.max(min, Math.min(max, value));
+
+	public static function randomFloat(min:Float, max:Float):Float
+		return min + (max - min) * (FlxG.random.int(0, 1000000) / 1000000.0);
 
 	public static function switchState(state:flixel.FlxState):Void
 		backend.MusicBeatState.switchState(state);

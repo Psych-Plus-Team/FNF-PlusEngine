@@ -86,6 +86,8 @@ class ModsMenuState extends MusicBeatState {
 
 		modsList = Mods.parseList();
 		Mods.loadTopMod();
+		Mods.currentModDirectory = '';
+		backend.Language.reloadPhrases();
 
 		#if DISCORD_ALLOWED
 		DiscordClient.changePresence("In the Mod Browser", null);

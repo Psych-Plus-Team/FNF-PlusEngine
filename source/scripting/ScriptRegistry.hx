@@ -109,7 +109,8 @@ class ScriptRegistry {
 		try {
 			return cls.typeCreateInstance(args == null ? [] : args);
 		} catch (e:haxe.Exception) {
-			HScript.error('Failed to instantiate "$path": ${exceptionDetails(e)}', errPos(path));
+			var pos:scripting.hscript.HScript.HScriptInfos = scriptPos(cls, path);
+			HScript.error('Failed to instantiate "$path": ${exceptionDetails(e)}', pos);
 			return null;
 		}
 	}
@@ -214,7 +215,17 @@ class ScriptRegistry {
 		cls.onInstanceError = function(e:Dynamic, fun:String, ?inst:Dynamic) {
 			var file:String = cls.module != null && cls.module.origin != null ? cls.module.origin : cls.path;
 			var details:String = exceptionDetails(e);
-			HScript.error('${cls.path}.$fun(): $details', errPos(file));
+			// ScriptedClass catches constructor/method exceptions before they reach
+			// instantiateClass(). Ask the class interpreter for its last source
+			// position so null-reference errors include the real HScript line.
+			var pos:scripting.hscript.HScript.HScriptInfos = cast (cls.interp != null
+				? cls.interp.posInfos()
+				: errPos(file));
+			if (pos.fileName == null || pos.fileName.length == 0)
+				pos.fileName = file;
+			pos.showLine = true;
+			pos.funcName = fun;
+			HScript.error('${cls.path}.$fun(): $details', pos);
 		};
 	}
 
@@ -241,6 +252,26 @@ class ScriptRegistry {
 
 	static inline function errPos(name:String):scripting.hscript.HScript.HScriptInfos
 		return cast {fileName: name, showLine: false};
+
+	static function scriptPos(cls:ScriptedClass, fallback:String):scripting.hscript.HScript.HScriptInfos {
+		var pos:scripting.hscript.HScript.HScriptInfos = cast (cls != null && cls.interp != null
+			? cls.interp.posInfos()
+			: errPos(fallback));
+		if (pos.fileName == null || pos.fileName.length == 0)
+			pos.fileName = fallback;
+		pos.showLine = true;
+		return pos;
+	}
+
+	public static function modulePos(module:Module, file:String, fallback:String):scripting.hscript.HScript.HScriptInfos {
+		var pos:scripting.hscript.HScript.HScriptInfos = cast (module != null && module.interp != null
+			? module.interp.posInfos()
+			: errPos(fallback));
+		if (pos.fileName == null || pos.fileName.length == 0)
+			pos.fileName = file;
+		pos.showLine = true;
+		return pos;
+	}
 
 	public static function log(message:String):Void {
 		if (verbose)
@@ -336,15 +367,15 @@ class ScriptWorld {
 		var hadError:Bool = false;
 		module.onParsingError = function(e:haxe.Exception) {
 			hadError = true;
-			HScript.error('Parse error in "$file": ${ScriptRegistry.exceptionDetails(e)}', errPos(path));
+			HScript.error('Parse error in "$file": ${ScriptRegistry.exceptionDetails(e)}', ScriptRegistry.modulePos(module, file, path));
 		};
 		module.onProgramError = function(e:haxe.Exception) {
 			hadError = true;
-			HScript.error('Runtime error in "$file": ${ScriptRegistry.exceptionDetails(e)}', errPos(path));
+			HScript.error('Runtime error in "$file": ${ScriptRegistry.exceptionDetails(e)}', ScriptRegistry.modulePos(module, file, path));
 		};
 		module.onTypeError = function(e:haxe.Exception, type:IScriptedType) {
 			hadError = true;
-			HScript.error('Type error in "${type.name}" from "$file": ${ScriptRegistry.exceptionDetails(e)}', errPos(path));
+			HScript.error('Type error in "${type.name}" from "$file": ${ScriptRegistry.exceptionDetails(e)}', ScriptRegistry.modulePos(module, file, path));
 		};
 
 		if (hadError) {

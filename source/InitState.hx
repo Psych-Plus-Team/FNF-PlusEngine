@@ -23,6 +23,7 @@ class InitialState extends MusicBeatState
 
 		super.create();
 
+		ClientPrefs.loadPrefs();
 		Highscore.load();
 		Language.reloadPhrases();
 
@@ -33,7 +34,33 @@ class InitialState extends MusicBeatState
 
 		#if HSCRIPT_ALLOWED
 		trace("scripted?");
-		MusicBeatState.switchState(backend.ScriptableState.tryCreateLazy('TitleState', function() return new TitleState()));
+		if ((Mods.launchedMod == null || Mods.launchedMod.length < 1) && FlxG.save.data.launchedMod != null)
+			Mods.launchedMod = Std.string(FlxG.save.data.launchedMod);
+
+		trace("Mod Launched: " + Mods.launchedMod);
+		if (Mods.launchedMod != null && Mods.launchedMod.length > 0 && Mods.isLaunchable(Mods.launchedMod))
+		{
+			Mods.currentModDirectory = Mods.launchedMod;
+			Mods.pushGlobalMods();
+			Language.reloadPhrases();
+			var entry:String = Mods.getEntryState(Mods.launchedMod);
+			var scripted:MusicBeatState = scripting.ScriptedStates.loadState(entry, [], scripting.ScriptedStates.ResolveScope.LAUNCHED);
+			if (scripted != null)
+			{
+				MusicBeatState.switchState(scripted);
+				return;
+			}
+			trace("Scriptable = null!");
+		}
+		else if (Mods.launchedMod != null && Mods.launchedMod.length > 0)
+		{
+			FlxG.save.data.launchedMod = null;
+			FlxG.save.flush();
+			Mods.launchedMod = null;
+			Mods.currentModDirectory = '';
+			Mods.pushGlobalMods();
+		}
+		MusicBeatState.switchState(new TitleState());
 		#else
 		trace("meh, hardcoded");
 		MusicBeatState.switchState(new TitleState());

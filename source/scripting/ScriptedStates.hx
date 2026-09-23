@@ -104,6 +104,8 @@ class ScriptedStates {
 			return false;
 		}
 
+		FlxG.save.data.launchedMod = folder;
+		FlxG.save.flush();
 		playMenuMusic(folder);
 		MusicBeatState.switchState(state);
 		return true;
@@ -121,7 +123,10 @@ class ScriptedStates {
 			ScriptRegistry.disposeMod(Mods.launchedMod);
 		Mods.launchedMod = null;
 		Mods.currentModDirectory = '';
+		FlxG.save.data.launchedMod = null;
+		FlxG.save.flush();
 		Mods.pushGlobalMods();
+		backend.Language.reloadPhrases();
 		#end
 		MusicBeatState.switchState(new states.ModsMenuState());
 	}

@@ -204,6 +204,28 @@ class MusicBeatState extends BaseMusicBeatState
 		{
 			backend.Screenshot.capture();
 		}
+
+		if (FlxG.keys.justPressed.F12 && !Std.isOfType(FlxG.state, states.ModsMenuState))
+		{
+			persistentUpdate = persistentDraw = true;
+			#if HSCRIPT_ALLOWED
+			scripting.ScriptedStates.exitToEngine();
+			#else
+			#if MODS_ALLOWED
+			Mods.launchedMod = null;
+			Mods.currentModDirectory = '';
+			if (FlxG.save != null && FlxG.save.data != null)
+			{
+				FlxG.save.data.launchedMod = null;
+				FlxG.save.flush();
+			}
+			Mods.pushGlobalMods();
+			backend.Language.reloadPhrases();
+			#end
+			MusicBeatState.switchState(new states.ModsMenuState());
+			#end
+			return;
+		}
 		#end
 
 		// Call global script update
@@ -227,8 +249,9 @@ class MusicBeatState extends BaseMusicBeatState
 			return;
 		}
 
-		// State replacement is opt-in only (explicit tryCreate usage).
-		// By default, hardcoded states run with companion scripts from scripts/states/*.
+		#if HSCRIPT_ALLOWED
+		nextState = backend.ScriptableState.tryCreateFromFallback(nextState);
+		#end
 
 		// Call scripts before switching - they can stop the default transition
 		var globalResult = callOnGlobalScript('onSwitchState', [Type.getClassName(Type.getClass(nextState))]);

@@ -2,6 +2,8 @@ package backend;
 
 import backend.AssetLoader;
 import backend.ui.md3.NetworkCheckToast;
+import flixel.util.FlxColor;
+import flixel.FlxG;
 import openfl.utils.AssetType;
 import openfl.utils.Assets;
 import lime.utils.Assets as LimeAssets;
@@ -11,6 +13,22 @@ import lime.utils.Assets as LimeAssets;
 #end
 class CoolUtil
 {
+	/** Psych-compatible menu sound shim for scripts. */
+	public static function playMenuSFX(selection:Int = 0, volume:Float = 1.0):Void
+	{
+		var key:String = switch (selection)
+		{
+			case 1: 'menu/confirm';
+			case 2: 'menu/cancel';
+			case 3: 'scrollMenu';
+			default: 'scrollMenu';
+		};
+		FlxG.sound.play(Paths.sound(key), volume);
+	}
+	/** Script-facing non-inline color interpolation shim. */
+	public static function lerpColor(color1:Int, color2:Int, ratio:Float):Int
+		return cast FlxColor.interpolate(color1, color2, ratio);
+
 	public static var hasUpdate:Bool = false;
 	public static var latestVersion:String = "";
 	public static final haxeExtensions:Array<String> = ["hx", "hscript", "hsc", "hxs"];
