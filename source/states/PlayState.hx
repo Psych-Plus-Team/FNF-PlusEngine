@@ -3728,11 +3728,18 @@ class PlayState extends MusicBeatState
 		object.dirty = true;
 	}
 
-	private function getStaticIconFrame(healthPercent:Float, isPlayerSide:Bool):Int
+	private function getStaticIconFrame(healthPercent:Float, icon:HealthIcon):Int
 	{
+		var frameCount:Int = 0;
+		if (icon != null && icon.frames != null && icon.frames.frames != null)
+			frameCount = icon.frames.frames.length;
+
 		if (healthPercent < 0.2)
-			return 1;
-		// TODO: Verify winning icon frames before pushing this back; frame 2 can break icon parity with animated icons.
+			return frameCount > 1 ? 1 : 0;
+
+		if (healthPercent > 0.8 && frameCount > 2)
+			return 2;
+
 		return 0;
 	}
 
@@ -3758,18 +3765,18 @@ class PlayState extends MusicBeatState
 			iconGF.updateIconState(gfIconSide == 'bf' ? bfHealth : dadHealth);
 		}
 
-		if (iconP1 != null && !iconP1.isAnimated)
+		if (iconP1 != null && !iconP1.isAnimated && iconP1.animation.curAnim != null)
 		{
-			iconP1.animation.curAnim.curFrame = getStaticIconFrame(bfHealth, true);
+			iconP1.animation.curAnim.curFrame = getStaticIconFrame(bfHealth, iconP1);
 		}
-		if (iconP2 != null && !iconP2.isAnimated)
+		if (iconP2 != null && !iconP2.isAnimated && iconP2.animation.curAnim != null)
 		{
-			iconP2.animation.curAnim.curFrame = getStaticIconFrame(dadHealth, false);
+			iconP2.animation.curAnim.curFrame = getStaticIconFrame(dadHealth, iconP2);
 		}
-		if (iconGF != null && iconGF.visible && !iconGF.isAnimated)
+		if (iconGF != null && iconGF.visible && !iconGF.isAnimated && iconGF.animation.curAnim != null)
 		{
 			var gfHealth:Float = gfIconSide == 'bf' ? bfHealth : dadHealth;
-			iconGF.animation.curAnim.curFrame = getStaticIconFrame(gfHealth, gfIconSide == 'bf');
+			iconGF.animation.curAnim.curFrame = getStaticIconFrame(gfHealth, iconGF);
 		}
 	}
 
