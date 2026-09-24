@@ -8,6 +8,7 @@ import flixel.FlxG;
 class ScriptGlobals {
 	public static var registeredCount(default, null):Int = 0;
 	public static var skippedCount(default, null):Int = 0;
+	static var modSaveCache:Map<String, flixel.util.FlxSave> = new Map();
 
 	static var keepScriptError:Class<ScriptError> = ScriptError;
 	static var keepScriptBytes:Class<ScriptBytes> = ScriptBytes;
@@ -16,6 +17,7 @@ class ScriptGlobals {
 	static var keepScriptHttp:Class<backend.ScriptHttp> = backend.ScriptHttp;
 	static var keepBuildInfo:Class<backend.BuildInfo> = backend.BuildInfo;
 	static var keepSecurityReview:Class<backend.SecurityReview> = backend.SecurityReview;
+	static var keepTransitionManager:Class<backend.TransitionManager> = backend.TransitionManager;
 	static var keepTouchUtil:Class<mobile.backend.TouchUtil> = mobile.backend.TouchUtil;
 	static var keepABotSpectrum:Class<objects.ABotSpectrum> = objects.ABotSpectrum;
 	static var keepCursor:Class<objects.Cursor> = objects.Cursor;
@@ -56,6 +58,7 @@ class ScriptGlobals {
 		'backend.MusicBeatState',
 		'backend.MusicBeatSubstate',
 		'backend.CustomFadeTransition',
+		'backend.TransitionManager',
 		'backend.ClientPrefs',
 		'backend.Conductor',
 		'backend.BaseStage',
@@ -203,7 +206,10 @@ class ScriptGlobals {
 		set('controls', backend.Controls.instance);
 		set('buildTarget', buildTarget);
 		set('BuildInfo', backend.BuildInfo);
+		set('TransitionManager', backend.TransitionManager);
 		set('Json', haxe.Json);
+		set('parseJson', parseJson);
+		set('stringifyJson', stringifyJson);
 		set('ScriptHttp', backend.ScriptHttp);
 		set('Http', backend.ScriptHttp);
 		set('Cursor', objects.Cursor);
@@ -226,7 +232,19 @@ class ScriptGlobals {
 		set('getVar', getVar);
 		set('setVar', setVar);
 		set('removeVar', removeVar);
+		set('getModSave', function(key:String, ?defaultValue:Dynamic = null, ?modName:String = null):Dynamic {
+			return getModSave(key, defaultValue, modName == null ? mod : modName);
+		});
+		set('setModSave', function(key:String, value:Dynamic, ?modName:String = null):Dynamic {
+			return setModSave(key, value, modName == null ? mod : modName);
+		});
+		set('flushModSave', function(?modName:String = null):Void flushModSave(modName == null ? mod : modName));
 		set('debugPrint', debugPrint);
+		set('getObjX', getObjX);
+		set('getObjY', getObjY);
+		set('setObjX', setObjX);
+		set('setObjY', setObjY);
+		set('setObjScale', setObjScale);
 		set('lerp', lerp);
 		set('clamp', clamp);
 		set('randomFloat', randomFloat);
@@ -275,8 +293,118 @@ class ScriptGlobals {
 		return true;
 	}
 
+	public static function resolveModSaveName(?modName:String = null):String {
+		var folder:String = modName;
+		if (folder == null || folder.length <= 0)
+			folder = backend.Mods.launchedMod;
+		if (folder == null || folder.length <= 0)
+			folder = backend.Mods.currentModDirectory;
+		if (folder == null || folder.length <= 0)
+			folder = 'global';
+
+		folder = StringTools.replace(folder, '\\', '_');
+		folder = StringTools.replace(folder, '/', '_');
+		folder = StringTools.replace(folder, ':', '_');
+		folder = StringTools.replace(folder, ' ', '_');
+		folder = StringTools.replace(folder, '{', '');
+		folder = StringTools.replace(folder, '}', '');
+		folder = StringTools.replace(folder, '(', '');
+		folder = StringTools.replace(folder, ')', '');
+		folder = StringTools.replace(folder, '[', '');
+		folder = StringTools.replace(folder, ']', '');
+		return folder;
+	}
+
+	static function getModSaveFile(?modName:String = null):flixel.util.FlxSave {
+		var saveName:String = resolveModSaveName(modName);
+		var cached:flixel.util.FlxSave = modSaveCache.get(saveName);
+		if (cached != null)
+			return cached;
+
+		var save:flixel.util.FlxSave = new flixel.util.FlxSave();
+		save.bind(saveName, backend.CoolUtil.getSavePath() + '/mods');
+		modSaveCache.set(saveName, save);
+		return save;
+	}
+
+	static function getLegacyModSaveBucket(saveName:String):Dynamic {
+		var root:Dynamic = FlxG.save.data.modSaves;
+		if (root == null)
+			return null;
+
+		var bucket:Dynamic = Reflect.field(root, saveName);
+		if (bucket != null)
+			return bucket;
+
+		var launched:String = backend.Mods.launchedMod;
+		if (launched != null && launched.length > 0)
+			return Reflect.field(root, launched);
+
+		return null;
+	}
+
+	public static function getModSave(key:String, ?defaultValue:Dynamic = null, ?modName:String = null):Dynamic {
+		var saveName:String = resolveModSaveName(modName);
+		var save:flixel.util.FlxSave = getModSaveFile(saveName);
+		var value:Dynamic = Reflect.field(save.data, key);
+		if (value == null) {
+			var legacyBucket:Dynamic = getLegacyModSaveBucket(saveName);
+			if (legacyBucket != null) {
+				var legacyValue:Dynamic = Reflect.field(legacyBucket, key);
+				if (legacyValue != null) {
+					Reflect.setField(save.data, key, legacyValue);
+					save.flush();
+					return legacyValue;
+				}
+			}
+		}
+		return value == null ? defaultValue : value;
+	}
+
+	public static function setModSave(key:String, value:Dynamic, ?modName:String = null):Dynamic {
+		var save:flixel.util.FlxSave = getModSaveFile(modName);
+		Reflect.setField(save.data, key, value);
+		save.flush();
+		return value;
+	}
+
+	public static function flushModSave(?modName:String = null):Void
+		getModSaveFile(modName).flush();
+
 	public static function debugPrint(text:String, ?color:FlxColor):Void
 		ScriptError.show(text, color == null ? FlxColor.WHITE : color);
+
+	public static function parseJson(text:String):Dynamic
+		return haxe.Json.parse(text);
+
+	public static function stringifyJson(value:Dynamic, ?replacer:Dynamic = null, ?space:Dynamic = null):String
+		return haxe.Json.stringify(value, replacer, space);
+
+	public static function getObjX(obj:Dynamic):Float
+		return obj == null ? 0 : Reflect.getProperty(obj, 'x');
+
+	public static function getObjY(obj:Dynamic):Float
+		return obj == null ? 0 : Reflect.getProperty(obj, 'y');
+
+	public static function setObjX(obj:Dynamic, value:Float):Float {
+		if (obj != null)
+			Reflect.setProperty(obj, 'x', value);
+		return value;
+	}
+
+	public static function setObjY(obj:Dynamic, value:Float):Float {
+		if (obj != null)
+			Reflect.setProperty(obj, 'y', value);
+		return value;
+	}
+
+	public static function setObjScale(obj:Dynamic, x:Float, ?y:Float):Void {
+		if (obj == null)
+			return;
+		var scale:Dynamic = Reflect.getProperty(obj, 'scale');
+		if (scale != null)
+			scale.set(x, y == null ? x : y);
+	}
 
 	public static inline function lerp(a:Float, b:Float, ratio:Float):Float
 		return a + (b - a) * ratio;

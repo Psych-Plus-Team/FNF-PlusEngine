@@ -1,15 +1,12 @@
 package backend;
 
-import flixel.addons.display.FlxBackdrop;
 import flixel.FlxCamera;
 import flixel.text.FlxText;
 import flixel.text.FlxText.FlxTextBorderStyle;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
-import flixel.util.FlxAxes;
 import flixel.util.FlxColor;
 import flixel.util.FlxGradient;
-import openfl.utils.AssetType;
 import states.MainMenuState;
 
 class CustomFadeTransition extends MusicBeatSubstate
@@ -36,11 +33,6 @@ class CustomFadeTransition extends MusicBeatSubstate
 	var bottomDoorTween:FlxTween;
 	var textTween:FlxTween;
 	var iconTween:FlxTween;
-	var moyLeft:FlxSprite;
-	var moyRight:FlxSprite;
-	var moyMiddle:FlxSprite;
-	var moyUp:FlxBackdrop;
-	var moyDown:FlxBackdrop;
 
 	var isDestroyed:Bool = false;
 	var isClosing:Bool = false;
@@ -119,11 +111,7 @@ class CustomFadeTransition extends MusicBeatSubstate
 			FlxG.cameras.add(cam, false);
 			cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 
-			if (shouldUseMoyTransition())
-			{
-				createMoyTransition();
-			}
-			else if (ClientPrefs.data.vanillaTransition)
+			if (ClientPrefs.data.vanillaTransition)
 			{
 				createVanillaTransition();
 			}
@@ -294,99 +282,6 @@ class CustomFadeTransition extends MusicBeatSubstate
 		iconTween = addTween(FlxTween.tween(iconSprite, {alpha: 0}, duration, {
 			ease: FlxEase.expoInOut
 		}));
-	}
-
-	function shouldUseMoyTransition():Bool
-	{
-		#if MODS_ALLOWED
-		if (Mods.launchedMod == null || Mods.launchedMod.length < 1)
-			return false;
-
-		return AssetLoader.exists(Paths.mods(Mods.launchedMod + '/images/trans/left.png'), AssetType.IMAGE)
-			&& AssetLoader.exists(Paths.mods(Mods.launchedMod + '/images/trans/right.png'), AssetType.IMAGE)
-			&& AssetLoader.exists(Paths.mods(Mods.launchedMod + '/images/trans/middle.png'), AssetType.IMAGE);
-		#else
-		return false;
-		#end
-	}
-
-	function createMoyTransition():Void
-	{
-		var tranDur:Float = Math.min(duration, 0.35);
-		var altTrans:Bool = false;
-		try
-			altTrans = FlxG.save.data.moyTransitionType == true
-		catch (_:Dynamic) {}
-
-		try
-			FlxG.sound.play(Paths.sound('menu/Transition' + (!isTransIn ? 'Out' : 'In')))
-		catch (_:Dynamic) {}
-
-		if (altTrans)
-			createMoySpikesTransition(tranDur);
-		else
-			createMoyDoorsTransition(tranDur);
-	}
-
-	function createMoySpikesTransition(tranDur:Float):Void
-	{
-		moyUp = new FlxBackdrop(Paths.image('menus/extras/Spikey'), FlxAxes.X, 0, 0);
-		moyDown = new FlxBackdrop(Paths.image('menus/extras/Spikey'), FlxAxes.X, 0, 0);
-		moyUp.flipY = true;
-		moyUp.velocity.x = -200;
-		moyDown.velocity.x = 200;
-		add(moyUp);
-		add(moyDown);
-
-		if (!isTransIn)
-		{
-			moyUp.y = -600;
-			moyDown.y = 1400;
-			addTween(FlxTween.tween(moyUp, {y: -280}, tranDur, {ease: FlxEase.circInOut}));
-			addTween(FlxTween.tween(moyDown, {y: 1060}, tranDur, {ease: FlxEase.circInOut, onComplete: (_) -> safeFinishCallback()}));
-		}
-		else
-		{
-			moyUp.y = -280;
-			moyDown.y = 1060;
-			addTween(FlxTween.tween(moyUp, {y: -680}, tranDur, {ease: FlxEase.circInOut}));
-			addTween(FlxTween.tween(moyDown, {y: 1400}, tranDur, {ease: FlxEase.circInOut, onComplete: (_) -> safeClose()}));
-		}
-	}
-
-	function createMoyDoorsTransition(tranDur:Float):Void
-	{
-		moyLeft = new FlxSprite(-779).loadGraphic(Paths.image('trans/left'));
-		moyRight = new FlxSprite(1280).loadGraphic(Paths.image('trans/right'));
-		moyMiddle = new FlxSprite().loadGraphic(Paths.image('trans/middle'));
-		moyMiddle.screenCenter();
-		add(moyLeft);
-		add(moyRight);
-		add(moyMiddle);
-
-		if (!isTransIn)
-		{
-			moyLeft.x = -779;
-			moyRight.x = 1280;
-			moyMiddle.alpha = 0;
-			moyMiddle.y -= 100;
-			addTween(FlxTween.tween(moyMiddle, {alpha: 1, y: moyMiddle.y + 100}, tranDur));
-			addTween(FlxTween.tween(moyLeft, {x: 0}, tranDur));
-			addTween(FlxTween.tween(moyRight, {x: 500}, tranDur, {onComplete: (_) -> safeFinishCallback()}));
-		}
-		else
-		{
-			moyLeft.x = 0;
-			moyRight.x = 500;
-			moyMiddle.alpha = 1;
-			moyMiddle.screenCenter();
-			moyLeft.flipY = true;
-			moyRight.flipY = true;
-			moyMiddle.flipY = true;
-			addTween(FlxTween.tween(moyMiddle, {alpha: 0, y: moyMiddle.y + 100}, tranDur));
-			addTween(FlxTween.tween(moyLeft, {x: -779}, tranDur, {ease: FlxEase.circIn}));
-			addTween(FlxTween.tween(moyRight, {x: 1280}, tranDur, {ease: FlxEase.circIn, onComplete: (_) -> safeClose()}));
-		}
 	}
 
 	function createTransitionOut(width:Int, height:Int):Void

@@ -43,6 +43,7 @@ class InitialState extends MusicBeatState
 			Mods.currentModDirectory = Mods.launchedMod;
 			Mods.pushGlobalMods();
 			Language.reloadPhrases();
+			scripting.GlobalScriptManager.loadForMod(Mods.launchedMod);
 			var entry:String = Mods.getEntryState(Mods.launchedMod);
 			var scripted:MusicBeatState = scripting.ScriptedStates.loadState(entry, [], scripting.ScriptedStates.ResolveScope.LAUNCHED);
 			if (scripted != null)

@@ -95,12 +95,16 @@ class ScriptedStates {
 		Mods.currentModDirectory = folder;
 		Mods.pushGlobalMods();
 		ScriptRegistry.disposeMod(folder);
+		GlobalScriptManager.loadForMod(folder);
 
 		var state:MusicBeatState = loadState(entry, [], LAUNCHED);
 		if (state == null) {
+			GlobalScriptManager.dispose();
 			Mods.launchedMod = previousLaunched;
 			Mods.currentModDirectory = previousMod;
 			Mods.pushGlobalMods();
+			if (previousLaunched != null && previousLaunched.length > 0)
+				GlobalScriptManager.loadForMod(previousLaunched);
 			return false;
 		}
 
@@ -121,6 +125,7 @@ class ScriptedStates {
 		#if MODS_ALLOWED
 		if (Mods.launchedMod != null && Mods.launchedMod.length > 0)
 			ScriptRegistry.disposeMod(Mods.launchedMod);
+		GlobalScriptManager.dispose();
 		Mods.launchedMod = null;
 		Mods.currentModDirectory = '';
 		FlxG.save.data.launchedMod = null;

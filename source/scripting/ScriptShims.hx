@@ -7,6 +7,13 @@ class ScriptShims {
 	public static function register():Void {
 		var shims = hxscript.Config.callShims;
 
+		shims.set('flixel.FlxCamera.addShader', function(o:Dynamic, args:Array<Dynamic>):Dynamic {
+			// Compatibility shim for old Psych/Codename scripts.
+			// Some mod shaders compile only in their original camera pipeline and can
+			// crash OpenFL during render if applied blindly here, so keep this safe.
+			return null;
+		});
+
 		shims.set('flixel.system.frontEnds.SoundFrontEnd.playMusic', function(o:Dynamic, args:Array<Dynamic>):Dynamic {
 			var volume:Float = (args.length > 1 && args[1] != null) ? args[1] : 1.0;
 			var looped:Bool = (args.length > 2 && args[2] != null) ? args[2] : true;

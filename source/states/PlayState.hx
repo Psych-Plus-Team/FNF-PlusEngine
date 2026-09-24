@@ -7388,6 +7388,11 @@ class PlayState extends MusicBeatState
 		var result:Dynamic = callOnLuas(funcToCall, args, ignoreStops, exclusions, excludeValues);
 		if (result == null || excludeValues.contains(result))
 			result = callOnHScript(funcToCall, args, ignoreStops, exclusions, excludeValues);
+
+		#if HSCRIPT_ALLOWED
+		scripting.GlobalScriptManager.call(funcToCall, args);
+		#end
+
 		return result;
 	}
 

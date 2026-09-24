@@ -105,7 +105,7 @@ class MusicBeatState extends BaseMusicBeatState
 			// Only use default transition if scripts didn't stop it
 			if (!LuaUtils.isStop(globalResult))
 			{
-				openSubState(new CustomFadeTransition(0.7, true));
+				openSubState(TransitionManager.create(0.7, true));
 			}
 		}
 		FlxTransitionableState.skipNextTransOut = false;
@@ -341,15 +341,15 @@ class MusicBeatState extends BaseMusicBeatState
 			return;
 		}
 
-		FlxG.state.openSubState(new CustomFadeTransition(0.7, false));
+		FlxG.state.openSubState(TransitionManager.create(0.7, false));
 		if (nextState == FlxG.state)
 		{
 			var resetFn = _makeCurrentStateReset();
-			CustomFadeTransition.finishCallback = function() FlxG.switchState(resetFn);
+			TransitionManager.setFinishCallback(function() FlxG.switchState(resetFn));
 		}
 		else
 		{
-			CustomFadeTransition.finishCallback = function() FlxG.switchState(nextState);
+			TransitionManager.setFinishCallback(function() FlxG.switchState(nextState));
 		}
 	}
 
