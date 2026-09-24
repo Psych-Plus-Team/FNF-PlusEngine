@@ -51,6 +51,7 @@ import states.TitleState;
 	public var titleIntroVideo:Bool = true;
 	public var autoPause:Bool = true;
 	public var instantWindowClose:Bool = true;
+	public var showPlayStateLoading:Bool = false;
 	public var antialiasing:Bool = true;
 	#if windows
 	public var changeWindowBorderColorWithNoteHit:Bool = false; // Changes window border color on note hit (Windows 11 only)

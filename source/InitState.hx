@@ -26,6 +26,7 @@ class InitialState extends MusicBeatState
 		ClientPrefs.loadPrefs();
 		Highscore.load();
 		Language.reloadPhrases();
+		MobileData.init();
 
 		// Apply preferences-dependent runtime settings.
 		#if !html5
@@ -42,6 +43,7 @@ class InitialState extends MusicBeatState
 		{
 			Mods.currentModDirectory = Mods.launchedMod;
 			Mods.pushGlobalMods();
+			Mods.applyWindowBrand(Mods.launchedMod);
 			Language.reloadPhrases();
 			scripting.GlobalScriptManager.loadForMod(Mods.launchedMod);
 			var entry:String = Mods.getEntryState(Mods.launchedMod);
@@ -60,6 +62,7 @@ class InitialState extends MusicBeatState
 			Mods.launchedMod = null;
 			Mods.currentModDirectory = '';
 			Mods.pushGlobalMods();
+			Mods.resetWindowBrand();
 		}
 		MusicBeatState.switchState(new TitleState());
 		#else

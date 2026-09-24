@@ -43,8 +43,12 @@ class GlobalScriptManager
 		for (script in scripts)
 		{
 			try
+			{
+				if (script != null && script.exists('onDestroy'))
+					script.call('onDestroy');
 				if (script != null)
-					script.destroy()
+					script.destroy();
+			}
 			catch (_:Dynamic) {}
 		}
 		scripts = [];
@@ -103,6 +107,8 @@ class GlobalScriptManager
 				return;
 
 			scripts.push(script);
+			if (script.exists('new'))
+				script.call('new');
 			if (script.exists('onCreate'))
 				script.call('onCreate');
 			if (script.exists('onInit'))

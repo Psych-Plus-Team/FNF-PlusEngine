@@ -4,6 +4,12 @@ import backend.AssetLoader;
 import openfl.utils.AssetType;
 import openfl.utils.Assets;
 import haxe.Json;
+import lime.app.Application;
+import lime.graphics.Image;
+
+#if sys
+import sys.FileSystem;
+#end
 
 using StringTools;
 
@@ -18,6 +24,7 @@ class Mods
 {
 	static public var currentModDirectory:String = '';
 	static public var launchedMod:String = null;
+	public static inline var DEFAULT_WINDOW_TITLE:String = "Friday Night Funkin': Plus Engine";
 	public static inline var BASE_GAME_MOD_FOLDER:String = "Friday Night Funkin";
 	public static inline var BASE_GAME_LOCAL_FOLDER:String = "base_game";
 	public static final ignoreModFolders:Array<String> = [
@@ -45,11 +52,16 @@ class Mods
 	public static function pushGlobalMods() // prob a better way to do this but idc
 	{
 		globalMods = [];
+		// A launched mod is an isolated runtime context. Keep it first so
+		// merged asset lookups and global scripts cannot silently fall back to
+		// another enabled mod while that context is active.
+		if (launchedMod != null && launchedMod.length > 0)
+			pushGlobalMod(launchedMod);
 		pushGlobalMod(BASE_GAME_MOD_FOLDER);
 
 		for (mod in parseList().enabled)
 		{
-			if (isBaseGameMod(mod))
+			if (isBaseGameMod(mod) || mod == launchedMod)
 				continue;
 
 			var pack:Dynamic = getPack(mod);
@@ -172,6 +184,62 @@ class Mods
 		}
 		#end
 		return null;
+	}
+
+	public static function applyWindowBrand(?folder:String = null):Void
+	{
+		#if (MODS_ALLOWED && desktop)
+		if (folder == null || folder.length < 1)
+			folder = launchedMod;
+		if (folder == null || folder.length < 1)
+		{
+			resetWindowBrand();
+			return;
+		}
+
+		var window = (Application.current != null) ? Application.current.window : null;
+		if (window == null)
+			return;
+
+		var pack:Dynamic = getPack(folder);
+		var title:String = (pack != null && Reflect.hasField(pack, 'windowTitle')) ? Std.string(Reflect.field(pack, 'windowTitle')) : null;
+		if (title == null || title.trim().length < 1)
+			title = (pack != null && Reflect.hasField(pack, 'name')) ? Std.string(Reflect.field(pack, 'name')) : null;
+		window.title = (title != null && title.trim().length > 0) ? title : DEFAULT_WINDOW_TITLE;
+
+		#if sys
+		var iconPath:String = Paths.mods(folder + '/icon.ico');
+		if (!FileSystem.exists(iconPath))
+			iconPath = Paths.mods(folder + '/icon.png');
+		if (FileSystem.exists(iconPath))
+		{
+			try
+				window.setIcon(Image.fromFile(iconPath))
+			catch (e:Dynamic)
+				trace('Failed to apply window icon for "$folder": $e');
+		}
+		#end
+		#end
+	}
+
+	public static function resetWindowBrand():Void
+	{
+		#if desktop
+		var window = (Application.current != null) ? Application.current.window : null;
+		if (window == null)
+			return;
+
+		window.title = DEFAULT_WINDOW_TITLE;
+		#if sys
+		if (FileSystem.exists('icon.ico'))
+		{
+			try
+				window.setIcon(Image.fromFile('icon.ico'))
+			catch (e:Dynamic)
+				trace('Failed to reset window icon: $e');
+		}
+		#end
+		#end
 	}
 
 	public static var updatedOnState:Bool = false;
@@ -323,6 +391,14 @@ class Mods
 
 	public static function loadTopMod()
 	{
+		#if MODS_ALLOWED
+		if (launchedMod != null && launchedMod.length > 0)
+		{
+			currentModDirectory = launchedMod;
+			return;
+		}
+		#end
+
 		Mods.currentModDirectory = '';
 
 		#if MODS_ALLOWED

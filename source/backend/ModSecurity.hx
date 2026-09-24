@@ -372,6 +372,31 @@ class ModSecurity {
 		save();
 	}
 
+	static function getSecurityScanMods():Array<String> {
+		final out:Array<String> = [];
+		inline function add(folder:String) {
+			if (folder != null && folder.length > 0 && !out.contains(folder))
+				out.push(folder);
+		}
+		final enabled = Mods.parseList().enabled;
+		for (i in 0...enabled.length)
+			add(enabled[i]);
+		add(Mods.launchedMod);
+		return out;
+	}
+
+	static function findingsSignature(findings:Array<ModSecurityFinding>):String {
+		if (findings == null || findings.length == 0) return '';
+		final list:Array<String> = [];
+		for (i in 0...findings.length) {
+			final f = findings[i];
+			if (f == null) continue;
+			list.push(f.file + ':' + f.line + ':' + f.pattern + ':' + f.severity);
+		}
+		list.sort(function(a, b) return a < b ? -1 : (a > b ? 1 : 0));
+		return list.join('|');
+	}
+
 	/**
 	 * Re-scan every enabled mod while preserving existing user decisions where
 	 * still applicable. Called by the per-check options menu after toggles
@@ -381,9 +406,9 @@ class ModSecurity {
 	public static function rescanAll():Void {
 		load();
 		checkedThisSession = new Map();
-		final enabled = Mods.parseList().enabled;
-		for (i in 0...enabled.length) {
-			final folder = enabled[i];
+		final mods = getSecurityScanMods();
+		for (i in 0...mods.length) {
+			final folder = mods[i];
 			final res = scanAndHash(folder);
 			final findings = res.findings;
 			final hash = res.hash;
@@ -462,13 +487,27 @@ class ModSecurity {
 		}
 		final currentHash = computeHash(folder);
 		if (currentHash != rec.hash) {
-			// Scripts changed -- re-scan, revoke trust if anything risky is now
-			// present, and clear the user's prior decision so the prompt re-shows.
+			// Scripts changed -- re-scan. Keep an explicit user Trust/Block when
+			// the risky findings are effectively the same; only reset the decision
+			// if new/different sensitive findings appear. This avoids launched
+			// mods randomly losing trust after harmless exports or timestamp churn.
+			final previousSignature = findingsSignature(rec.findings);
+			final wasDecided:Bool = rec.decided == true;
+			final wasAllowed:Bool = rec.allowed == true;
 			final findings = scanMod(folder);
+			final currentSignature = findingsSignature(findings);
 			rec.hash = currentHash;
 			rec.findings = findings;
-			rec.allowed = findings.length == 0;
-			rec.decided = false;
+			if (findings.length == 0) {
+				rec.allowed = true;
+				rec.decided = false;
+			} else if (wasDecided && previousSignature == currentSignature) {
+				rec.allowed = wasAllowed;
+				rec.decided = true;
+			} else {
+				rec.allowed = false;
+				rec.decided = false;
+			}
 		}
 		rec.stamp = computeStamp(folder);
 		requestSave();
@@ -480,7 +519,7 @@ class ModSecurity {
 	public static function getPendingMods():Array<String> {
 		load();
 		var out:Array<String> = [];
-		var enabled = Mods.parseList().enabled;
+		var enabled = getSecurityScanMods();
 		beginBatch();
 		for (i in 0...enabled.length) {
 			var folder = enabled[i];
@@ -500,7 +539,7 @@ class ModSecurity {
 	public static function getReviewableMods():Array<String> {
 		load();
 		var out:Array<String> = [];
-		var enabled = Mods.parseList().enabled;
+		var enabled = getSecurityScanMods();
 		beginBatch();
 		for (i in 0...enabled.length) {
 			var folder = enabled[i];

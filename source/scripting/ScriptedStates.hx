@@ -17,6 +17,8 @@ using StringTools;
 enum ResolveScope {
 	ANY;
 	LAUNCHED;
+	ENGINE;
+	PRIORITY;
 }
 
 typedef ScriptedStateFile = {
@@ -94,6 +96,7 @@ class ScriptedStates {
 		Mods.launchedMod = folder;
 		Mods.currentModDirectory = folder;
 		Mods.pushGlobalMods();
+		Mods.applyWindowBrand(folder);
 		ScriptRegistry.disposeMod(folder);
 		GlobalScriptManager.loadForMod(folder);
 
@@ -103,6 +106,10 @@ class ScriptedStates {
 			Mods.launchedMod = previousLaunched;
 			Mods.currentModDirectory = previousMod;
 			Mods.pushGlobalMods();
+			if (previousLaunched != null && previousLaunched.length > 0)
+				Mods.applyWindowBrand(previousLaunched);
+			else
+				Mods.resetWindowBrand();
 			if (previousLaunched != null && previousLaunched.length > 0)
 				GlobalScriptManager.loadForMod(previousLaunched);
 			return false;
@@ -131,6 +138,7 @@ class ScriptedStates {
 		FlxG.save.data.launchedMod = null;
 		FlxG.save.flush();
 		Mods.pushGlobalMods();
+		Mods.resetWindowBrand();
 		backend.Language.reloadPhrases();
 		#end
 		MusicBeatState.switchState(new states.ModsMenuState());
@@ -164,6 +172,11 @@ class ScriptedStates {
 		return switch (scope) {
 			case LAUNCHED:
 				resolveInModCandidates(candidates, Mods.launchedMod != null && Mods.launchedMod.length > 0 ? Mods.launchedMod : Mods.currentModDirectory);
+			case ENGINE:
+				resolveEngineCandidates(candidates);
+			case PRIORITY:
+				var launched:ScriptedStateFile = resolveInModCandidates(candidates, Mods.launchedMod != null && Mods.launchedMod.length > 0 ? Mods.launchedMod : Mods.currentModDirectory);
+				launched != null ? launched : resolveEngineCandidates(candidates);
 			case ANY:
 				resolveAnyCandidate(candidates);
 		}
@@ -178,20 +191,7 @@ class ScriptedStates {
 		return null;
 	}
 
-	static function resolveInModCandidates(candidates:Array<String>, ?mod:String):ScriptedStateFile {
-		#if MODS_ALLOWED
-		if (mod != null && mod.length > 0) {
-			for (full in candidates) {
-				for (relative in ScriptRegistry.classPaths(full)) {
-					var file:String = Paths.mods(mod + '/' + relative);
-					if (AssetLoader.exists(file, AssetType.TEXT))
-						return {full: full, file: file, mod: mod};
-				}
-			}
-			return null;
-		}
-		#end
-
+	static function resolveEngineCandidates(candidates:Array<String>):ScriptedStateFile {
 		for (full in candidates) {
 			for (relative in ScriptRegistry.classPaths(full)) {
 				var sharedAssets:String = Paths.getSharedPath(relative);
@@ -210,6 +210,23 @@ class ScriptedStates {
 			}
 		}
 		return null;
+	}
+
+	static function resolveInModCandidates(candidates:Array<String>, ?mod:String):ScriptedStateFile {
+		#if MODS_ALLOWED
+		if (mod != null && mod.length > 0) {
+			for (full in candidates) {
+				for (relative in ScriptRegistry.classPaths(full)) {
+					var file:String = Paths.mods(mod + '/' + relative);
+					if (AssetLoader.exists(file, AssetType.TEXT))
+						return {full: full, file: file, mod: mod};
+				}
+			}
+			return null;
+		}
+		#end
+
+		return resolveEngineCandidates(candidates);
 	}
 
 	static function playMenuMusic(folder:String):Void {

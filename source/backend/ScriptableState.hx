@@ -15,30 +15,24 @@ class ScriptableState extends MusicBeatState {
 		return false;
 
 	public static function hasScript(name:String):Bool
-		return scripting.ScriptedStates.hasState(name, hasLaunchedMod() ? scripting.ScriptedStates.ResolveScope.LAUNCHED : scripting.ScriptedStates.ResolveScope.ANY);
+		return scripting.ScriptedStates.hasState(name, scripting.ScriptedStates.ResolveScope.PRIORITY);
 
 	public static function tryCreate(name:String, ?fallback:FlxState, ?args:Array<Dynamic>):FlxState {
-		// Normal engine flow stays hardcoded. A mod state is considered only
-		// after the user explicitly launched that mod from the Mods menu.
-		if (!hasLaunchedMod())
-			return fallback;
-		var state:MusicBeatState = scripting.ScriptedStates.loadState(name, args, scripting.ScriptedStates.ResolveScope.LAUNCHED);
+		var state:MusicBeatState = scripting.ScriptedStates.loadState(name, args, scripting.ScriptedStates.ResolveScope.PRIORITY);
 		if (state == null && hasScript(name))
 			scripting.ScriptError.warn('ScriptableState', 'Scripted state "$name" exists but could not be created; using hardcoded fallback.');
 		return state != null ? state : fallback;
 	}
 
 	public static function tryCreateLazy(name:String, fallback:Void->FlxState, ?args:Array<Dynamic>):FlxState {
-		if (!hasLaunchedMod())
-			return fallback != null ? fallback() : null;
-		var state:MusicBeatState = scripting.ScriptedStates.loadState(name, args, scripting.ScriptedStates.ResolveScope.LAUNCHED);
+		var state:MusicBeatState = scripting.ScriptedStates.loadState(name, args, scripting.ScriptedStates.ResolveScope.PRIORITY);
 		if (state == null && hasScript(name))
 			scripting.ScriptError.warn('ScriptableState', 'Scripted state "$name" exists but could not be created; using hardcoded fallback.');
 		return state != null ? state : (fallback != null ? fallback() : null);
 	}
 
 	public static function tryCreateFromFallback(fallback:FlxState):FlxState {
-		if (!hasLaunchedMod() || fallback == null)
+		if (fallback == null)
 			return fallback;
 
 		if (Std.isOfType(fallback, MusicBeatState)) {
@@ -57,7 +51,7 @@ class ScriptableState extends MusicBeatState {
 
 		var parts:Array<String> = fullName.split('.');
 		var stateName:String = parts[parts.length - 1];
-		var state:MusicBeatState = scripting.ScriptedStates.loadState(stateName, [], scripting.ScriptedStates.ResolveScope.LAUNCHED);
+		var state:MusicBeatState = scripting.ScriptedStates.loadState(stateName, [], scripting.ScriptedStates.ResolveScope.PRIORITY);
 		return state != null ? state : fallback;
 	}
 

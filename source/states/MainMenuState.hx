@@ -20,8 +20,8 @@ enum MainMenuColumn
 
 class MainMenuState extends MusicBeatState
 {
-	public static var fnfApiVersion:String = '0.8.5';
-	public static var plusEngineVersion:String = '1.3-prerelease'; // Nothing interesting =)
+	public static var fnfVersion:String = '0.2.8';
+	public static var plusEngineVersion:String = '1.3'; // Nothing interesting =)
 	public static var isOpt(get, never):String;
 	public static var psychEngineVersion(get, never):String; // This is also used for Discord RPC
 	public static var curSelected:Int = 0;
@@ -135,7 +135,7 @@ class MainMenuState extends MusicBeatState
 		psychVer.scrollFactor.set();
 		psychVer.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(psychVer);
-		var fnfVer:FlxText = new FlxText(safeX(12), FlxG.height - (hasBuildLine ? 44 : 24), 0, "FNF API v" + fnfApiVersion, 12);
+		var fnfVer:FlxText = new FlxText(safeX(12), FlxG.height - (hasBuildLine ? 44 : 24), 0, "Friday Night Funkin' v" + fnfVersion, 12);
 		fnfVer.scrollFactor.set();
 		fnfVer.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		leftWatermarkText = fnfVer;

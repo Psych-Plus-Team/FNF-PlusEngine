@@ -296,8 +296,9 @@ class AlphaCharacter extends FlxSprite
 			return cachedAlphabetFrames;
 
 		var atlasPath:String = Paths.getPath('images/$request.xml', TEXT);
-		if (!AssetLoader.exists(atlasPath, TEXT))
-			request = 'alphabet';
+		var imagePath:String = Paths.getPath('images/$request.png', IMAGE);
+		if (!AssetLoader.exists(atlasPath, TEXT) || !AssetLoader.exists(imagePath, IMAGE))
+			return getSharedAlphabetFrames();
 
 		cachedAlphabetRequest = request;
 		cachedAlphabetFrames = Paths.getSparrowAtlas(request);
@@ -307,8 +308,12 @@ class AlphaCharacter extends FlxSprite
 	public static function loadAlphabetData(request:String = 'alphabet')
 	{
 		var path:String = Paths.getPath('images/$request.json');
+		var framesRequest:String = request;
 		if (!AssetLoader.exists(path, TEXT))
-			path = Paths.getPath('images/alphabet.json');
+		{
+			path = Paths.getSharedPath('images/alphabet.json');
+			framesRequest = 'alphabet';
+		}
 
 		allLetters = new Map<String, Null<Letter>>();
 		try
@@ -318,7 +323,7 @@ class AlphaCharacter extends FlxSprite
 			if (rawData == null || rawData.length == 0)
 				throw 'Missing alphabet data: $path';
 			var data:Dynamic = Json.parse(rawData);
-			getAlphabetFrames(request);
+			getAlphabetFrames(framesRequest);
 
 			if (data.allowed != null && data.allowed.length > 0)
 			{
@@ -349,10 +354,69 @@ class AlphaCharacter extends FlxSprite
 		{
 			FlxG.log.error('Error on loading alphabet data: $e');
 			trace('Error on loading alphabet data: $e');
+			loadSharedAlphabetData();
 		}
 
 		if (!allLetters.exists('?'))
 			allLetters.set('?', {anim: 'question'});
+	}
+
+	static function getSharedAlphabetFrames():FlxAtlasFrames
+	{
+		if (cachedAlphabetFrames != null && cachedAlphabetRequest == 'assets/shared/images/alphabet')
+			return cachedAlphabetFrames;
+
+		var imagePath:String = Paths.getSharedPath('images/alphabet.png');
+		var xmlPath:String = Paths.getSharedPath('images/alphabet.xml');
+		var bitmap = AssetLoader.loadBitmap(imagePath);
+		var graphic = Paths.cacheBitmap(imagePath, null, bitmap);
+		var xml:String = Paths.stripBOM(AssetLoader.loadText(xmlPath));
+		cachedAlphabetRequest = 'assets/shared/images/alphabet';
+		cachedAlphabetFrames = FlxAtlasFrames.fromSparrow(graphic, xml);
+		return cachedAlphabetFrames;
+	}
+
+	static function loadSharedAlphabetData():Void
+	{
+		allLetters = new Map<String, Null<Letter>>();
+		var rawData:String = AssetLoader.loadText(Paths.getSharedPath('images/alphabet.json'));
+		if (rawData == null || rawData.length == 0)
+			return;
+
+		try
+		{
+			clearAlphabetCache();
+			var data:Dynamic = Json.parse(rawData);
+			getSharedAlphabetFrames();
+
+			if (data.allowed != null && data.allowed.length > 0)
+			{
+				for (i in 0...data.allowed.length)
+				{
+					var char:String = data.allowed.charAt(i);
+					if (char != ' ')
+						allLetters.set(char.toLowerCase(), null);
+				}
+			}
+
+			if (data.characters != null)
+			{
+				for (char in Reflect.fields(data.characters))
+				{
+					var letterData = Reflect.field(data.characters, char);
+					var character:String = char.toLowerCase().substr(0, 1);
+					if ((letterData.animation != null || letterData.normal != null || letterData.bold != null)
+						&& allLetters.exists(character))
+						allLetters.set(character, {anim: letterData.animation, offsets: letterData.normal, offsetsBold: letterData.bold});
+				}
+			}
+			trace('Reloaded shared alphabet fallback successfully!');
+		}
+		catch (fallbackError:Dynamic)
+		{
+			FlxG.log.error('Error on loading shared alphabet fallback: $fallbackError');
+			trace('Error on loading shared alphabet fallback: $fallbackError');
+		}
 	}
 
 	var parent:Alphabet;

@@ -220,6 +220,7 @@ class MusicBeatState extends BaseMusicBeatState
 				FlxG.save.flush();
 			}
 			Mods.pushGlobalMods();
+			Mods.resetWindowBrand();
 			backend.Language.reloadPhrases();
 			#end
 			MusicBeatState.switchState(new states.ModsMenuState());
@@ -252,6 +253,9 @@ class MusicBeatState extends BaseMusicBeatState
 		#if HSCRIPT_ALLOWED
 		nextState = backend.ScriptableState.tryCreateFromFallback(nextState);
 		#end
+		#if MODS_ALLOWED
+		preserveLaunchedModContext(nextState);
+		#end
 
 		// Call scripts before switching - they can stop the default transition
 		var globalResult = callOnGlobalScript('onSwitchState', [Type.getClassName(Type.getClass(nextState))]);
@@ -270,6 +274,31 @@ class MusicBeatState extends BaseMusicBeatState
 			startTransition(nextState);
 		FlxTransitionableState.skipNextTransIn = false;
 	}
+
+	#if MODS_ALLOWED
+	static function preserveLaunchedModContext(nextState:FlxState):Void
+	{
+		if (nextState == null || Mods.launchedMod == null || Mods.launchedMod.length < 1)
+			return;
+
+		#if HSCRIPT_ALLOWED
+		if (Std.isOfType(nextState, MusicBeatState)) {
+			var musicState:MusicBeatState = cast nextState;
+			if (musicState.isScriptedState && musicState.scriptOwnerMod != null && musicState.scriptOwnerMod.length > 0) {
+				Mods.currentModDirectory = musicState.scriptOwnerMod;
+				Mods.pushGlobalMods();
+				return;
+			}
+		}
+		#end
+
+		// Hardcoded states reached from a launched mod still belong to that
+		// launched asset context. Otherwise Credits/Mods/etc. can clear the mod
+		// folder and every Paths.image()/sound() lookup starts returning null.
+		Mods.currentModDirectory = Mods.launchedMod;
+		Mods.pushGlobalMods();
+	}
+	#end
 
 	public static function resetState()
 	{

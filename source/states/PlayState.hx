@@ -644,11 +644,21 @@ class PlayState extends MusicBeatState
 		persistentUpdate = true;
 		persistentDraw = true;
 
+		if (SONG == null)
+		{
+			trace('[PlayState] Cannot start gameplay: Song data is null. Returning to Freeplay.');
+			MusicBeatState.switchState(backend.ScriptableState.tryCreateLazy('FreeplayState', function() return new FreeplayState()));
+			return;
+		}
+
 		Conductor.mapBPMChanges(SONG);
 		Conductor.bpm = SONG.bpm;
 
 		super.create();
-		beginPlayStateLoadingSequence();
+		if (ClientPrefs.data.showPlayStateLoading)
+			beginPlayStateLoadingSequence();
+		else
+			createPlayStateImmediately();
 	}
 
 	function beginPlayStateLoadingSequence():Void
@@ -664,6 +674,13 @@ class PlayState extends MusicBeatState
 		if (playStateLoadingSubState != null)
 			playStateLoadingSubState.updateStatus(status);
 		new FlxTimer().start(PLAYSTATE_LOAD_STEP_DELAY, function(_:FlxTimer) runPlayStateLoadingStep());
+	}
+
+	function createPlayStateImmediately():Void
+	{
+		createPlayStateStageAndBaseUi();
+		generateSong();
+		finishPlayStateCreateAfterSong();
 	}
 
 	function runPlayStateLoadingStep():Void
@@ -3156,7 +3173,7 @@ class PlayState extends MusicBeatState
 	override public function onFocus():Void
 	{
 		super.onFocus();
-		if (!paused && health > 0)
+		if (!paused && health > 0 && SONG != null)
 		{
 			resetRPC(Conductor.songPosition > 0.0);
 		}
@@ -3167,7 +3184,7 @@ class PlayState extends MusicBeatState
 	override public function onFocusLost():Void
 	{
 		super.onFocusLost();
-		if (!paused && health > 0 && autoUpdateRPC)
+		if (!paused && health > 0 && autoUpdateRPC && SONG != null)
 		{
 			var iconChar:String = (iconP2 != null) ? iconP2.getCharacter() : 'dad';
 			DiscordClient.changePresence(detailsPausedText, SONG.song + " (" + storyDifficultyText + ")", iconChar);
