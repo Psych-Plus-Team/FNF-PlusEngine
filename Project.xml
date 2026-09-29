@@ -44,6 +44,7 @@
 
 	<section if="officialBuild">
 		<define name="TITLE_SCREEN_EASTER_EGG"/>
+		<define name="BASE_GAME_FILES" />
 	</section>
 	<!-- ____________________________ Window Settings ___________________________ -->
 
@@ -67,18 +68,23 @@
 	<!-- __________________________ Game Assets & Etc. __________________________ -->
 
 	<!-- Assets -->
-	<assets path="assets/fonts" embed="true" />
+	<assets path="assets/fonts" />
 	<assets path="assets/shared" />
 	<assets path="assets/embed" embed="true"/>
 	<assets path="assets/cursor" rename="assets/images/cursor"/>
 	<assets path="assets/videos" if="VIDEOS_ALLOWED"/>
-	<assets path="assets/week1" />
+	<assets path="assets/songs" />
+	<assets path="assets/week_assets" />
 	<section if="TITLE_SCREEN_EASTER_EGG">
 		<assets path="assets/secrets" rename="assets/shared"/>
 	</section>
 
 	<section if="TRANSLATIONS_ALLOWED">
 		<assets path="assets/translations" rename="assets"/>
+	</section>
+
+	<section if="BASE_GAME_FILES">
+		<assets path="assets/base_game" rename="assets"/>
 	</section>
 
 	<define name="CHECK_FOR_UPDATES" if="officialBuild"/>

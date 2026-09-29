@@ -549,6 +549,14 @@ class Character extends FlxSprite
 		super.update(elapsed);
 	}
 
+	override function updateAnimation(elapsed:Float):Void
+	{
+		if (currentUsesAnimateAtlas())
+			return;
+
+		super.updateAnimation(elapsed);
+	}
+
 	inline public function isAnimationNull():Bool
 	{
 		return currentUsesAnimateAtlas() ? (atlas.anim.curInstance == null || atlas.anim.curSymbol == null) : (animation.curAnim == null);
