@@ -30,7 +30,7 @@ class ClassResolver
 	];
 
 	static inline function shouldShowDeprecatedWarnings():Bool
-		return ClientPrefs.data.scriptDeprecationWarnings;
+		return ClientPrefs.data.scriptWarns;
 
 	/**
 	 * Compatibility map for Psych Engine 0.6.3 and older script paths.
@@ -98,6 +98,7 @@ class ClassResolver
 		'ResultsScreen' => 'states.ResultsState',
 		'OptionsState' => 'options.OptionsState',
 		'NotesColorSubState' => 'options.NotesColorSubState',
+		'NotesSubState' => 'options.NotesSubState',
 		'NoteOffsetState' => 'options.NoteOffsetState',
 		'VisualsSettingsSubState' => 'options.VisualsSettingsSubState',
 		'GraphicsSettingsSubState' => 'options.GraphicsSettingsSubState',

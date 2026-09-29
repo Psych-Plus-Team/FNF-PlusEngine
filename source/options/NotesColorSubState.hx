@@ -18,6 +18,7 @@ class NotesColorSubState extends MusicBeatSubstate
 	var curSelectedMode:Int = 0;
 	var curSelectedNote:Int = 0;
 	var onPixel:Bool = false;
+	var classicMode:Bool = false;
 	var dataArray:Array<Array<FlxColor>>;
 
 	var hexTypeLine:FlxSprite;
@@ -57,6 +58,7 @@ class NotesColorSubState extends MusicBeatSubstate
 		#end
 
 		onPixel = PlayState.isPixelStage;
+		classicMode = Note.usesClassicColors();
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.color = 0xFFEA71FD;
 		bg.screenCenter();
@@ -205,7 +207,7 @@ class NotesColorSubState extends MusicBeatSubstate
 	{
 		if (colorModeText == null)
 			return;
-		colorModeText.text = 'Color Mode: RGB';
+		colorModeText.text = 'Color Mode: ' + (classicMode ? 'Classic H/S/B' : 'RGB');
 	}
 
 	var _storedColor:FlxColor;
@@ -460,8 +462,13 @@ class NotesColorSubState extends MusicBeatSubstate
 						modeBG.visible = notesBG.visible = false;
 						curSelectedNote = note.ID;
 						onModeColumn = false;
-						bigNote.rgbShader.parent = Note.globalRgbShaders[note.ID];
-						bigNote.shader = Note.globalRgbShaders[note.ID].shader;
+						if (!classicMode)
+						{
+							bigNote.rgbShader.parent = Note.globalRgbShaders[note.ID];
+							bigNote.shader = Note.globalRgbShaders[note.ID].shader;
+						}
+						else
+							Note.applyHSVToColorSwap(bigNote.colorSwap, note.ID);
 						updateNotes();
 						FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
 					}
@@ -548,7 +555,17 @@ class NotesColorSubState extends MusicBeatSubstate
 		}
 		else if (touchPad.buttonC.justPressed || controls.RESET && hexTypeNum < 0)
 		{
-			if (FlxG.keys.pressed.SHIFT || FlxG.gamepads.anyPressed(LEFT_SHOULDER))
+			if (classicMode)
+			{
+				if (FlxG.keys.pressed.SHIFT || FlxG.gamepads.anyPressed(LEFT_SHOULDER))
+				{
+					for (i in 0...3)
+						classicHSV(curSelectedNote)[i] = 0;
+				}
+				else
+					classicHSV(curSelectedNote)[curSelectedMode] = 0;
+			}
+			else if (FlxG.keys.pressed.SHIFT || FlxG.gamepads.anyPressed(LEFT_SHOULDER))
 			{
 				for (i in 0...3)
 				{
@@ -566,7 +583,8 @@ class NotesColorSubState extends MusicBeatSubstate
 					dataArray[curSelectedNote][i] = color;
 				}
 			}
-			setShaderColor(!onPixel ? ClientPrefs.defaultData.arrowRGB[curSelectedNote][curSelectedMode] : ClientPrefs.defaultData.arrowRGBPixel[curSelectedNote][curSelectedMode]);
+			if (!classicMode)
+				setShaderColor(!onPixel ? ClientPrefs.defaultData.arrowRGB[curSelectedNote][curSelectedMode] : ClientPrefs.defaultData.arrowRGBPixel[curSelectedNote][curSelectedMode]);
 			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
 			updateColors();
 		}
@@ -641,8 +659,13 @@ class NotesColorSubState extends MusicBeatSubstate
 
 		modeBG.visible = false;
 		notesBG.visible = true;
-		bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
-		bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		if (!classicMode)
+		{
+			bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
+			bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		}
+		else
+			Note.applyHSVToColorSwap(bigNote.colorSwap, curSelectedNote);
 		updateNotes();
 		FlxG.sound.play(Paths.sound('scrollMenu'));
 	}
@@ -727,7 +750,7 @@ class NotesColorSubState extends MusicBeatSubstate
 		{
 			Note.initializeGlobalRGBShader(i);
 			var newNote:StrumNote = new StrumNote(150 + (480 / dataArray.length * i), 200, i, 0);
-			newNote.useRGBShader = true;
+			newNote.useRGBShader = !classicMode;
 			newNote.setGraphicSize(102);
 			newNote.updateHitbox();
 			newNote.ID = i;
@@ -738,8 +761,13 @@ class NotesColorSubState extends MusicBeatSubstate
 		bigNote.setPosition(250, 325);
 		bigNote.setGraphicSize(250);
 		bigNote.updateHitbox();
-		bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
-		bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		if (!classicMode)
+		{
+			bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
+			bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		}
+		else
+			Note.applyHSVToColorSwap(bigNote.colorSwap, curSelectedNote);
 		for (i in 0...Note.colArray.length)
 		{
 			if (!onPixel)
@@ -767,6 +795,8 @@ class NotesColorSubState extends MusicBeatSubstate
 				note.animation.curAnim.finish();
 		}
 		bigNote.animation.play('note$curSelectedNote', true);
+		if (classicMode)
+			Note.applyHSVToColorSwap(bigNote.colorSwap, curSelectedNote);
 		updateColors();
 	}
 
@@ -774,10 +804,21 @@ class NotesColorSubState extends MusicBeatSubstate
 	{
 		var color:FlxColor = getShaderColor();
 		var wheelColor:FlxColor = specific == null ? getShaderColor() : specific;
-		alphabetR.text = Std.string(color.red);
-		alphabetG.text = Std.string(color.green);
-		alphabetB.text = Std.string(color.blue);
-		alphabetHex.text = color.toHexString(false, false);
+		if (classicMode)
+		{
+			var hsv:Array<Float> = classicHSV(curSelectedNote);
+			alphabetR.text = 'H ' + Std.string(Math.round(hsv[0]));
+			alphabetG.text = 'S ' + Std.string(Math.round(hsv[1]));
+			alphabetB.text = 'B ' + Std.string(Math.round(hsv[2]));
+			alphabetHex.text = 'CLASSIC';
+		}
+		else
+		{
+			alphabetR.text = Std.string(color.red);
+			alphabetG.text = Std.string(color.green);
+			alphabetB.text = Std.string(color.blue);
+			alphabetHex.text = color.toHexString(false, false);
+		}
 		for (letter in alphabetHex.letters)
 			letter.color = color;
 
@@ -790,6 +831,19 @@ class NotesColorSubState extends MusicBeatSubstate
 			colorWheelSelector.y -= Math.cos(hueWrap) * colorWheel.height / 2 * wheelColor.saturation;
 		}
 		colorGradientSelector.y = colorGradient.y + colorGradient.height * (1 - color.brightness);
+
+		if (classicMode)
+		{
+			for (note in myNotes)
+			{
+				if (note.animation.curAnim == null || note.animation.curAnim.name == 'static')
+					Note.resetHSVColorSwap(note.colorSwap);
+				else
+					Note.applyHSVToColorSwap(note.colorSwap, note.ID);
+			}
+			Note.applyHSVToColorSwap(bigNote.colorSwap, curSelectedNote);
+			return;
+		}
 
 		var strumRGB:RGBShaderReference = myNotes.members[curSelectedNote].rgbShader;
 		switch (curSelectedMode)
@@ -805,16 +859,56 @@ class NotesColorSubState extends MusicBeatSubstate
 
 	function setShaderColor(value:FlxColor)
 	{
+		if (classicMode)
+		{
+			var hsv:Array<Float> = classicHSV(curSelectedNote);
+			switch (curSelectedMode)
+			{
+				case 0:
+					var hue:Float = value.hue;
+					hsv[0] = Math.round(hue > 180 ? hue - 360 : hue);
+				case 1:
+					hsv[1] = Math.round((value.saturation * 200) - 100);
+				case 2:
+					hsv[2] = Math.round((value.brightness * 200) - 100);
+			}
+			return;
+		}
 		dataArray[curSelectedNote][curSelectedMode] = value;
 	}
 
 	function getShaderColor()
 	{
+		if (classicMode)
+			return classicColor(curSelectedNote);
 		return dataArray[curSelectedNote][curSelectedMode];
 	}
 
 	function getShader()
 		return Note.globalRgbShaders[curSelectedNote];
+
+	function classicHSV(note:Int):Array<Float>
+	{
+		if (ClientPrefs.data.arrowHSV == null)
+			ClientPrefs.data.arrowHSV = [];
+		while (ClientPrefs.data.arrowHSV.length <= note)
+			ClientPrefs.data.arrowHSV.push([0, 0, 0]);
+		var hsv:Array<Float> = ClientPrefs.data.arrowHSV[note];
+		while (hsv.length < 3)
+			hsv.push(0);
+		return hsv;
+	}
+
+	function classicColor(note:Int):FlxColor
+	{
+		var hsv:Array<Float> = classicHSV(note);
+		var hue:Float = hsv[0] % 360;
+		if (hue < 0)
+			hue += 360;
+		var sat:Float = FlxMath.bound((hsv[1] + 100) / 200, 0, 1);
+		var brt:Float = FlxMath.bound((hsv[2] + 100) / 200, 0, 1);
+		return FlxColor.fromHSB(hue, sat, brt);
+	}
 
 	override function destroy()
 	{

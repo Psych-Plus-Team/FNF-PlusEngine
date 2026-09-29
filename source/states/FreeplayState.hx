@@ -2226,7 +2226,7 @@ class FreeplayState extends MusicBeatState
 				var score:Int = Highscore.getScore(data.songName, i, viewingOpponentScores);
 				var accuracySystem:String = Highscore.getAccuracySystem(data.songName, i, viewingOpponentScores);
 				if (accuracySystem == null || accuracySystem.length == 0)
-					accuracySystem = ClientPrefs.data.accuracySystem;
+					accuracySystem = 'Psych';
 				scoreLines.push('${diffName}: ${score} [$accuracySystem]');
 			}
 			songInfoCardScores.text = 'Diff and Scores:\n' + scoreLines.join('\n');

@@ -457,7 +457,7 @@ class ModSecurity {
 	 */
 	public static function isBlocked(folder:String):Bool {
 		if (folder == null || folder.length == 0) return false; // not a mod
-		if (!ClientPrefs.data.modSecurityEnabled) return false;
+		if (!ClientPrefs.data.modSecure) return false;
 		load();
 		// Fast path: already validated this session, just answer from the record.
 		if (checkedThisSession.exists(folder)) {

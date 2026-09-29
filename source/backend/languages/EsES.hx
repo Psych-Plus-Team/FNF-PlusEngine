@@ -365,6 +365,7 @@ class EsES
 		"dialogue_editor" => "Editor de Diálogos",
 		"dialogue_portrait_editor" => "Editor de Dial. Avatar",
 		"note_splash_editor" => "Editor de Salpicaduras",
+		"note_rgb_disabled_editor" => "Note RGB esta desactivado!!!",
 		"no_mod_directory_loaded" => "< No se ha cargado ningún directorio de mods. >",
 		"loaded_mod_directory" => "< Directorio de mods cargado: {1} >",
 		"time_hours" => "horas",

@@ -446,6 +446,7 @@ class EnUS
 		"dialogue_editor" => "Dialogue Editor",
 		"dialogue_portrait_editor" => "Dialogue Portrait Editor",
 		"note_splash_editor" => "Note Splash Editor",
+		"note_rgb_disabled_editor" => "Note RGB is disabled!!!",
 		"no_mod_directory_loaded" => "< No mod directory loaded. >",
 		"loaded_mod_directory" => "< Mod directory loaded: {1} >",
 		"time_hours" => "HRS",

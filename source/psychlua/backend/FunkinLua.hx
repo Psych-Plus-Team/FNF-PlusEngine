@@ -108,7 +108,7 @@ class FunkinLua
 		set('Function_Stop', LuaUtils.Function_Stop);
 		set('Function_Continue', LuaUtils.Function_Continue);
 		set('luaDebugMode', false);
-		set('luaDeprecatedWarnings', ClientPrefs.data.scriptDeprecationWarnings);
+		set('luaDeprecatedWarnings', ClientPrefs.data.scriptWarns);
 		set('inChartEditor', false);
 		set('cameraX', 0);
 		set('cameraY', 0);

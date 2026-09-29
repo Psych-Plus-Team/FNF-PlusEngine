@@ -2,6 +2,7 @@ package objects;
 
 import backend.animation.PsychAnimationController;
 import shaders.RGBPalette;
+import shaders.ColorSwap;
 import flixel.system.FlxAssets.FlxShader;
 
 typedef RGB =
@@ -33,6 +34,7 @@ typedef NoteSplashConfig =
 class NoteSplash extends FlxSprite
 {
 	public var rgbShader:PixelSplashShaderRef;
+	public var colorSwap:ColorSwap;
 	public var texture:String;
 	public var config(default, set):NoteSplashConfig;
 	public var babyArrow:StrumNote;
@@ -47,6 +49,7 @@ class NoteSplash extends FlxSprite
 	var reusableRGBPalette:RGBPalette = new RGBPalette();
 
 	public static var defaultNoteSplash(default, never):String = "noteSplashes/noteSplashes";
+	public static var classicNoteSplash(default, never):String = "noteSplashes";
 	public static var configs:Map<String, NoteSplashConfig> = new Map();
 	static var framesCache:Map<String, Dynamic> = new Map();
 
@@ -57,6 +60,7 @@ class NoteSplash extends FlxSprite
 		animation = new PsychAnimationController(this);
 
 		rgbShader = new PixelSplashShaderRef();
+		colorSwap = new ColorSwap();
 		shader = rgbShader.shader;
 
 		loadSplash(splash);
@@ -294,7 +298,10 @@ class NoteSplash extends FlxSprite
 				loadSplash(loadedTexture);
 		}
 
-		setPosition(x, y);
+		if (Note.usesClassicColors())
+			setPosition(x - Note.swagWidth * 0.95, y - Note.swagWidth);
+		else
+			setPosition(x, y);
 
 		if (babyArrow != null)
 			setPosition(babyArrow.x - Note.swagWidth * 0.95, babyArrow.y - Note.swagWidth); // To prevent it from being misplaced for one game tick
@@ -311,9 +318,16 @@ class NoteSplash extends FlxSprite
 		var tempShader:RGBPalette = null;
 		var colorIndex:Int = Note.normalizeNoteData(noteData);
 		var canUseSplashShader:Bool = inEditor
-			|| ((note == null || note.noteSplashData.useRGBShader) && (PlayState.SONG == null || !PlayState.SONG.disableNoteRGB));
-		shader = rgbShader.shader;
-		if (config.allowRGB)
+			|| ((note == null || note.noteSplashData.useRGBShader) && Note.usesRGBShader());
+		if (Note.usesClassicColors())
+		{
+			shader = colorSwap.shader;
+			Note.applyHSVToColorSwap(colorSwap, colorIndex);
+		}
+		else
+			shader = rgbShader.shader;
+
+		if (config.allowRGB && !Note.usesClassicColors())
 		{
 			Note.initializeGlobalRGBShader(colorIndex);
 			if (canUseSplashShader)
@@ -382,7 +396,8 @@ class NoteSplash extends FlxSprite
 					tempShader.copyValues(Note.globalRgbShaders[colorIndex]);
 			}
 		}
-		rgbShader.copyValues(tempShader);
+		if (!Note.usesClassicColors())
+			rgbShader.copyValues(tempShader);
 		if (!config.allowPixel)
 			rgbShader.pixelAmount = 1;
 		else if (PlayState.isPixelStage)
@@ -568,6 +583,12 @@ class NoteSplash extends FlxSprite
 
 	public static function getDefaultNoteSplashPath(?pixel:Null<Bool>):String
 	{
+		if (Note.usesClassicColors())
+		{
+			var classic:String = resolveSplashCandidate(classicNoteSplash, pixel);
+			if (splashPathExists(classic, false, true))
+				return classic;
+		}
 		var resolved:String = resolveSplashCandidate(defaultNoteSplash, pixel);
 		if (splashPathExists(resolved, false, true))
 			return resolved;
@@ -578,10 +599,16 @@ class NoteSplash extends FlxSprite
 	{
 		if (splash == null || splash.length < 1)
 			splash = getDefaultNoteSplashPath(pixel);
+		else if (Note.usesClassicColors() && splashPathExists(splash, pixel))
+		{
+			var direct:String = resolveSplashCandidate(splash, pixel);
+			if (splashPathExists(direct, false, true))
+				return direct;
+		}
 		else
 			splash = splashNameToPath(splash);
 
-		if (useSkinPostfix)
+		if (useSkinPostfix && !Note.usesClassicColors())
 		{
 			var postfix:String = getSplashSkinPostfix();
 			if (postfix.length > 0)
@@ -610,6 +637,8 @@ class NoteSplash extends FlxSprite
 			return splash;
 
 		var normalized:String = splash.toLowerCase().replace(' ', '-').replace('_', '-');
+		if (Note.usesClassicColors() && (normalized == 'psych' || normalized == 'default'))
+			return classicNoteSplash;
 		if (normalized == 'psych' || normalized == 'default')
 			return defaultNoteSplash;
 		if (normalized.startsWith('notesplashes-'))

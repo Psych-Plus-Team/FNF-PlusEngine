@@ -2,6 +2,7 @@ package objects;
 
 import backend.animation.PsychAnimationController;
 import shaders.RGBPalette.RGBShaderReference;
+import shaders.ColorSwap;
 #if mobile
 import mobile.backend.MobileScaleMode;
 #end
@@ -9,6 +10,7 @@ import mobile.backend.MobileScaleMode;
 class StrumNote extends FlxSprite
 {
 	public var rgbShader:RGBShaderReference;
+	public var colorSwap:ColorSwap;
 	public var resetAnim:Float = 0;
 
 	private var noteData:Int = 0;
@@ -57,7 +59,12 @@ class StrumNote extends FlxSprite
 
 		rgbShader = new RGBShaderReference(this, Note.initializeGlobalRGBShader(leData));
 		rgbShader.enabled = false;
-		useRGBShader = (PlayState.SONG == null || !PlayState.SONG.disableNoteRGB);
+		useRGBShader = Note.usesRGBShader();
+		if (Note.usesClassicColors())
+		{
+			colorSwap = new ColorSwap();
+			shader = colorSwap.shader;
+		}
 
 		var arr:Array<FlxColor> = Note.getNoteColorPalette(leData);
 		@:bypassAccessor
@@ -76,7 +83,13 @@ class StrumNote extends FlxSprite
 	public function checkNotITGSkin():Void
 	{
 		animateOnBeat = texture != null && texture.toLowerCase().contains('notitg');
-		useRGBShader = (PlayState.SONG == null || !PlayState.SONG.disableNoteRGB);
+		useRGBShader = Note.usesRGBShader();
+		if (Note.usesClassicColors())
+		{
+			if (colorSwap == null)
+				colorSwap = new ColorSwap();
+			shader = colorSwap.shader;
+		}
 
 		if (rgbShader != null)
 			rgbShader.forceDisabled = false;
@@ -208,6 +221,13 @@ class StrumNote extends FlxSprite
 			var shouldUseRGB:Bool = useRGBShader && animation.curAnim != null && animation.curAnim.name != 'static';
 			if (rgbShader.enabled != shouldUseRGB)
 				rgbShader.enabled = shouldUseRGB;
+		}
+		if (Note.usesClassicColors())
+		{
+			if (animation.curAnim == null || animation.curAnim.name == 'static')
+				Note.resetHSVColorSwap(colorSwap);
+			else
+				Note.applyHSVToColorSwap(colorSwap, noteData);
 		}
 	}
 }

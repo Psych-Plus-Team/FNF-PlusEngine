@@ -8,7 +8,7 @@ class LegacySettingsSubState extends BaseOptionsMenu
 		rpcTitle = 'Legacy Settings Menu';
 
 		var option:Option = new Option('Use Psych Score Text', 'If checked, keeps the original Psych Engine score text format during gameplay.',
-			'usePsychScoreText', BOOL);
+			'psychScoreText', BOOL);
 		addOption(option);
 
 		var option:Option = new Option('Vanilla Transition', 'If checked, uses the vanilla Psych Engine transition instead of the custom one.',
@@ -23,23 +23,18 @@ class LegacySettingsSubState extends BaseOptionsMenu
 			'instantWindowClose', BOOL);
 		addOption(option);
 
-		var option:Option = new Option('PlayState Loading Overlay',
-			'If checked, shows the staged gameplay loading overlay before songs. Disable for the classic instant PlayState create.',
-			'showPlayStateLoading', BOOL);
-		addOption(option);
-
 		var option:Option = new Option('Use Psych Freeplay', 'If checked, uses the classic Psych Engine Freeplay state instead of the PlusEngine Freeplay.',
 			'usePsychFreeplay', BOOL);
 		addOption(option);
 
 		var option:Option = new Option('Script Deprecation Warnings',
 			'If checked, deprecated Lua/HScript compatibility APIs will print warnings to the debug console. Disable to silence noisy mods.',
-			'scriptDeprecationWarnings', BOOL);
+			'scriptWarns', BOOL);
 		addOption(option);
 
 		#if MODS_ALLOWED
 		var option:Option = new Option('Mod Security',
-			'If checked, scans mod Lua/HScript and skips scripts from mods with untrusted sensitive APIs.', 'modSecurityEnabled', BOOL);
+			'If checked, scans mod Lua/HScript and skips scripts from mods with untrusted sensitive APIs.', 'modSecure', BOOL);
 		option.onChange = function()
 		{
 			ClientPrefs.saveSettings();

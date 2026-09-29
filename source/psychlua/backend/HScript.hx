@@ -471,6 +471,7 @@ class HScript extends Iris
 		set('WindowMode', backend.WindowMode);
 		set('StageData', backend.StageData);
 		set('NotesColorSubState', options.NotesColorSubState);
+		set('NotesSubState', options.NotesSubState);
 		set('ControlsSubState', options.ControlsSubState);
 		set('GraphicsSettingsSubState', options.GraphicsSettingsSubState);
 		set('VisualsSettingsSubState', options.VisualsSettingsSubState);

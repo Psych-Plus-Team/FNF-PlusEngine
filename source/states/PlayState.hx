@@ -654,7 +654,7 @@ class PlayState extends MusicBeatState
 			uiGroup.insert(0, kv);
 		}
 
-		if(ClientPrefs.data.versionTextOnGameplay && !ClientPrefs.data.hideHud)
+		if(ClientPrefs.data.showVersionText && !ClientPrefs.data.hideHud)
 		{
 			var ver = SONG.song + ' (' + Difficulty.getString() + ') - Plus Engine v' + MainMenuState.plusEngineVersion;
 			if(BuildInfo.githubDevBuild && BuildInfo.commit.length > 0)
@@ -1459,7 +1459,7 @@ class PlayState extends MusicBeatState
 
 		var tempScore:String;
 		var score:String = ClientPrefs.data.abbreviateScore ? CoolUtil.formatScore(songScore) : Std.string(songScore);
-		if(ClientPrefs.data.usePsychScoreText)
+		if(ClientPrefs.data.psychScoreText)
 		{
 			if(!instakillOnMiss) tempScore = Language.getPhrase('score_text', 'Score: {1} | Misses: {2} | Rating: {3}', [score, songMisses, str]);
 			else tempScore = Language.getPhrase('score_text_instakill', 'Score: {1} | Rating: {2}', [score, str]);
@@ -3138,12 +3138,12 @@ class PlayState extends MusicBeatState
 
 	function addTiming(rating:FlxSprite, hitDiff:Float, antialias:Bool):Void
 	{
-		if ((cpuControlled && !isBotplayCPU()) || rating == null || comboGroup == null || (!ClientPrefs.data.showEarlyLateSprites && !ClientPrefs.data.showHitMs))
+		if ((cpuControlled && !isBotplayCPU()) || rating == null || comboGroup == null || (!ClientPrefs.data.showTimingTags && !ClientPrefs.data.showHitMs))
 			return;
 
 		var early:Bool = hitDiff > 0;
 		var color:FlxColor = early ? 0xFF66D9FF : 0xFFFFD166;
-		var showTag:Bool = ClientPrefs.data.showEarlyLateSprites && Math.abs(hitDiff) >= Math.max(1, Conductor.safeZoneOffset * 0.5);
+		var showTag:Bool = ClientPrefs.data.showTimingTags && Math.abs(hitDiff) >= Math.max(1, Conductor.safeZoneOffset * 0.5);
 
 		if (showTag)
 		{
@@ -3284,7 +3284,7 @@ class PlayState extends MusicBeatState
 			antialias = !isPixelStage;
 		}
 
-		if (ClientPrefs.data.popUpRating || ClientPrefs.data.showEarlyLateSprites || ClientPrefs.data.showHitMs)
+		if (ClientPrefs.data.popUpRating || ClientPrefs.data.showTimingTags || ClientPrefs.data.showHitMs)
 		{
 			rating.loadGraphic(Paths.image(uiAsset(daRating.image)));
 			rating.screenCenter();
@@ -3340,7 +3340,7 @@ class PlayState extends MusicBeatState
 			if (ClientPrefs.data.popUpRating && showCombo)
 				comboGroup.add(comboSpr);
 
-			var comboStr:String = ClientPrefs.data.dynamicComboDigits ? Std.string(combo) : Std.string(combo).lpad('0', 3);
+			var comboStr:String = ClientPrefs.data.dynamicCombo ? Std.string(combo) : Std.string(combo).lpad('0', 3);
 			for (i in 0...comboStr.length)
 			{
 				var digit:Int = Std.parseInt(comboStr.charAt(i));

@@ -654,10 +654,7 @@ class PlayState extends MusicBeatState
 		Conductor.bpm = SONG.bpm;
 
 		super.create();
-		if (ClientPrefs.data.showPlayStateLoading)
-			beginPlayStateLoadingSequence();
-		else
-			createPlayStateImmediately();
+		createPlayStateImmediately();
 	}
 
 	function beginPlayStateLoadingSequence():Void
@@ -934,7 +931,7 @@ class PlayState extends MusicBeatState
 
 		initJudgementCounter();
 
-		if (ClientPrefs.data.versionTextOnGameplay)
+		if (ClientPrefs.data.showVersionText)
 		{
 			var versionStr = "PlE v" + MainMenuState.plusEngineVersion + " | " + SONG.song + " (" + Difficulty.getString() + ")";
 			versionText = new FlxText(getGameplaySafeX(), -50, getGameplaySafeWidth(), versionStr, 14);
@@ -2347,7 +2344,7 @@ class PlayState extends MusicBeatState
 
 		var scoreStr:String = ClientPrefs.data.abbreviateScore ? abbreviateScore(songScore) : Std.string(songScore);
 
-		if (ClientPrefs.data.usePsychScoreText)
+		if (ClientPrefs.data.psychScoreText)
 		{
 			str = Language.getPhrase('rating_$ratingName', ratingName);
 			if (totalPlayed != 0)
@@ -3400,9 +3397,9 @@ class PlayState extends MusicBeatState
 				timeTxt.text = FlxStringUtil.formatTime(secondsTotal, false);
 
 			// --- INICIO: Lógica de cuenta regresiva al final ---
-			if (ClientPrefs.data.showEndCountdown)
+			if (ClientPrefs.data.endCountdown)
 			{
-				var countdownSeconds = ClientPrefs.data.endCountdownSeconds;
+				var countdownSeconds = ClientPrefs.data.endCountSecs;
 				var timeLeft = Math.floor((songLength - curTime) / 1000);
 				if (timeLeft <= countdownSeconds && timeLeft > 0)
 				{
@@ -4682,7 +4679,7 @@ class PlayState extends MusicBeatState
 			var percent:Float = ratingPercent;
 			if (Math.isNaN(percent))
 				percent = 0;
-			Highscore.saveScore(Song.loadedSongName, songScore, storyDifficulty, percent, playOpponent, ClientPrefs.data.accuracySystem);
+			Highscore.saveScore(Song.loadedSongName, songScore, storyDifficulty, percent, playOpponent, 'Psych');
 			#end
 			playbackRate = 1;
 
@@ -5142,7 +5139,7 @@ class PlayState extends MusicBeatState
 			return true;
 		if (ClientPrefs.data.hideHud)
 			return false;
-		return showRating || showCombo || showComboNum || ClientPrefs.data.showEarlyLateSprites || ClientPrefs.data.showHitMs;
+		return showRating || showCombo || showComboNum || ClientPrefs.data.showTimingTags || ClientPrefs.data.showHitMs;
 	}
 
 	inline function shouldSpawnHoldSplashFor(note:Note):Bool
@@ -5381,7 +5378,7 @@ class PlayState extends MusicBeatState
 		var daRating:Rating = Conductor.judgeNote(ratingsData, noteDiff);
 		lastJudName = daRating.name;
 
-		switch (ClientPrefs.data.accuracySystem)
+		switch ('Psych')
 		{
 			case 'Wife3':
 				var noteDiff_ms:Float = noteDiff;
@@ -5576,7 +5573,7 @@ class PlayState extends MusicBeatState
 			var showRatingSprite:Bool = !showStepmaniaJudgementOnly && !ClientPrefs.data.hideHud && showRating;
 			var showComboSprite:Bool = !ClientPrefs.data.hideHud && showCombo;
 			var showComboDigits:Bool = !ClientPrefs.data.hideHud && showComboNum;
-			var showTimingSprite:Bool = !showStepmaniaJudgementOnly && !ClientPrefs.data.hideHud && ClientPrefs.data.showEarlyLateSprites;
+			var showTimingSprite:Bool = !showStepmaniaJudgementOnly && !ClientPrefs.data.hideHud && ClientPrefs.data.showTimingTags;
 			var showTimingMs:Bool = !showStepmaniaJudgementOnly && !ClientPrefs.data.hideHud && ClientPrefs.data.showHitMs;
 			if (showStepmaniaJudgementOnly)
 				showStepManiaJudgement(daRating.name);
@@ -5662,7 +5659,7 @@ class PlayState extends MusicBeatState
 			if (showComboSprite)
 				comboGroup.add(comboSpr);
 
-			if (ClientPrefs.data.dynamicComboDigits)
+			if (ClientPrefs.data.dynamicCombo)
 			{
 				comboStr = Std.string(combo);
 				digitCount = comboStr.length;
@@ -6289,7 +6286,7 @@ class PlayState extends MusicBeatState
 		totalPlayed++;
 
 		// Registrar miss solo en el sistema de accuracy activo
-		switch (ClientPrefs.data.accuracySystem)
+		switch ('Psych')
 		{
 			case 'Wife3':
 				wife3Scores.push(-8.0);
@@ -7601,7 +7598,7 @@ class PlayState extends MusicBeatState
 			ratingPercent = 0.0; // Inicializar en 0
 
 			// Seleccionar sistema de accuracy según la preferencia del usuario
-			var selectedSystem:String = ClientPrefs.data.accuracySystem;
+			var selectedSystem:String = 'Psych';
 
 			if (selectedSystem == 'Wife3')
 			{
@@ -7724,9 +7721,9 @@ class PlayState extends MusicBeatState
 			return;
 		}
 		lastExtendedRatingScriptSync = Timer.stamp();
-		setOnScripts('accuracySystem', ClientPrefs.data.accuracySystem);
+		setOnScripts('accuracySystem', 'Psych');
 
-		switch (ClientPrefs.data.accuracySystem)
+		switch ('Psych')
 		{
 			case 'Wife3':
 				var wife3Percent:Float = 0.0;

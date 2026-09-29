@@ -163,7 +163,10 @@ class OptionsState extends MusicBeatState
 		switch (label)
 		{
 			case 'Note Colors':
-				openSubState(ScriptableSubstate.tryCreate('NotesColorSubState', new options.NotesColorSubState()));
+				if (ClientPrefs.data.noteRGB)
+					openSubState(ScriptableSubstate.tryCreate('NotesColorSubState', new options.NotesColorSubState()));
+				else
+					openSubState(ScriptableSubstate.tryCreate('NotesSubState', new options.NotesSubState()));
 			case 'Controls':
 				openSubState(ScriptableSubstate.tryCreate('ControlsSubState', new options.ControlsSubState()));
 			case 'Graphics':

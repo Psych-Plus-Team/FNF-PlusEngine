@@ -445,6 +445,7 @@ class EsLA
 		"dialogue_editor" => "Editor de Diálogos",
 		"dialogue_portrait_editor" => "Editor de Dial. Ava.",
 		"note_splash_editor" => "Editor de Salpicaduras",
+		"note_rgb_disabled_editor" => "Note RGB esta desactivado!!!",
 		"no_mod_directory_loaded" => "< No se ha cargado ningúna carpeta de mods. >",
 		"loaded_mod_directory" => "< Carpeta de mods cargada: {1} >",
 		"time_hours" => "hrs",

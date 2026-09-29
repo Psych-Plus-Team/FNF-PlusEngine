@@ -692,7 +692,7 @@ class ModsMenuState extends MusicBeatState {
 			modsList.disabled.push(mod);
 		} else {
 			#if MODS_ALLOWED
-			if (ClientPrefs.data.modSecurityEnabled && backend.ModSecurity.hasFindings(mod)) {
+			if (ClientPrefs.data.modSecure && backend.ModSecurity.hasFindings(mod)) {
 				FlxG.sound.play(Paths.sound('confirmMenu'), 0.6);
 				launchStatus.text = 'Sensitive scripts detected - choose TRUST to enable';
 				launchStatus.color = FlxColor.YELLOW;
@@ -748,7 +748,7 @@ class ModsMenuState extends MusicBeatState {
 			return;
 		// Reachable per-pack regardless of findings: lets users proactively
 		// trust/block a mod's scripts. Only the master toggle gates it.
-		if (!ClientPrefs.data.modSecurityEnabled) {
+		if (!ClientPrefs.data.modSecure) {
 			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
 			launchStatus.text = 'Mod Security is disabled (enable it in Options)';
 			launchStatus.color = FlxColor.YELLOW;
@@ -780,7 +780,7 @@ class ModsMenuState extends MusicBeatState {
 			var isDisabled = modsList.disabled.contains(mod);
 			if (anyDisabled && isDisabled) {
 				#if MODS_ALLOWED
-				if (ClientPrefs.data.modSecurityEnabled && backend.ModSecurity.hasFindings(mod))
+				if (ClientPrefs.data.modSecure && backend.ModSecurity.hasFindings(mod))
 					continue;
 				#end
 				modsList.disabled.remove(mod);
@@ -795,7 +795,7 @@ class ModsMenuState extends MusicBeatState {
 			}
 		}
 		#if MODS_ALLOWED
-		if (anyDisabled && ClientPrefs.data.modSecurityEnabled) {
+		if (anyDisabled && ClientPrefs.data.modSecure) {
 			var risky:Array<String> = [];
 			for (item in view)
 				if (modsList.disabled.contains(item.folder) && backend.ModSecurity.hasFindings(item.folder))
