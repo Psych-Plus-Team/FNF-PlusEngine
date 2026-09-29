@@ -73,29 +73,6 @@ class FPSCounter extends Sprite
 	**/
 	public var modAuthor:String = "";
 
-	/**
-		Charting info from PlayState (Step, Beat, Section)
-	**/
-	public var currentStep:Int = 0;
-
-	public var currentBeat:Int = 0;
-	public var currentSection:Int = 0;
-
-	/**
-		Debug info from PlayState (Speed, BPM, Health)
-	**/
-	public var songSpeed:Float = 1.0;
-
-	public var currentBPM:Int = 0;
-	public var playerHealth:Float = 1.0;
-
-	/**
-		Rating and Combo from PlayState
-	**/
-	public var lastRating:String = "None";
-
-	public var comboCount:Int = 0;
-
 	private var metricBoxes:Array<FPSCounterBox> = [];
 
 	/**
@@ -105,15 +82,6 @@ class FPSCounter extends Sprite
 
 	private var commitTime:String = ""; // Commit time
 	private var commitDate:String = ""; // Commit date
-
-	/**
-		Script statistics from PlayState
-	**/
-	public var luaScriptsLoaded:Int = 0;
-
-	public var luaScriptsFailed:Int = 0;
-	public var hscriptsLoaded:Int = 0;
-	public var hscriptsFailed:Int = 0;
 
 	/**
 		Singleton instance for global access.
@@ -320,21 +288,7 @@ class FPSCounter extends Sprite
 		}
 
 		if (debugLevel >= 4)
-		{
-			var totalScripts = luaScriptsLoaded + hscriptsLoaded;
-			var totalFailed = luaScriptsFailed + hscriptsFailed;
-			var scriptDebug:String = 'Scripts: ' + totalScripts;
-			if (totalFailed > 0)
-				scriptDebug += ' (Failed: ' + totalFailed + ')';
-			if (totalScripts > 0)
-				scriptDebug += '\nLua: ' + luaScriptsLoaded + ' | HScript: ' + hscriptsLoaded;
-			setBox(index++, scriptDebug, true);
-
-			var healthPercent = Math.floor((playerHealth / 2) * 100);
-			setBox(index++, 'Step: ' + currentStep + '\nBeat: ' + currentBeat + '\nSection: ' + currentSection, true);
-			setBox(index++, 'Speed: ' + formatFloat(songSpeed, 2) + 'x\nBPM: ' + currentBPM + '\nHealth: ' + healthPercent + '%', true);
 			setBox(index++, 'Plus Engine v' + MainMenuState.plusEngineVersion + '\nPsych v' + MainMenuState.psychEngineVersion, true);
-		}
 
 		hideUnusedBoxes(index);
 		layoutBoxes();

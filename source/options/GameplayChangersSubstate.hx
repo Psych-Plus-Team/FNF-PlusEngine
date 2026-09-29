@@ -73,7 +73,14 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		optionsArray.push(new GameplayOption('Opponent Mode', 'opponentplay', BOOL, false));
 		optionsArray.push(new GameplayOption('Opponent Drain', 'opponentdrain', BOOL, false));
 		optionsArray.push(new GameplayOption('No Drop Penalty', 'nodroppenalty', BOOL, false));
-		optionsArray.push(new GameplayOption('Botplay', 'botplay', BOOL, false));
+		var botplay:GameplayOption = new GameplayOption('Botplay', 'botplay', BOOL, false);
+		optionsArray.push(botplay);
+
+		var botType:GameplayOption = new GameplayOption('Botplay Type', 'botplayType', STRING, 'Normal', ['Normal', 'CPU']);
+		if (botType.options.indexOf(Std.string(botType.getValue())) < 0)
+			botType.setValue('Normal');
+		botType.showCondition = function() return ClientPrefs.getGameplaySetting('botplay');
+		optionsArray.push(botType);
 	}
 
 	public function getOptionByName(name:String)
@@ -394,19 +401,22 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		if (optionsArray == null || optionsArray.length == 0)
 			return;
 
-		curSelected = FlxMath.wrap(curSelected + change, 0, optionsArray.length - 1);
+		curSelected = wrapSelectable(curSelected + change);
 		for (num => item in grpOptions.members)
 		{
+			if (item == null)
+				continue;
+
 			item.targetY = num - curSelected;
-			item.alpha = 0.6;
-			if (item.targetY == 0)
-				item.alpha = 1;
+			item.alpha = optionAlpha(num, item.targetY == 0);
 		}
 		for (text in grpTexts)
 		{
-			text.alpha = 0.6;
-			if (text.ID == curSelected)
-				text.alpha = 1;
+			text.alpha = optionAlpha(text.ID, text.ID == curSelected);
+		}
+		for (checkbox in checkboxGroup)
+		{
+			checkbox.alpha = optionAlpha(checkbox.ID, checkbox.ID == curSelected);
 		}
 		callOnCompanionScript('onGameplayChangerSelectionChange', [curSelected, curOption]);
 		FlxG.sound.play(Paths.sound('scrollMenu'));
@@ -433,7 +443,7 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 	{
 		if (optionsArray == null || optionsArray.length < 1)
 			return;
-		curSelected = FlxMath.wrap(index, 0, optionsArray.length - 1);
+		curSelected = wrapSelectable(index);
 		changeSelection(0);
 	}
 
@@ -530,7 +540,7 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 
 		if (optionsArray.length > 0)
 		{
-			curSelected = Std.int(FlxMath.bound(curSelected, 0, optionsArray.length - 1));
+			curSelected = wrapSelectable(curSelected);
 			changeSelection(0);
 			reloadCheckboxes();
 		}
@@ -540,6 +550,31 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		}
 
 		callOnCompanionScript('onGameplayChangerRebuild', [getOptionsCopy()]);
+	}
+
+	function wrapSelectable(index:Int):Int
+	{
+		if (optionsArray == null || optionsArray.length == 0)
+			return 0;
+
+		var idx:Int = FlxMath.wrap(index, 0, optionsArray.length - 1);
+		for (i in 0...optionsArray.length)
+		{
+			var check:Int = FlxMath.wrap(idx + i, 0, optionsArray.length - 1);
+			if (optionsArray[check].isSelectable())
+				return check;
+		}
+		return 0;
+	}
+
+	function optionAlpha(index:Int, selected:Bool):Float
+	{
+		var option:GameplayOption = getOptionAt(index);
+		if (option == null)
+			return 0.6;
+		if (!option.isSelectable())
+			return 0.32;
+		return selected ? 1 : 0.6;
 	}
 }
 
@@ -552,6 +587,7 @@ class GameplayOption
 	public var type:OptionType = BOOL;
 
 	public var showBoyfriend:Bool = false;
+	public var showCondition:Void->Bool = null;
 	public var scrollSpeed:Float = 50; // Only works on int/float, defines how fast it scrolls per second while holding left/right
 
 	private var variable:String = null; // Variable from ClientPrefs.hx's gameplaySettings
@@ -633,6 +669,9 @@ class GameplayOption
 
 	public function setChild(child:Alphabet)
 		this.child = child;
+
+	public function isSelectable():Bool
+		return showCondition == null || showCondition();
 
 	// Expose internal name and variable identifier via read-only properties
 	public var internalName(get, never):String;

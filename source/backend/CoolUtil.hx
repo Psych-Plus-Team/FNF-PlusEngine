@@ -187,6 +187,36 @@ class CoolUtil
 		return newValue;
 	}
 
+	public static function formatScore(score:Int):String
+	{
+		if (score >= 1000000)
+			return Std.string(Math.round(score / 10000) / 100) + "M";
+		if (score >= 10000)
+			return Std.string(Math.round(score / 10) / 100) + "K";
+		return Std.string(score);
+	}
+
+	public static function botplayType(value:Dynamic):String
+	{
+		var kind:String = Std.string(value);
+		return (kind == 'CPU' || kind == 'BotplayCPU') ? 'CPU' : 'Normal';
+	}
+
+	public static function botplayCPUHits(diff:Float, safeZone:Float):Bool
+	{
+		var window:Float = Math.max(1, safeZone);
+		var edge:Float = boundTo(diff / window, 0, 1);
+		return FlxG.random.float() <= 0.985 - (edge * 0.28);
+	}
+
+	public static function botplayCPUHitMs(safeZone:Float):Float
+	{
+		var range:Float = Math.max(1, safeZone);
+		if (FlxG.random.bool(18))
+			return FlxG.random.float(-range * 0.72, range * 0.72);
+		return FlxG.random.float(-range * 0.28, range * 0.28);
+	}
+
 	inline public static function coolTextFile(path:String):Array<String>
 	{
 		var daList:String = AssetLoader.loadText(path);
