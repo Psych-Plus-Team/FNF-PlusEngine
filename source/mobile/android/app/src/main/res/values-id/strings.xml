@@ -6,7 +6,7 @@
 	<string name="plus_launcher_start_game">Mulai game</string>
 	<string name="plus_launcher_files">Berkas</string>
 	<string name="plus_launcher_open_data">Buka /data</string>
-	<string name="plus_launcher_open_external">Buka /external</string>
+	<string name="plus_launcher_open_external">Buka /eksternal</string>
 	<string name="plus_launcher_permissions">Izin engine</string>
 	<string name="plus_launcher_open_settings">Buka pengaturan</string>
 	<string name="plus_launcher_request_permissions">Minta izin</string>
@@ -20,6 +20,7 @@
 	<string name="plus_launcher_github">GitHub</string>
 	<string name="plus_launcher_language">Bahasa</string>
 	<string name="plus_launcher_spanish">Spanyol</string>
+	<string name="plus_launcher_indonesian">Bahasa Indonesia</string>
 	<string name="plus_launcher_english">Inggris</string>
 	<string name="plus_launcher_ready">Siap</string>
 	<string name="plus_launcher_checking">Mengecek...</string>
@@ -36,6 +37,6 @@
 	<string name="plus_launcher_not_installed">Tidak terinstal</string>
 	<string name="plus_launcher_app_data">Data aplikasi</string>
 	<string name="plus_launcher_game_data">Data game</string>
-	<string name="plus_launcher_mods">Mods</string>
+	<string name="plus_launcher_mods">Mod</string>
 	<string name="plus_launcher_apk">APK</string>
 </resources>

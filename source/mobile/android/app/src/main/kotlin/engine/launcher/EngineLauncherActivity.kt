@@ -780,6 +780,9 @@ private fun LauncherScreen(
 										OutlinedButton(onClick = { onSetLanguage("es") }, modifier = Modifier.weight(1f)) {
 											Text(stringResource(R.string.plus_launcher_spanish), maxLines = 1, overflow = TextOverflow.Ellipsis)
 										}
+										OutlinedButton(onClick = { onSetLanguage("id") }, modifier = Modifier.weight(1f)) {
+											Text(stringResource(R.string.plus_launcher_indonesian), maxLines = 1, overflow = TextOverflow.Ellipsis)
+										}
 										OutlinedButton(onClick = { onSetLanguage("en") }, modifier = Modifier.weight(1f)) {
 											Text(stringResource(R.string.plus_launcher_english), maxLines = 1, overflow = TextOverflow.Ellipsis)
 										}
