@@ -89,78 +89,6 @@ jobs:
             echo "dev_build=${{ github.event.inputs.dev_build }}" >> $GITHUB_OUTPUT
           fi
 
-  package_base_game:
-    name: Package Mod Base Game
-    runs-on: ubuntu-24.04
-    needs: check_platforms
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 1
-          persist-credentials: false
-          show-progress: false
-          set-safe-directory: false
-
-      - name: Package Mod-Base-Game
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import zipfile
-
-          source = Path("base_game")
-          output = Path("dist/Mod-Base-Game.zip")
-          mod_folder = Path("Friday Night Funkin")
-
-          if not source.is_dir():
-              raise SystemExit("base_game directory was not found")
-
-          output.parent.mkdir(parents=True, exist_ok=True)
-          with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_STORED) as archive:
-              for path in sorted(source.rglob("*")):
-                  if path.is_file():
-                      archive.write(path, mod_folder / path.relative_to(source))
-          PY
-
-      - name: Package Mod-Base-Game-Opt
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import zipfile
-
-          source = Path("base_game_opt")
-          output = Path("dist/Mod-Base-Game-Opt.zip")
-          mod_folder = Path("Friday Night Funkin")
-
-          if not source.is_dir():
-              raise SystemExit("base_game directory was not found")
-
-          output.parent.mkdir(parents=True, exist_ok=True)
-          with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_STORED) as archive:
-              for path in sorted(source.rglob("*")):
-                  if path.is_file():
-                      archive.write(path, mod_folder / path.relative_to(source))
-          PY
-
-      - name: Upload Mod-Base-Game
-        uses: actions/upload-artifact@v7
-        with:
-          name: Mod-Base-Game
-          path: dist/Mod-Base-Game.zip
-          if-no-files-found: error
-          compression-level: 0
-
-      - name: Upload Mod-Base-Game-Opt
-        uses: actions/upload-artifact@v7
-        with:
-          name: Mod-Base-Game-Opt
-          path: dist/Mod-Base-Game-Opt.zip
-          if-no-files-found: error
-          compression-level: 0
-
-  # WARNING: Optimized content is shipped as Mod-Base-Game-Opt.zip, so the engine
-  # only needs one binary build per platform.
   build_linux_x64:
     name: Build Linux x64
     runs-on: ubuntu-24.04
@@ -545,7 +473,6 @@ jobs:
     runs-on: ubuntu-24.04
     needs:
       - check_platforms
-      - package_base_game
       - build_linux_x64
       - build_android
       - build_windows_x64
@@ -564,7 +491,6 @@ jobs:
 
           needs = json.loads(r'''${{ toJson(needs) }}''')
           order = [
-              ("package_base_game", "Mod Base Game"),
               ("build_linux_x64", "Linux x64"),
               ("build_android", "Android"),
               ("build_windows_x64", "Windows x64"),
@@ -616,7 +542,7 @@ jobs:
 
     steps:
       # WARNING: One pattern download keeps this job lighter than many separate
-      # download steps, and automatically includes both base game mod zips.
+      # download steps.
       - name: Download release artifacts
         uses: actions/download-artifact@v8
         with:

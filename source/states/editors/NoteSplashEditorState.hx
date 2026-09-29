@@ -206,7 +206,7 @@ class NoteSplashEditorState extends MusicBeatState
 
 		templateButton.onClick = function()
 		{
-			NoteSplash.configs.clear();
+			resetSplashRuntimeCache();
 			config = NoteSplash.createConfig();
 
 			curAnim = null;
@@ -248,8 +248,19 @@ class NoteSplashEditorState extends MusicBeatState
 			else
 				offsets = offsets.copy();
 
+			var minFpsValue:Int = Std.int(minFps.value);
+			var maxFpsValue:Int = Std.int(maxFps.value);
+			if (minFpsValue > maxFpsValue)
+			{
+				var swappedFpsValue:Int = minFpsValue;
+				minFpsValue = maxFpsValue;
+				maxFpsValue = swappedFpsValue;
+				minFps.value = minFpsValue;
+				maxFps.value = maxFpsValue;
+			}
+
 			config = NoteSplash.addAnimationToConfig(config, scaleNumericStepper.value, name_input.text, prefix_input.text,
-				[cast minFps.value, cast maxFps.value], offsets, indices, cast numericStepperData.value);
+				[minFpsValue, maxFpsValue], offsets, indices, cast numericStepperData.value);
 			curAnim = name_input.text;
 			playStrumAnim(curAnim, cast numericStepperData.value);
 			setAnimDropDown();
@@ -298,7 +309,7 @@ class NoteSplashEditorState extends MusicBeatState
 				errorText.text = 'Succesfully loaded $imageSkin.png';
 			}
 
-			NoteSplash.configs.clear();
+			resetSplashRuntimeCache();
 
 			FlxTween.tween(errorText, {alpha: 0}, 1, {
 				startDelay: 1,
@@ -624,7 +635,10 @@ class NoteSplashEditorState extends MusicBeatState
 				}
 			}
 			else
+			{
 				holdingArrowsTime = 0;
+				holdingArrowsElapsed = 0;
+			}
 
 			if (changedOffset || FlxG.keys.justPressed.SPACE)
 				splash();
@@ -914,13 +928,19 @@ class NoteSplashEditorState extends MusicBeatState
 
 	override function destroy()
 	{
-		NoteSplash.configs.clear();
+		resetSplashRuntimeCache();
 		super.destroy();
 
 		FlxG.sound.music.volume = 1;
 		FlxG.sound.muteKeys = [FlxKey.ZERO];
 		FlxG.sound.volumeDownKeys = [FlxKey.NUMPADMINUS, FlxKey.MINUS];
 		FlxG.sound.volumeUpKeys = [FlxKey.NUMPADPLUS, FlxKey.PLUS];
+	}
+
+	function resetSplashRuntimeCache():Void
+	{
+		NoteSplash.configs.clear();
+		NoteSplash.clearCache();
 	}
 
 	public static function parseTxt(content:String):NoteSplashConfig

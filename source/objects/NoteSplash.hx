@@ -428,6 +428,13 @@ class NoteSplash extends FlxSprite
 				maxFps = 0;
 		}
 
+		if (minFps > maxFps)
+		{
+			var swappedFps:Int = minFps;
+			minFps = maxFps;
+			maxFps = swappedFps;
+		}
+
 		if (animation.curAnim != null)
 			animation.curAnim.frameRate = FlxG.random.int(minFps, maxFps);
 
@@ -443,7 +450,8 @@ class NoteSplash extends FlxSprite
 		}
 		else if (animation.getNameList().length > 0)
 		{
-			animation.play(animation.getNameList()[0], true);
+			anim = animation.getNameList()[0];
+			animation.play(anim, true);
 		}
 
 		return anim;
