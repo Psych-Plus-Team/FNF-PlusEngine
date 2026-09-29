@@ -170,6 +170,7 @@ class PlayState extends MusicBeatState
 	public var opponentStrums:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
 	public var playerStrums:FlxTypedGroup<StrumNote> = new FlxTypedGroup<StrumNote>();
 	public var grpNoteSplashes:FlxTypedGroup<NoteSplash> = new FlxTypedGroup<NoteSplash>();
+	public var grpHoldSplashes:FlxTypedGroup<SustainSplash> = new FlxTypedGroup<SustainSplash>();
 
 	#if LUA_ALLOWED
 	public var modchartTweens:Map<String, FlxTween> = new Map<String, FlxTween>();
@@ -227,9 +228,14 @@ class PlayState extends MusicBeatState
 	public var songScore:Int = 0;
 	public var songHits:Int = 0;
 	public var songMisses:Int = 0;
+	public var maxCombo:Int = 0;
+	public var totalNotes:Int = 0;
 	public var scoreTxt:FlxText;
 	var timeTxt:FlxText;
 	var scoreTxtTween:FlxTween;
+	var lyricText:FlxText;
+	var lyricTween:FlxTween;
+	var versionText:FlxText;
 
 	public static var campaignScore:Int = 0;
 	public static var campaignMisses:Int = 0;
@@ -547,6 +553,20 @@ class PlayState extends MusicBeatState
 		generateSong();
 
 		noteGroup.add(grpNoteSplashes);
+		if(!ClientPrefs.data.hideSustainSplash && !ClientPrefs.data.lowQuality)
+			noteGroup.add(grpHoldSplashes);
+
+		if(eventsPushed.contains('Lyric Event'))
+		{
+			lyricText = new FlxText(0, FlxG.height * 0.72, FlxG.width, "", 32);
+			lyricText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			lyricText.scrollFactor.set();
+			lyricText.borderSize = 2;
+			lyricText.alpha = 0;
+			lyricText.visible = !ClientPrefs.data.hideHud;
+			lyricText.cameras = [camHUD];
+			uiGroup.add(lyricText);
+		}
 
 		camFollow = new FlxObject();
 		camFollow.setPosition(camPos.x, camPos.y);
@@ -602,6 +622,27 @@ class PlayState extends MusicBeatState
 		uiGroup.add(botplayTxt);
 		if(ClientPrefs.data.downScroll)
 			botplayTxt.y = healthBar.y + 70;
+
+		if(ClientPrefs.data.showKeyViewer && !ClientPrefs.data.hideHud)
+		{
+			var kv = new objects.KeyViewer(0, 0, this);
+			kv.visible = true;
+			keyViewer = kv;
+			uiGroup.insert(0, kv);
+		}
+
+		if(ClientPrefs.data.versionTextOnGameplay && !ClientPrefs.data.hideHud)
+		{
+			var ver = 'Plus Engine v' + MainMenuState.plusEngineVersion;
+			if(BuildInfo.githubDevBuild && BuildInfo.commit.length > 0)
+				ver += ' #' + BuildInfo.shortCommit();
+			versionText = new FlxText(0, ClientPrefs.data.downScroll ? FlxG.height - 22 : 5, FlxG.width, ver, 14);
+			versionText.setFormat(Paths.font("vcr.ttf"), 14, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			versionText.scrollFactor.set();
+			versionText.borderSize = 1;
+			versionText.alpha = 0.75;
+			uiGroup.add(versionText);
+		}
 
 		uiGroup.cameras = [camHUD];
 		noteGroup.cameras = [camHUD];
@@ -681,6 +722,15 @@ class PlayState extends MusicBeatState
 		var splash:NoteSplash = new NoteSplash();
 		grpNoteSplashes.add(splash);
 		splash.alpha = 0.000001; //cant make it invisible or it won't allow precaching
+
+		if(!ClientPrefs.data.hideSustainSplash && !ClientPrefs.data.lowQuality)
+		{
+			SustainSplash.startCrochet = Conductor.stepCrochet;
+			SustainSplash.frameRate = Math.floor(24 / 100 * SONG.bpm);
+			var sus = new SustainSplash();
+			sus.alpha = 0.000001;
+			grpHoldSplashes.add(sus);
+		}
 
 		#if !android
 		addTouchPad('NONE', 'P');
@@ -1543,6 +1593,10 @@ class PlayState extends MusicBeatState
 				makeEvent(event, i);
 
 		unspawnNotes.sort(sortByTime);
+		totalNotes = 0;
+		for(note in unspawnNotes)
+			if(note != null && !note.isSustainNote && note.mustPress)
+				totalNotes++;
 		generatedMusic = true;
 	}
 
@@ -2402,6 +2456,53 @@ class PlayState extends MusicBeatState
 			case 'Play Sound':
 				if(flValue2 == null) flValue2 = 1;
 				FlxG.sound.play(Paths.sound(value1), flValue2);
+
+			case 'Lyric Event':
+				if(lyricText != null)
+				{
+					if(lyricTween != null)
+					{
+						lyricTween.cancel();
+						lyricTween = null;
+					}
+
+					var lyr = value1.trim();
+					if(lyr.length > 0)
+					{
+						var col = FlxColor.WHITE;
+						var raw = value2.trim();
+						if(raw.length > 0)
+						{
+							try
+							{
+								col = FlxColor.fromString(raw);
+							}
+							catch(e:Dynamic)
+							{
+								col = FlxColor.WHITE;
+							}
+						}
+
+						lyricText.text = lyr;
+						lyricText.color = col;
+						lyricText.alpha = 0;
+						lyricTween = FlxTween.tween(lyricText, {alpha: 1}, 0.25, {
+							ease: FlxEase.cubeOut,
+							onComplete: function(t:FlxTween) lyricTween = null
+						});
+					}
+					else
+					{
+						lyricTween = FlxTween.tween(lyricText, {alpha: 0}, 0.4, {
+							ease: FlxEase.cubeIn,
+							onComplete: function(t:FlxTween)
+							{
+								lyricText.text = "";
+								lyricTween = null;
+							}
+						});
+					}
+				}
 		}
 
 		stagesFunc(function(stage:BaseStage) stage.eventCalled(eventName, value1, value2, flValue1, flValue2, strumTime));
@@ -2597,6 +2698,18 @@ class PlayState extends MusicBeatState
 			{
 				campaignScore += songScore;
 				campaignMisses += songMisses;
+				campaignFlawlesss += Rating.getHits(ratingsData, 'flawless');
+				campaignSicks += Rating.getHits(ratingsData, 'sick');
+				campaignGoods += Rating.getHits(ratingsData, 'good');
+				campaignBads += Rating.getHits(ratingsData, 'bad');
+				campaignShits += Rating.getHits(ratingsData, 'shit');
+				if(maxCombo > campaignMaxCombo)
+					campaignMaxCombo = maxCombo;
+				campaignTotalNotes += totalNotes;
+				campaignSongsPlayed.push(SONG.song);
+				if(!Math.isNaN(ratingPercent))
+					campaignAccuracySum += ratingPercent;
+				campaignSongsCount++;
 
 				storyPlaylist.remove(storyPlaylist[0]);
 
@@ -2861,6 +2974,9 @@ class PlayState extends MusicBeatState
 	{
 		if(cpuControlled || paused || inCutscene || key < 0 || key >= playerStrums.length || !generatedMusic || endingSong || boyfriend.stunned) return;
 
+		if(keyViewer != null)
+			keyViewer.keyPressed(key);
+
 		var ret:Dynamic = callOnScripts('onKeyPressPre', [key]);
 		if(ret == LuaUtils.Function_Stop) return;
 
@@ -2938,6 +3054,9 @@ class PlayState extends MusicBeatState
 	private function keyReleased(key:Int)
 	{
 		if(cpuControlled || !startedCountdown || paused || key < 0 || key >= playerStrums.length) return;
+
+		if(keyViewer != null)
+			keyViewer.keyReleased(key);
 
 		var ret:Dynamic = callOnScripts('onKeyReleasePre', [key]);
 		if(ret == LuaUtils.Function_Stop) return;
@@ -3264,7 +3383,20 @@ class PlayState extends MusicBeatState
 			{
 				combo++;
 				if(combo > 9999) combo = 9999;
+				if(combo > maxCombo) maxCombo = combo;
 				popUpScore(note);
+
+				if(!ClientPrefs.data.hideSustainSplash && !ClientPrefs.data.lowQuality && !note.noteSplashData.disabled && note.tail.length > 1)
+				{
+					var strum = playerStrums.members[note.noteData];
+					if(strum != null)
+					{
+						var end = note.tail[note.tail.length - 1];
+						var sus = grpHoldSplashes.recycle(SustainSplash);
+						sus.setupSusSplash(strum, note, playbackRate);
+						grpHoldSplashes.add(end.noteHoldSplash = sus);
+					}
+				}
 			}
 			var gainHealth:Bool = true; // prevent health gain, *if* sustains are treated as a singular note
 			if (guitarHeroSustains && note.isSustainNote) gainHealth = false;
