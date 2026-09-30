@@ -19,7 +19,6 @@ import lime.utils.Assets;
 import openfl.utils.Assets as OpenFlAssets;
 import openfl.events.KeyboardEvent;
 import haxe.Json;
-import flixel.graphics.FlxGraphic;
 
 import cutscenes.DialogueBoxPsych;
 
@@ -79,7 +78,6 @@ import crowplexus.hscript.Printer;
  * "function eventEarlyTrigger" - Used for making your event start a few MILLISECONDS earlier
  * "function triggerEvent" - Called when the song hits your event's timestamp, this is probably what you were looking for
 **/
-@:access(openfl.display.BitmapData)
 class PlayState extends MusicBeatState
 {
 	public static var STRUM_X = 42;
@@ -3332,41 +3330,13 @@ class PlayState extends MusicBeatState
 	private function cachePopUpScore()
 	{
 		for (rating in ratingsData)
-			warmGraphic(Paths.image(uiAsset(rating.image)));
+			Paths.image(uiAsset(rating.image));
 		for (i in 0...10)
-			warmGraphic(Paths.image(uiAsset('num' + i)));
-		warmGraphic(Paths.image(uiAsset('combo')));
-		warmGraphic(Paths.image(uiAsset('miss')));
-		warmGraphic(Paths.image(uiAsset('early')));
-		warmGraphic(Paths.image(uiAsset('late')));
-	}
-
-	function warmGraphic(graphic:FlxGraphic):Void
-	{
-		if (graphic == null || graphic.bitmap == null)
-			return;
-
-		#if !flash
-		var shouldWarmGPU:Bool = ClientPrefs.data.cacheOnGPU;
-		#if mobile
-		shouldWarmGPU = true;
-		#end
-
-		if (shouldWarmGPU && FlxG.stage != null && FlxG.stage.context3D != null)
-		{
-			try
-			{
-				graphic.bitmap.lock();
-				if (graphic.bitmap.image != null)
-					graphic.bitmap.image.premultiplied = true;
-				graphic.bitmap.getTexture(FlxG.stage.context3D);
-			}
-			catch (e:Dynamic)
-			{
-				trace('PlayState warmGraphic failed: $e');
-			}
-		}
-		#end
+			Paths.image(uiAsset('num' + i));
+		Paths.image(uiAsset('combo'));
+		Paths.image(uiAsset('miss'));
+		Paths.image(uiAsset('early'));
+		Paths.image(uiAsset('late'));
 	}
 
 	inline function uiAsset(name:String):String
