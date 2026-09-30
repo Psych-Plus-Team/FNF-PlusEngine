@@ -434,7 +434,7 @@ class FreeplayState extends MusicBeatState
 		var meta:FreeplaySongMeta = loadSongMeta(songs[index]);
 		var songKey:String = Paths.formatToSongPath(songs[index].songName);
 		var listCardKey:String = meta != null && meta.cardKey != null ? meta.cardKey : 'albumRoll/cards/$songKey';
-		var customListCard:FlxGraphic = getOptionalSongImage(listCardKey, songs[index]);
+		var customListCard:FlxGraphic = getOptionalSongImage(listCardKey, songs[index], false);
 		if (loadRoundedGraphic(card, customListCard, 470, 110, 22, 'listCard:$listCardKey'))
 		{
 			card.updateHitbox();
@@ -1838,7 +1838,7 @@ class FreeplayState extends MusicBeatState
 
 		songInfoCardCover = new FlxSprite(albumX + (SONG_INFO_ALBUM_SIZE - SONG_INFO_COVER_SIZE) * 0.5, songInfoCardY + 20);
 		songInfoCardCover.antialiasing = ClientPrefs.data.antialiasing;
-		var fallbackCover = Paths.image('albumRoll/example');
+		var fallbackCover = Paths.image('albumRoll/example', null, false);
 		if (!loadRoundedGraphic(songInfoCardCover, fallbackCover, SONG_INFO_COVER_SIZE, SONG_INFO_COVER_SIZE, 22, 'cover:fallback'))
 			songInfoCardCover.makeGraphic(SONG_INFO_COVER_SIZE, SONG_INFO_COVER_SIZE, 0x00000000);
 		songInfoCardCover.updateHitbox();
@@ -2106,9 +2106,9 @@ class FreeplayState extends MusicBeatState
 			songInfoCardScores.text = 'Diff and Scores:\n' + scoreLines.join('\n');
 		}
 
-		var coverGraphic:FlxGraphic = getOptionalImageInFolder(data.coverKey, data.folder);
+		var coverGraphic:FlxGraphic = getOptionalImageInFolder(data.coverKey, data.folder, false);
 		if (coverGraphic == null)
-			coverGraphic = Paths.image('albumRoll/example');
+			coverGraphic = Paths.image('albumRoll/example', null, false);
 		if (songInfoCardCover != null)
 		{
 			if (!loadRoundedGraphic(songInfoCardCover, coverGraphic, SONG_INFO_COVER_SIZE, SONG_INFO_COVER_SIZE, 22, 'cover:${data.coverKey}'))
@@ -2134,7 +2134,7 @@ class FreeplayState extends MusicBeatState
 		return statsLines.join('\n');
 	}
 
-	function getOptionalImage(key:String):FlxGraphic
+	function getOptionalImage(key:String, ?allowGPU:Bool = true):FlxGraphic
 	{
 		if (key == null || key.length == 0)
 			return null;
@@ -2143,15 +2143,15 @@ class FreeplayState extends MusicBeatState
 		if (!AssetLoader.exists(imagePath, IMAGE))
 			return null;
 
-		return Paths.image(key);
+		return Paths.image(key, null, allowGPU);
 	}
 
-	function getOptionalSongImage(key:String, song:SongMetadata):FlxGraphic
+	function getOptionalSongImage(key:String, song:SongMetadata, ?allowGPU:Bool = true):FlxGraphic
 	{
-		return getOptionalImageInFolder(key, song != null ? song.folder : null);
+		return getOptionalImageInFolder(key, song != null ? song.folder : null, allowGPU);
 	}
 
-	function getOptionalImageInFolder(key:String, folder:String):FlxGraphic
+	function getOptionalImageInFolder(key:String, folder:String, ?allowGPU:Bool = true):FlxGraphic
 	{
 		if (key == null || key.length == 0)
 			return null;
@@ -2160,7 +2160,7 @@ class FreeplayState extends MusicBeatState
 		if (folder != null)
 			Mods.currentModDirectory = folder;
 
-		var graphic:FlxGraphic = getOptionalImage(key);
+		var graphic:FlxGraphic = getOptionalImage(key, allowGPU);
 		Mods.currentModDirectory = previousModDirectory;
 		return graphic;
 	}

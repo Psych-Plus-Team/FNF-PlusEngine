@@ -495,6 +495,44 @@ class Paths
 		var bitmap:BitmapData = null;
 		var resolvedFile:String = getPath(key, IMAGE, parentFolder, true);
 
+		if (!allowGPU)
+		{
+			var cpuCacheKey:String = resolvedFile + '#cpu';
+			if (currentTrackedAssets.exists(cpuCacheKey))
+			{
+				AssetCache.remember(cpuCacheKey);
+				localTrackedAssets = AssetCache.localTrackedAssets;
+				return currentTrackedAssets.get(cpuCacheKey);
+			}
+
+			if (currentTrackedAssets.exists(resolvedFile))
+			{
+				var cached:FlxGraphic = currentTrackedAssets.get(resolvedFile);
+				if (cached != null && cached.bitmap != null && cached.bitmap.readable)
+				{
+					AssetCache.remember(resolvedFile);
+					localTrackedAssets = AssetCache.localTrackedAssets;
+					return cached;
+				}
+			}
+
+			if (missingBitmapCache.exists(resolvedFile))
+				return null;
+
+			bitmap = AssetLoader.loadBitmap(resolvedFile);
+			if (bitmap == null)
+			{
+				missingBitmapCache.set(resolvedFile, true);
+				return null;
+			}
+
+			missingBitmapCache.remove(resolvedFile);
+			var cpuGraph:FlxGraphic = AssetCache.cacheBitmap(cpuCacheKey, bitmap, false);
+			currentTrackedAssets = AssetCache.currentTrackedAssets;
+			localTrackedAssets = AssetCache.localTrackedAssets;
+			return cpuGraph;
+		}
+
 		// Use the resolved path as cache key so assets with the same logical name
 		// from different mods don't leak into each other.
 		if (currentTrackedAssets.exists(resolvedFile))
