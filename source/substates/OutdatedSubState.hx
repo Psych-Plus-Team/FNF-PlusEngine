@@ -103,12 +103,15 @@ class OutdatedSubState extends MusicBeatSubstate
 	function loadChangelogBlocking():Void
 	{
 		var loaded:Bool = false;
-		var http = new Http("https://raw.githubusercontent.com/LeninAsto/FNF-PlusEngine/refs/heads/main/gitChangelog.txt");
+		var http = new Http("https://raw.githubusercontent.com/Psych-Plus-Team/FNF-PlusEngine/refs/heads/main/gitVersion.txt");
 
 		http.onData = function(data:String)
 		{
 			loaded = true;
-			pendingChangelog = data;
+			var lines:Array<String> = data.replace('\r\n', '\n').replace('\r', '\n').split('\n');
+			pendingChangelog = lines.length > 2 ? lines.slice(2).join('\n').trim() : "";
+			if (pendingChangelog.length <= 0)
+				pendingChangelog = Language.getPhrase('changelog_error', "Error loading changelog: {1}", ["No changelog available"]);
 		};
 
 		http.onError = function(error:String)
