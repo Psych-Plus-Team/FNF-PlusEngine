@@ -20,9 +20,6 @@ haxelib git lime https://github.com/Psych-Plus-Team/lime.git
 echo [Core] openfl git
 haxelib git openfl https://github.com/Psych-Plus-Team/openfl.git --quiet
 
-echo [Core - 3D] away3d
-haxelib git away3d https://github.com/openfl/away3d.git
-
 REM ============================================================================
 REM HaxeFlixel stack - required by Plus/Psych.
 REM ============================================================================
