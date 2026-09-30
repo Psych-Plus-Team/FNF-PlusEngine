@@ -19,6 +19,7 @@ import lime.utils.Assets;
 import openfl.utils.Assets as OpenFlAssets;
 import openfl.events.KeyboardEvent;
 import haxe.Json;
+import flixel.graphics.FlxGraphic;
 
 import cutscenes.DialogueBoxPsych;
 
@@ -78,6 +79,7 @@ import crowplexus.hscript.Printer;
  * "function eventEarlyTrigger" - Used for making your event start a few MILLISECONDS earlier
  * "function triggerEvent" - Called when the song hits your event's timestamp, this is probably what you were looking for
 **/
+@:access(openfl.display.BitmapData)
 class PlayState extends MusicBeatState
 {
 	public static var STRUM_X = 42;
@@ -188,6 +190,9 @@ class PlayState extends MusicBeatState
 	public var camZooming:Bool = false;
 	public var camZoomingMult:Float = 1;
 	public var camZoomingDecay:Float = 1;
+	public var cameraBopEnabled:Bool = false;
+	public var cameraBopFrequency:Float = 1;
+	public var cameraBopIntensity:Float = 1;
 	public var windowResizedByScript:Bool = false;
 	public var keyViewer:objects.KeyViewer;
 	public var modchartManagerEnabled:Bool = true;
@@ -2655,6 +2660,14 @@ class PlayState extends MusicBeatState
 					camHUD.zoom += flValue2;
 				}
 
+			case 'Set Camera Bopping':
+				if(flValue1 == null || flValue1 <= 0) flValue1 = 1;
+				if(flValue2 == null) flValue2 = 1;
+
+				cameraBopFrequency = flValue1;
+				cameraBopIntensity = flValue2;
+				cameraBopEnabled = cameraBopIntensity > 0;
+
 			case 'Play Animation':
 				//trace('Anim to play: ' + value1);
 				var char:Character = dad;
@@ -3319,13 +3332,41 @@ class PlayState extends MusicBeatState
 	private function cachePopUpScore()
 	{
 		for (rating in ratingsData)
-			Paths.image(uiAsset(rating.image));
+			warmGraphic(Paths.image(uiAsset(rating.image)));
 		for (i in 0...10)
-			Paths.image(uiAsset('num' + i));
-		Paths.image(uiAsset('combo'));
-		Paths.image(uiAsset('miss'));
-		Paths.image(uiAsset('early'));
-		Paths.image(uiAsset('late'));
+			warmGraphic(Paths.image(uiAsset('num' + i)));
+		warmGraphic(Paths.image(uiAsset('combo')));
+		warmGraphic(Paths.image(uiAsset('miss')));
+		warmGraphic(Paths.image(uiAsset('early')));
+		warmGraphic(Paths.image(uiAsset('late')));
+	}
+
+	function warmGraphic(graphic:FlxGraphic):Void
+	{
+		if (graphic == null || graphic.bitmap == null)
+			return;
+
+		#if !flash
+		var shouldWarmGPU:Bool = ClientPrefs.data.cacheOnGPU;
+		#if mobile
+		shouldWarmGPU = true;
+		#end
+
+		if (shouldWarmGPU && FlxG.stage != null && FlxG.stage.context3D != null)
+		{
+			try
+			{
+				graphic.bitmap.lock();
+				if (graphic.bitmap.image != null)
+					graphic.bitmap.image.premultiplied = true;
+				graphic.bitmap.getTexture(FlxG.stage.context3D);
+			}
+			catch (e:Dynamic)
+			{
+				trace('PlayState warmGraphic failed: $e');
+			}
+		}
+		#end
 	}
 
 	inline function uiAsset(name:String):String
@@ -4325,6 +4366,14 @@ class PlayState extends MusicBeatState
 		doVerBump();
 
 		super.beatHit();
+		var bopEvery:Int = Math.round(cameraBopFrequency);
+		if (bopEvery < 1)
+			bopEvery = 1;
+		if (cameraBopEnabled && ClientPrefs.data.camZooms && FlxG.camera.zoom < 1.35 && curBeat % bopEvery == 0)
+		{
+			FlxG.camera.zoom += 0.015 * cameraBopIntensity;
+			camHUD.zoom += 0.03 * cameraBopIntensity;
+		}
 		lastBeatHit = curBeat;
 
 		setOnScripts('curBeat', curBeat);
