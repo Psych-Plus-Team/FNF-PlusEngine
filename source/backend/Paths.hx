@@ -29,55 +29,49 @@ class Paths
 	inline public static var SOUND_EXT = "ogg";
 	inline public static var VIDEO_EXT = "mp4";
 
-	/**
-	 * Base UI path prefix for custom UI assets.
-	 */
 	public static var uiBasePath:String = "";
 
-	/**
-	 * UI suffix for pixel/alternate versions
-	 */
 	public static var uiSuffix:String = "";
 
-	/**
-	 * Get a UI asset path with support for nested folders
-	 * @param assetName Base asset name (e.g., "ready", "combo")
-	 * @param useSuffix Whether to append uiSuffix
-	 * @return Full image path string
-	 */
 	public static function getUIPath(assetName:String, useSuffix:Bool = true):String
 	{
 		var base:String = "images/";
 
-		// Add custom base path if set
 		if (uiBasePath != null && uiBasePath.length > 0)
 		{
-			// Normalize path: ensure no leading/trailing slashes
 			var normalizedPath = uiBasePath.replace('\\', '/');
 			if (normalizedPath.startsWith("/"))
 				normalizedPath = normalizedPath.substr(1);
 			if (normalizedPath.endsWith("/"))
 				normalizedPath = normalizedPath.substr(0, -1);
 
-			// Add UI folder suffix
 			base += normalizedPath + "/";
 		}
 
-		// Add asset name
-		base += assetName;
+		var normalizedAsset = assetName.replace('\\', '/');
+		if (normalizedAsset.startsWith("/"))
+			normalizedAsset = normalizedAsset.substr(1);
 
-		// Add suffix if requested
+		base += normalizedAsset;
+
 		if (useSuffix && uiSuffix != null && uiSuffix.length > 0)
-			base += uiSuffix;
+		{
+			var lastSlash:Int = base.lastIndexOf("/");
+			var lastDot:Int = base.lastIndexOf(".");
+
+			if (lastDot > lastSlash && lastDot != -1)
+			{
+				base = base.substr(0, lastDot) + uiSuffix + base.substr(lastDot);
+			}
+			else
+			{
+				base += uiSuffix;
+			}
+		}
 
 		return base;
 	}
 
-	/**
-	 * Set UI path for standard UI
-	 * @param uiName UI name
-	 * @param isPixel Whether to use pixel suffix
-	 */
 	public static function setUIPath(uiName:String, isPixel:Bool = false):Void
 	{
 		if (uiName == null || uiName == "normal")
@@ -87,7 +81,12 @@ class Paths
 			return;
 		}
 
-		// Handle "-pixel" suffix in name
+		uiName = uiName.replace('\\', '/');
+		if (uiName.startsWith("/"))
+			uiName = uiName.substr(1);
+		if (uiName.endsWith("/"))
+			uiName = uiName.substr(0, -1);
+
 		if (uiName == "pixel")
 			isPixel = true;
 		if (uiName.endsWith("-pixel"))
@@ -96,23 +95,28 @@ class Paths
 			isPixel = true;
 		}
 
-		uiBasePath = uiName.endsWith("UI") ? uiName : uiName + "UI";
+		var segments:Array<String> = uiName.split("/");
+		var lastSegment:String = segments[segments.length - 1];
+
+		if (lastSegment.toUpperCase().endsWith("UI"))
+		{
+			uiBasePath = uiName;
+		}
+		else
+		{
+			segments[segments.length - 1] = lastSegment + "UI";
+			uiBasePath = segments.join("/");
+		}
+
 		uiSuffix = isPixel ? "-pixel" : "";
 	}
 
-	/**
-	 * Reset UI path to default (normal)
-	 */
 	public static function resetUIPath():Void
 	{
 		uiBasePath = "";
 		uiSuffix = "";
 	}
 
-	/**
-	 * Get the UI folder prefix (compatible with old system)
-	 * @deprecated Use getUIPath() instead
-	 */
 	public static function getUIPrefix():String
 	{
 		if (uiBasePath == null || uiBasePath.length == 0)
@@ -120,9 +124,6 @@ class Paths
 		return uiBasePath + "/";
 	}
 
-	/**
-	 * Temporary frames cache that gets cleared between states.
-	 */
 	static var tempFramesCache:Map<String, FlxAtlasFrames> = [];
 
 	static var animateAtlasExistenceCache:Map<String, Bool> = [];
@@ -130,23 +131,14 @@ class Paths
 	static var animateAtlasSpriteJsonCache:Map<String, Array<String>> = [];
 	static var animateAtlasPageKeysCache:Map<String, Array<String>> = [];
 
-	/**
-	 * Initialize Paths system
-	 * Call this at game startup
-	 */
 	public static function init():Void
 	{
-		// Clear temp cache on state switch
 		FlxG.signals.preStateSwitch.add(function()
 		{
 			clearTempFramesCache();
 		});
 	}
 
-	/**
-	 * Clear temporary frames cache
-	 * Called automatically between state switches
-	 */
 	public static function clearTempFramesCache():Void
 	{
 		if (tempFramesCache == null)
@@ -176,7 +168,7 @@ class Paths
 		if (!cacheAnimateAtlasData(key))
 			return [];
 
-		return animateAtlasPageKeysCache.get(key.trim()).copy();
+		return animateAtlasPageKeysCache.get(animateAtlasCacheKey(key)).copy();
 	}
 
 	static function getAnimateAtlasSpriteJsons(key:String):Array<String>
@@ -184,7 +176,7 @@ class Paths
 		if (!cacheAnimateAtlasData(key))
 			return [];
 
-		return animateAtlasSpriteJsonCache.get(key.trim()).copy();
+		return animateAtlasSpriteJsonCache.get(animateAtlasCacheKey(key)).copy();
 	}
 
 	static function getAnimateAtlasAnimationJson(key:String):String
@@ -192,7 +184,16 @@ class Paths
 		if (!cacheAnimateAtlasData(key))
 			return null;
 
-		return animateAtlasAnimationCache.get(key.trim());
+		return animateAtlasAnimationCache.get(animateAtlasCacheKey(key));
+	}
+
+	static function animateAtlasCacheKey(key:String):String
+	{
+		var mod:String = '';
+		#if MODS_ALLOWED
+		mod = Mods.currentModDirectory == null ? '' : Mods.currentModDirectory;
+		#end
+		return mod + '::' + key.trim();
 	}
 
 	static function cacheAnimateAtlasData(key:String):Bool
@@ -204,13 +205,15 @@ class Paths
 		if (key.length == 0)
 			return false;
 
-		if (animateAtlasExistenceCache.exists(key))
-			return animateAtlasExistenceCache.get(key);
+		var cacheKey:String = animateAtlasCacheKey(key);
+
+		if (animateAtlasExistenceCache.exists(cacheKey))
+			return animateAtlasExistenceCache.get(cacheKey);
 
 		var animationJson:String = getTextFromFile('images/$key/Animation.json');
 		if (animationJson == null)
 		{
-			animateAtlasExistenceCache.set(key, false);
+			animateAtlasExistenceCache.set(cacheKey, false);
 			return false;
 		}
 
@@ -236,13 +239,13 @@ class Paths
 		}
 
 		var exists:Bool = pageKeys.length > 0;
-		animateAtlasExistenceCache.set(key, exists);
+		animateAtlasExistenceCache.set(cacheKey, exists);
 		if (!exists)
 			return false;
 
-		animateAtlasAnimationCache.set(key, animationJson);
-		animateAtlasSpriteJsonCache.set(key, spriteJsons);
-		animateAtlasPageKeysCache.set(key, pageKeys);
+		animateAtlasAnimationCache.set(cacheKey, animationJson);
+		animateAtlasSpriteJsonCache.set(cacheKey, spriteJsons);
+		animateAtlasPageKeysCache.set(cacheKey, pageKeys);
 		return true;
 	}
 
@@ -300,7 +303,6 @@ class Paths
 		for (key in keysToRemove)
 			currentTrackedAssets.remove(key);
 
-		// Match Psych's cache cleanup behavior: free collected assets promptly.
 		System.gc();
 	}
 
@@ -493,6 +495,44 @@ class Paths
 		var bitmap:BitmapData = null;
 		var resolvedFile:String = getPath(key, IMAGE, parentFolder, true);
 
+		if (!allowGPU)
+		{
+			var cpuCacheKey:String = resolvedFile + '#cpu';
+			if (currentTrackedAssets.exists(cpuCacheKey))
+			{
+				AssetCache.remember(cpuCacheKey);
+				localTrackedAssets = AssetCache.localTrackedAssets;
+				return currentTrackedAssets.get(cpuCacheKey);
+			}
+
+			if (currentTrackedAssets.exists(resolvedFile))
+			{
+				var cached:FlxGraphic = currentTrackedAssets.get(resolvedFile);
+				if (cached != null && cached.bitmap != null && cached.bitmap.readable)
+				{
+					AssetCache.remember(resolvedFile);
+					localTrackedAssets = AssetCache.localTrackedAssets;
+					return cached;
+				}
+			}
+
+			if (missingBitmapCache.exists(resolvedFile))
+				return null;
+
+			bitmap = AssetLoader.loadBitmap(resolvedFile);
+			if (bitmap == null)
+			{
+				missingBitmapCache.set(resolvedFile, true);
+				return null;
+			}
+
+			missingBitmapCache.remove(resolvedFile);
+			var cpuGraph:FlxGraphic = AssetCache.cacheBitmap(cpuCacheKey, bitmap, false);
+			currentTrackedAssets = AssetCache.currentTrackedAssets;
+			localTrackedAssets = AssetCache.localTrackedAssets;
+			return cpuGraph;
+		}
+
 		// Use the resolved path as cache key so assets with the same logical name
 		// from different mods don't leak into each other.
 		if (currentTrackedAssets.exists(resolvedFile))
@@ -504,36 +544,18 @@ class Paths
 		return cacheBitmap(key, parentFolder, bitmap, allowGPU);
 	}
 
-	/**
-	 * Load a UI image with softcoded path support
-	 * @param assetName Asset name (e.g., "ready", "combo")
-	 * @param useSuffix Whether to append uiSuffix
-	 * @param parentFolder Optional parent folder override
-	 * @param allowGPU Whether to allow GPU caching
-	 * @return FlxGraphic or null if not found
-	 */
 	static public function uiImage(assetName:String, useSuffix:Bool = true, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxGraphic
 	{
 		var path:String = getUIPath(assetName, useSuffix);
 		return image(path, parentFolder, allowGPU);
 	}
 
-	/**
-	 * Check if a UI image exists with softcoded path support
-	 * @param assetName Asset name (e.g., "ready", "combo")
-	 * @param useSuffix Whether to use uiSuffix
-	 * @param parentFolder Optional parent folder override
-	 * @return True if the image exists
-	 */
 	static public function uiImageExists(assetName:String, useSuffix:Bool = true, ?parentFolder:String = null):Bool
 	{
 		var path:String = getUIPath(assetName, useSuffix);
 		return fileExists(path, IMAGE, false, parentFolder);
 	}
 
-	/**
-	 * Get a UI atlas with softcoded path support
-	 */
 	static public function getUIAtlas(assetName:String, useSuffix:Bool = true, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxAtlasFrames
 	{
 		var path:String = getUIPath(assetName, useSuffix);
@@ -986,40 +1008,22 @@ class Paths
 	inline static public function modsImagesJson(key:String)
 		return modFolders('images/' + key + '.json');
 
-	/**
-	 * Get path to an NDLL file in the mods folder
-	 * @param key Name of the NDLL file (without extension)
-	 * @return Full path to the NDLL file
-	 */
 	inline static public function modsNdll(key:String)
 		return modFolders('ndlls/' + key + '.ndll');
 
-	/**
-	 * Get path to a DLL file in the mods folder
-	 * @param key Name of the DLL file (without extension)
-	 * @return Full path to the DLL file
-	 */
 	inline static public function modsDll(key:String)
 		return modFolders('ndlls/' + key + '.dll');
 
-	/**
-	 * Get path to a native library (tries both .ndll and .dll)
-	 * @param key Name of the library file (without extension)
-	 * @return Full path to the library file, or null if not found
-	 */
 	static public function modsLibrary(key:String):String
 	{
-		// Try NDLL first
 		var ndllPath:String = modsNdll(key);
 		if (safeModPathExists(ndllPath))
 			return ndllPath;
 
-		// Try DLL
 		var dllPath:String = modsDll(key);
 		if (safeModPathExists(dllPath))
 			return dllPath;
 
-		// Try without ndlls folder (root of mod)
 		var rootNdll:String = modFolders(key + '.ndll');
 		if (safeModPathExists(rootNdll))
 			return rootNdll;
@@ -1031,10 +1035,6 @@ class Paths
 		return null;
 	}
 
-	/**
-	 * List all NDLL files in the current mod's ndlls folder
-	 * @return Array of NDLL filenames (without path or extension)
-	 */
 	static public function listModNdlls():Array<String>
 	{
 		var ndlls:Array<String> = [];
@@ -1058,11 +1058,6 @@ class Paths
 		return ndlls;
 	}
 
-	/**
-	 * Check if a native library exists in mods
-	 * @param key Name of the library (without extension)
-	 * @return True if the library exists
-	 */
 	static public function modsLibraryExists(key:String):Bool
 	{
 		return modsLibrary(key) != null;
@@ -1219,12 +1214,25 @@ class Paths
 		for (sprite in sprites)
 		{
 			var limb:Dynamic = sprite.SPRITE;
+			if (limb == null)
+				continue;
+
+			// Use flxanimate's canonical parser for Adobe Animate spritemaps.
+			// It handles rotated and zero-sized atlas entries consistently with
+			// the library's regular fromSpriteMap() path.
 			var rotated:Bool = limb.rotated == true;
-			var rect:FlxRect = FlxRect.get(limb.x, limb.y, limb.w, limb.h);
+			var rect:FlxRect = FlxRect.get(Std.int(limb.x), Std.int(limb.y), Std.int(limb.w), Std.int(limb.h));
 			if (rotated)
 				rect.setSize(rect.height, rect.width);
 
-			frames.addAtlasFrame(rect, FlxPoint.get(limb.w, limb.h), FlxPoint.get(), limb.name, rotated ? FlxFrameAngle.ANGLE_NEG_90 : FlxFrameAngle.ANGLE_0);
+			flxanimate.frames.FlxAnimateFrames.sliceFrame(
+				Std.string(limb.name),
+				rotated,
+				rect,
+				null,
+				null,
+				frames
+			);
 		}
 
 		return frames;
@@ -1363,4 +1371,3 @@ class Paths
 		#end
 	}
 }
-

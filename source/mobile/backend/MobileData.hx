@@ -28,6 +28,9 @@ class MobileData
 
 	public static function init()
 	{
+		if (save != null)
+			return;
+
 		save = new FlxSave();
 		save.bind('MobileControls', CoolUtil.getSavePath());
 

@@ -2,19 +2,17 @@ package states;
 
 import backend.AssetLoader;
 import backend.ClientPrefs;
-import backend.ui.PsychUIButton;
 import flixel.input.keyboard.FlxKey;
 import flixel.graphics.frames.FlxFrame;
 import flixel.group.FlxGroup;
 import flixel.input.gamepad.FlxGamepad;
+import objects.VideoSprite;
+import openfl.utils.AssetType;
 import shaders.ColorSwap;
 import states.StoryMenuState;
 import states.MainMenuState;
 #if mobile
 import mobile.backend.TouchUtil;
-#end
-#if android
-import mobile.states.AndroidPermissionsState;
 #end
 
 typedef TitleData =
@@ -41,6 +39,7 @@ class TitleState extends MusicBeatState
 	public static var volumeUpKeys:Array<FlxKey> = [FlxKey.NUMPADPLUS, FlxKey.PLUS];
 
 	public static var initialized:Bool = false;
+	public static var introVideoPlayed:Bool = false;
 
 	public var forceShowIntro:Bool = false; // Si debe forzar mostrar la intro
 
@@ -67,9 +66,8 @@ class TitleState extends MusicBeatState
 	public var introFinished:Bool = false;
 	public var skipTimer:Float = 0;
 	public var canSkip:Bool = true;
-	#if android
-	public var androidToolsButton:PsychUIButton;
-	#end
+	var introVideo:VideoSprite;
+	var waitingForIntroVideo:Bool = false;
 
 	override public function create():Void
 	{
@@ -90,7 +88,6 @@ class TitleState extends MusicBeatState
 		#if CHECK_FOR_UPDATES
 		if (ClientPrefs.data.checkForUpdates)
 		{
-			// Verificación de actualizaciones en TitleState
 			try
 			{
 				var updateVersion = CoolUtil.checkForUpdates();
@@ -138,14 +135,62 @@ class TitleState extends MusicBeatState
 		}
 		else
 		{
-			startIntro();
+			startIntroAfterVideoGate();
+		}
+		#end
+	}
+
+	function startIntroAfterVideoGate():Void
+	{
+		#if VIDEOS_ALLOWED
+		if (shouldPlayIntroVideo())
+		{
+			playIntroVideo();
+			return;
 		}
 		#end
 
-		#if android
-		createAndroidToolsButton();
-		#end
+		startIntro();
 	}
+
+	#if VIDEOS_ALLOWED
+	function shouldPlayIntroVideo():Bool
+	{
+		return ClientPrefs.data.titleIntroVideo && !introVideoPlayed && Paths.fileExists('videos/intro.${Paths.VIDEO_EXT}', AssetType.BINARY, true);
+	}
+
+	function playIntroVideo():Void
+	{
+		introVideoPlayed = true;
+		waitingForIntroVideo = true;
+		persistentUpdate = true;
+		FlxG.camera.bgColor = FlxColor.BLACK;
+
+		if (FlxG.sound.music != null)
+			FlxG.sound.music.stop();
+
+		introVideo = new VideoSprite(Paths.video('intro'), false, true, false);
+		introVideo.finishCallback = finishIntroVideo;
+		introVideo.onSkip = finishIntroVideo;
+		add(introVideo);
+		introVideo.play();
+	}
+
+	function finishIntroVideo():Void
+	{
+		if (!waitingForIntroVideo)
+			return;
+
+		waitingForIntroVideo = false;
+		var video:VideoSprite = introVideo;
+		introVideo = null;
+		if (video != null)
+		{
+			remove(video, true);
+		}
+		startIntro();
+	}
+	#end
 
 	var logoBl:FlxSprite;
 	var gfDance:FlxSprite;
@@ -279,6 +324,8 @@ class TitleState extends MusicBeatState
 		if (Paths.fileExists('images/gfDanceTitle.json', TEXT))
 		{
 			var titleRaw:String = Paths.getTextFromFile('images/gfDanceTitle.json');
+			if (titleRaw != null)
+				titleRaw = StringTools.trim(titleRaw);
 			if (titleRaw != null && titleRaw.length > 0)
 			{
 				try
@@ -297,16 +344,16 @@ class TitleState extends MusicBeatState
 						danceRightFrames = titleJSON.dance_right;
 					useIdle = (titleJSON.idle == true);
 
-					if (titleJSON.backgroundSprite != null && titleJSON.backgroundSprite.trim().length > 0)
+					if (titleJSON.backgroundSprite != null && StringTools.trim(titleJSON.backgroundSprite).length > 0)
 					{
 						var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image(titleJSON.backgroundSprite));
 						bg.antialiasing = ClientPrefs.data.antialiasing;
 						add(bg);
 					}
 				}
-				catch (e:haxe.Exception)
+				catch (e:Dynamic)
 				{
-					trace('[WARN] Title JSON might broken, ignoring issue...\n${e.details()}');
+					trace('[WARN] Title JSON might be broken, using default values: $e');
 				}
 			}
 			else
@@ -314,26 +361,6 @@ class TitleState extends MusicBeatState
 		}
 		// else trace('[WARN] No Title JSON detected, using default values.');
 	}
-
-	#if android
-	function createAndroidToolsButton():Void
-	{
-		if (androidToolsButton != null)
-		{
-			remove(androidToolsButton);
-			androidToolsButton.destroy();
-		}
-
-		androidToolsButton = new PsychUIButton(FlxG.width - 210, FlxG.height - 54, 'ANDROID TOOLS', function()
-		{
-			FlxTransitionableState.skipNextTransIn = true;
-			FlxTransitionableState.skipNextTransOut = true;
-			MusicBeatState.switchState(backend.ScriptableState.tryCreate('AndroidPermissionsState', new AndroidPermissionsState()));
-		}, 190, 36);
-		androidToolsButton.scrollFactor.set();
-		add(androidToolsButton);
-	}
-	#end
 
 	function easterEggData()
 	{
@@ -400,7 +427,7 @@ class TitleState extends MusicBeatState
 
 		for (i in firstArray)
 		{
-			if (i != null && i.trim().length > 0)
+			if (i != null && StringTools.trim(i).length > 0)
 				swagGoodArray.push(i.split('--'));
 		}
 
@@ -419,6 +446,22 @@ class TitleState extends MusicBeatState
 
 	override function update(elapsed:Float)
 	{
+		#if android
+		if (FlxG.android.justReleased.BACK && !transitioning)
+		{
+			AndroidTools.finishActivity();
+			return;
+		}
+		#end
+
+		#if VIDEOS_ALLOWED
+		if (waitingForIntroVideo)
+		{
+			super.update(elapsed);
+			return;
+		}
+		#end
+
 		if (showingIntro && canSkip)
 		{
 			var pressedSkip:Bool = false;
@@ -442,7 +485,10 @@ class TitleState extends MusicBeatState
 				Conductor.songPosition = FlxG.sound.music.time;
 			// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
 
-			var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT || TouchUtil.justPressed;
+			var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT;
+			#if mobile
+			pressedEnter = pressedEnter || TouchUtil.justPressed;
+			#end
 
 			var gamepad:FlxGamepad = FlxG.gamepads.lastActive;
 
@@ -496,7 +542,7 @@ class TitleState extends MusicBeatState
 
 					new FlxTimer().start(1, function(tmr:FlxTimer)
 					{
-						MusicBeatState.switchState(backend.ScriptableState.tryCreate('MainMenuState', new MainMenuState()));
+						MusicBeatState.switchState(backend.ScriptableState.tryCreateLazy('MainMenuState', function() return new MainMenuState()));
 						closedState = true;
 					});
 					// FlxG.sound.play(Paths.music('titleShoot'), 0.7);
@@ -516,7 +562,7 @@ class TitleState extends MusicBeatState
 						for (wordRaw in easterEggKeys)
 						{
 							var word:String = wordRaw.toUpperCase(); // just for being sure you're doing it right
-							if (easterEggKeysBuffer.contains(word))
+							if (StringTools.contains(easterEggKeysBuffer, word))
 							{
 								// trace('YOOO! ' + word);
 								if (FlxG.save.data.psychDevsEasterEgg == word)
@@ -538,7 +584,7 @@ class TitleState extends MusicBeatState
 									{
 										FlxTransitionableState.skipNextTransIn = true;
 										FlxTransitionableState.skipNextTransOut = true;
-										MusicBeatState.switchState(backend.ScriptableState.tryCreate('TitleState', new TitleState()));
+										MusicBeatState.switchState(backend.ScriptableState.tryCreateLazy('TitleState', function() return new TitleState()));
 									}
 								});
 								FlxG.sound.music.fadeOut();
@@ -771,6 +817,21 @@ class TitleState extends MusicBeatState
 			}
 			skippedIntro = true;
 		}
+	}
+
+	override function destroy()
+	{
+		#if VIDEOS_ALLOWED
+		if (introVideo != null)
+		{
+			var video:VideoSprite = introVideo;
+			introVideo = null;
+			waitingForIntroVideo = false;
+			remove(video, true);
+			video.destroy();
+		}
+		#end
+		super.destroy();
 	}
 }
 

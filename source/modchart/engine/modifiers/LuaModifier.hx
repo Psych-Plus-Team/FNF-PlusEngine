@@ -6,8 +6,8 @@ import modchart.backend.core.VisualParameters;
 import modchart.backend.math.Vector3;
 import modchart.engine.PlayField;
 import openfl.geom.Vector3D;
-import psychlua.FunkinLua;
-import psychlua.LuaUtils;
+import psychlua.backend.FunkinLua;
+import psychlua.backend.LuaUtils;
 
 using StringTools;
 

@@ -65,8 +65,6 @@ class ModsMenuState extends MusicBeatState {
 	var waitingToRestart:Bool = false;
 	var holdTime:Float = 0;
 	var startMod:String = null;
-	var vsliceMode:Bool = false;
-	var returnToSelector:Bool = false;
 	var _lastControllerMode:Bool = false;
 
 	// geometry (computed in create)
@@ -76,10 +74,8 @@ class ModsMenuState extends MusicBeatState {
 	var listH:Float;
 	var rowH:Float = 72;
 
-	public function new(startMod:String = null, vsliceMode:Bool = false, returnToSelector:Bool = false) {
+	public function new(startMod:String = null) {
 		this.startMod = startMod;
-		this.vsliceMode = false;
-		this.returnToSelector = returnToSelector;
 		super();
 	}
 
@@ -90,6 +86,12 @@ class ModsMenuState extends MusicBeatState {
 
 		modsList = Mods.parseList();
 		Mods.loadTopMod();
+		if (Mods.launchedMod != null && Mods.launchedMod.length > 0)
+			Mods.currentModDirectory = Mods.launchedMod;
+		else
+			Mods.currentModDirectory = '';
+		Mods.pushGlobalMods();
+		backend.Language.reloadPhrases();
 
 		#if DISCORD_ALLOWED
 		DiscordClient.changePresence("In the Mod Browser", null);
@@ -287,6 +289,13 @@ class ModsMenuState extends MusicBeatState {
 
 	// ───────────────────────────────────────────────────────── update ──
 	override function update(elapsed:Float) {
+		var touchBack:Bool = touchPad != null && touchPad.buttonB.justPressed;
+		var touchDown:Bool = touchPad != null && touchPad.buttonDown.justPressed;
+		var touchUp:Bool = touchPad != null && touchPad.buttonUp.justPressed;
+		var touchLeft:Bool = touchPad != null && touchPad.buttonLeft.justPressed;
+		var touchRight:Bool = touchPad != null && touchPad.buttonRight.justPressed;
+		var touchAccept:Bool = touchPad != null && touchPad.buttonA.justPressed;
+
 		if (Math.abs(FlxG.mouse.deltaX) > 10 || Math.abs(FlxG.mouse.deltaY) > 10) {
 			controls.controllerMode = false;
 			if (!FlxG.mouse.visible)
@@ -302,16 +311,16 @@ class ModsMenuState extends MusicBeatState {
 		if (searching) {
 			handleSearchInput();
 			#if android
-			if (controls.BACK) {
+			if (controls.BACK || touchBack #if android || FlxG.android.justReleased.BACK #end) {
 				endSearch();
 				super.update(elapsed);
 				return;
 			}
 			#end
 			if (view.length > 0) {
-				if (controls.UI_DOWN_P)
+				if (controls.UI_DOWN_P || touchDown)
 					changeSel(1);
-				else if (controls.UI_UP_P)
+				else if (controls.UI_UP_P || touchUp)
 					changeSel(-1);
 			}
 			super.update(elapsed);
@@ -326,7 +335,12 @@ class ModsMenuState extends MusicBeatState {
 				cycleFilter();
 		}
 
-		if (controls.BACK) {
+		var backPressed:Bool = controls.BACK || touchBack;
+		#if android
+		backPressed = backPressed || FlxG.android.justReleased.BACK;
+		#end
+
+		if (backPressed) {
 			if (query.length > 0 || filterMode != 0) {
 				// first BACK clears the filter/search, second leaves
 				query = '';
@@ -345,9 +359,9 @@ class ModsMenuState extends MusicBeatState {
 				|| FlxG.gamepads.anyPressed(LEFT_SHOULDER)
 				|| FlxG.gamepads.anyPressed(RIGHT_SHOULDER)) ? 4 : 1;
 
-			if (controls.UI_DOWN_P)
+			if (controls.UI_DOWN_P || touchDown)
 				changeSel(shiftMult);
-			else if (controls.UI_UP_P)
+			else if (controls.UI_UP_P || touchUp)
 				changeSel(-shiftMult);
 			else if (FlxG.mouse.wheel != 0)
 				changeSel(-FlxG.mouse.wheel * shiftMult);
@@ -377,9 +391,9 @@ class ModsMenuState extends MusicBeatState {
 
 			// Reorder (only meaningful in the unfiltered/un-searched ALL view).
 			if (filterMode == 0 && query.length == 0) {
-				if (controls.UI_LEFT_P)
+				if (controls.UI_LEFT_P || touchLeft)
 					moveSelected(-1);
-				else if (controls.UI_RIGHT_P)
+				else if (controls.UI_RIGHT_P || touchRight)
 					moveSelected(1);
 			}
 
@@ -391,7 +405,7 @@ class ModsMenuState extends MusicBeatState {
 					toggleAll();
 				else
 					toggleSelected();
-			} else if (controls.ACCEPT)
+			} else if (controls.ACCEPT || touchAccept)
 				launchSelected();
 			else if (FlxG.keys.justPressed.TAB || FlxG.gamepads.anyJustPressed(X))
 				openSelectedSettings();
@@ -609,8 +623,10 @@ class ModsMenuState extends MusicBeatState {
 		}
 		modRestartText.visible = m.mustRestart;
 
-		var enabled = !modsList.disabled.contains(m.folder);
-		enableBtn.setText(enabled ? Language.getPhrase('disable_button', 'DISABLE') : Language.getPhrase('enable_button', 'ENABLE'));
+		var lockedGlobal:Bool = Mods.isRequiredGlobalMod(m.folder);
+		var enabled = lockedGlobal || !modsList.disabled.contains(m.folder);
+		enableBtn.setText(lockedGlobal ? Language.getPhrase('enabled_button', 'ENABLED') : (enabled ? Language.getPhrase('disable_button', 'DISABLE') : Language.getPhrase('enable_button', 'ENABLE')));
+		enableBtn.enabled = !lockedGlobal;
 		settingsBtn.enabled = (m.settings != null && m.settings.length > 0);
 		launchBtn.enabled = enabled && m.launchable;
 
@@ -653,7 +669,7 @@ class ModsMenuState extends MusicBeatState {
 		FlxG.mouse.visible = false;
 		FlxG.autoPause = ClientPrefs.data.autoPause;
 		if (!scripting.ScriptedStates.launchMod(m.folder))
-			MusicBeatState.switchState(new MainMenuState());
+			MusicBeatState.switchState(backend.ScriptableState.tryCreate('MainMenuState', new MainMenuState()));
 		#else
 		FlxG.sound.play(Paths.sound('cancelMenu'));
 		#end
@@ -664,12 +680,19 @@ class ModsMenuState extends MusicBeatState {
 		if (m == null)
 			return;
 		var mod = m.folder;
+		if (Mods.isRequiredGlobalMod(mod)) {
+			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
+			launchStatus.text = 'Base game is always loaded globally';
+			launchStatus.color = 0xFF66FF66;
+			return;
+		}
+
 		if (!modsList.disabled.contains(mod)) {
 			modsList.enabled.remove(mod);
 			modsList.disabled.push(mod);
 		} else {
 			#if MODS_ALLOWED
-			if (ClientPrefs.data.modSecurityEnabled && backend.ModSecurity.hasFindings(mod)) {
+			if (ClientPrefs.data.modSecure && backend.ModSecurity.hasFindings(mod)) {
 				FlxG.sound.play(Paths.sound('confirmMenu'), 0.6);
 				launchStatus.text = 'Sensitive scripts detected - choose TRUST to enable';
 				launchStatus.color = FlxColor.YELLOW;
@@ -725,7 +748,7 @@ class ModsMenuState extends MusicBeatState {
 			return;
 		// Reachable per-pack regardless of findings: lets users proactively
 		// trust/block a mod's scripts. Only the master toggle gates it.
-		if (!ClientPrefs.data.modSecurityEnabled) {
+		if (!ClientPrefs.data.modSecure) {
 			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
 			launchStatus.text = 'Mod Security is disabled (enable it in Options)';
 			launchStatus.color = FlxColor.YELLOW;
@@ -751,10 +774,13 @@ class ModsMenuState extends MusicBeatState {
 
 		for (item in view) {
 			var mod = item.folder;
+			if (Mods.isRequiredGlobalMod(mod))
+				continue;
+
 			var isDisabled = modsList.disabled.contains(mod);
 			if (anyDisabled && isDisabled) {
 				#if MODS_ALLOWED
-				if (ClientPrefs.data.modSecurityEnabled && backend.ModSecurity.hasFindings(mod))
+				if (ClientPrefs.data.modSecure && backend.ModSecurity.hasFindings(mod))
 					continue;
 				#end
 				modsList.disabled.remove(mod);
@@ -769,7 +795,7 @@ class ModsMenuState extends MusicBeatState {
 			}
 		}
 		#if MODS_ALLOWED
-		if (anyDisabled && ClientPrefs.data.modSecurityEnabled) {
+		if (anyDisabled && ClientPrefs.data.modSecure) {
 			var risky:Array<String> = [];
 			for (item in view)
 				if (modsList.disabled.contains(item.folder) && backend.ModSecurity.hasFindings(item.folder))
@@ -884,15 +910,13 @@ class ModsMenuState extends MusicBeatState {
 		FlxTransitionableState.skipNextTransIn = true;
 		FlxTransitionableState.skipNextTransOut = true;
 		var m = currentMod();
-		MusicBeatState.switchState(new ModsMenuState(m != null ? m.folder : null, false, returnToSelector));
+		MusicBeatState.switchState(backend.ScriptableState.tryCreate('ModsMenuState', new ModsMenuState(m != null ? m.folder : null), [m != null ? m.folder : null]));
 	}
 
 	function exitMenu() {
 		saveTxt();
 		FlxG.sound.play(Paths.sound('cancelMenu'));
-		if (returnToSelector) {
-			MusicBeatState.switchState(new ModsManagerSelectorState());
-		} else if (waitingToRestart) {
+		if (waitingToRestart) {
 			TitleState.initialized = false;
 			TitleState.closedState = false;
 			FlxG.sound.music.fadeOut(0.3);
@@ -902,7 +926,7 @@ class ModsMenuState extends MusicBeatState {
 			}
 			FlxG.camera.fade(FlxColor.BLACK, 0.5, false, FlxG.resetGame, false);
 		} else {
-			MusicBeatState.switchState(new MainMenuState());
+			MusicBeatState.switchState(backend.ScriptableState.tryCreate('MainMenuState', new MainMenuState()));
 		}
 
 		persistentUpdate = false;
@@ -944,7 +968,7 @@ class ModItem extends FlxSpriteGroup {
 	public var changelog:String = '';
 	public var launchable:Bool = false;
 
-	public function new(folder:String, vsliceMode:Bool = false) {
+	public function new(folder:String) {
 		super();
 
 		this.folder = folder;
@@ -1003,19 +1027,27 @@ class ModItem extends FlxSpriteGroup {
 
 		this.name = folder;
 		if (pack != null) {
-			if (pack.name != null)
-				this.name = pack.name;
-			if (pack.title != null)
-				this.name = pack.title;
-			if (pack.description != null)
-				this.desc = pack.description;
-			if (pack.iconFramerate != null)
-				this.iconFps = pack.iconFramerate;
-			if (pack.color != null) {
-				this.bgColor = FlxColor.fromRGB(pack.color[0] != null ? pack.color[0] : 170, pack.color[1] != null ? pack.color[1] : 0,
-					pack.color[2] != null ? pack.color[2] : 255);
+			var packName:Dynamic = Reflect.field(pack, 'name');
+			var packTitle:Dynamic = Reflect.field(pack, 'title');
+			var packDescription:Dynamic = Reflect.field(pack, 'description');
+			var packIconFps:Dynamic = Reflect.field(pack, 'iconFramerate');
+			var packColor:Dynamic = Reflect.field(pack, 'color');
+			var packRestart:Dynamic = Reflect.field(pack, 'restart');
+
+			if (packName != null)
+				this.name = Std.string(packName);
+			if (packTitle != null)
+				this.name = Std.string(packTitle);
+			if (packDescription != null)
+				this.desc = Std.string(packDescription);
+			if (packIconFps != null)
+				this.iconFps = Std.int(packIconFps);
+			if (packColor != null) {
+				var color:Array<Dynamic> = cast packColor;
+				this.bgColor = FlxColor.fromRGB(color[0] != null ? color[0] : 170, color[1] != null ? color[1] : 0,
+					color[2] != null ? color[2] : 255);
 			}
-			this.mustRestart = (pack.restart == true);
+			this.mustRestart = (packRestart == true);
 		}
 		text.text = this.name;
 
@@ -1031,15 +1063,19 @@ class ModItem extends FlxSpriteGroup {
 		var featFile:String = Paths.mods('$folder/features.txt');
 		if (FileSystem.exists(featFile))
 			features = File.getContent(featFile);
-		else if (pack != null && pack.features != null)
-			features = (pack.features is Array) ? (cast(pack.features, Array<Dynamic>)).join('\n') : Std.string(pack.features);
+		else if (pack != null && Reflect.field(pack, 'features') != null) {
+			var packFeatures:Dynamic = Reflect.field(pack, 'features');
+			features = (packFeatures is Array) ? (cast(packFeatures, Array<Dynamic>)).join('\n') : Std.string(packFeatures);
+		}
 
 		// Changelog: changelog.txt, else pack.json "changelog".
 		var clFile:String = Paths.mods('$folder/changelog.txt');
 		if (FileSystem.exists(clFile))
 			changelog = File.getContent(clFile);
-		else if (pack != null && pack.changelog != null)
-			changelog = (pack.changelog is Array) ? (cast(pack.changelog, Array<Dynamic>)).join('\n') : Std.string(pack.changelog);
+		else if (pack != null && Reflect.field(pack, 'changelog') != null) {
+			var packChangelog:Dynamic = Reflect.field(pack, 'changelog');
+			changelog = (packChangelog is Array) ? (cast(packChangelog, Array<Dynamic>)).join('\n') : Std.string(packChangelog);
+		}
 
 		#if HSCRIPT_ALLOWED
 		launchable = Mods.isLaunchable(folder);

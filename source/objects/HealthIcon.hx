@@ -84,6 +84,7 @@ class HealthIcon extends FlxSprite
 						frames = atlas;
 						var hasNormalAnim:Bool = false;
 						var hasLosingAnim:Bool = false;
+						var hasWinningAnim:Bool = false;
 
 						for (frame in frames.frames)
 						{
@@ -91,9 +92,12 @@ class HealthIcon extends FlxSprite
 								hasNormalAnim = true;
 							if (frame.name.startsWith('losing'))
 								hasLosingAnim = true;
-							if (hasNormalAnim && hasLosingAnim)
+							if (frame.name.startsWith('winning'))
+								hasWinningAnim = true;
+							if (hasNormalAnim && hasLosingAnim && hasWinningAnim)
 								break;
 						}
+
 						if (hasNormalAnim)
 						{
 							animation.addByPrefix('normal', 'normal', animFPS, true, isPlayer);
@@ -101,30 +105,20 @@ class HealthIcon extends FlxSprite
 							{
 								animation.addByPrefix('losing', 'losing', animFPS, true, isPlayer);
 							}
+							if (hasWinningAnim)
+							{
+								animation.addByPrefix('winning', 'winning', animFPS, true, isPlayer);
+							}
+
 							animation.play('normal');
+
+							recalculateOffsetsForAnim('normal');
 						}
 						else
 						{
 							animation.addByPrefix(char, '', animFPS, true, isPlayer);
 							animation.play(char);
-						}
-
-						if (animation.curAnim != null && animation.curAnim.numFrames > 0)
-						{
-							var firstFrameData = frames.frames[0];
-							if (firstFrameData != null && firstFrameData.frame != null)
-							{
-								iconOffsets[0] = (firstFrameData.frame.width - 150) / 2;
-								iconOffsets[1] = (firstFrameData.frame.height - 150) / 2;
-							}
-							else
-							{
-								iconOffsets[0] = iconOffsets[1] = 0;
-							}
-						}
-						else
-						{
-							iconOffsets[0] = iconOffsets[1] = 0;
+							recalculateOffsetsForAnim(char);
 						}
 					}
 					else
@@ -175,6 +169,39 @@ class HealthIcon extends FlxSprite
 			trace('[HealthIcon] ' + message);
 	}
 
+	private function recalculateOffsetsForAnim(animName:String):Void
+	{
+		var referenceAnim = animation.getByName('normal');
+		if (referenceAnim == null)
+			referenceAnim = animation.getByName(animName);
+
+		if (referenceAnim == null || referenceAnim.frames == null || referenceAnim.frames.length < 1)
+		{
+			iconOffsets[0] = iconOffsets[1] = 0;
+			return;
+		}
+
+		var firstFrameIndex:Int = referenceAnim.frames[0];
+		var firstFrame = (frames != null && frames.frames != null && firstFrameIndex >= 0 && firstFrameIndex < frames.frames.length)
+			? frames.frames[firstFrameIndex]
+			: null;
+
+		if (firstFrame != null && firstFrame.frame != null)
+		{
+			var frameW:Float = firstFrame.frame.width;
+			var frameH:Float = firstFrame.frame.height;
+
+			if (frameW > 0 && frameH > 0)
+			{
+				iconOffsets[0] = (frameW - 150) / 2;
+				iconOffsets[1] = (frameH - 150) / 2;
+				return;
+			}
+		}
+
+		iconOffsets[0] = iconOffsets[1] = 0;
+	}
+
 	private function loadStaticIcon(name:String, allowGPU:Bool = true):Void
 	{
 		var graphic = Paths.image(name, null, allowGPU);
@@ -223,18 +250,21 @@ class HealthIcon extends FlxSprite
 		if (!isAnimated)
 			return;
 
-		if (animation.getByName('losing') != null)
+		var hasLosing:Bool = animation.getByName('losing') != null;
+		var hasWinning:Bool = animation.getByName('winning') != null;
+
+		var targetAnim:String = 'normal';
+
+		if (hasWinning && healthPercent > 0.8)
+			targetAnim = 'winning';
+		else if (hasLosing && healthPercent < 0.2)
+			targetAnim = 'losing';
+
+		if (animation.curAnim == null || animation.curAnim.name != targetAnim)
 		{
-			if (healthPercent < 0.2)
-			{
-				if (animation.curAnim == null || animation.curAnim.name != 'losing')
-					playAnim('losing');
-			}
-			else
-			{
-				if (animation.curAnim == null || animation.curAnim.name != 'normal')
-					playAnim('normal');
-			}
+			playAnim(targetAnim);
+			recalculateOffsetsForAnim(targetAnim);
+			updateHitbox();
 		}
 	}
 
@@ -255,4 +285,3 @@ class HealthIcon extends FlxSprite
 		return char;
 	}
 }
-

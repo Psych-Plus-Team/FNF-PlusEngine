@@ -44,7 +44,10 @@ class EaseEvent extends Event {
 			fired = false;
 		} else if (curBeat >= endBeat) {
 			fired = true;
-			setModPercent(name, target, player);
+			if (entryPerc == null)
+				entryPerc = ModchartUtil.findEntryFrom(this);
+
+			setModPercent(name, FlxMath.lerp(entryPerc, target, ease(1)), player);
 		}
 	}
 }

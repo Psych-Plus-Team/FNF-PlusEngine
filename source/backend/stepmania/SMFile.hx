@@ -215,7 +215,7 @@ class SMFile
 				player2: 'dad',
 				gfVersion: psychSong.gfVersion ?? 'gf',
 				speed: psychSong.speed,
-				stage: psychSong.stage ?? 'notitg',
+				stage: psychSong.stage ?? 'stage',
 				format: 'psych_v1',
 				offset: 0,
 				disableNoteRGB: false

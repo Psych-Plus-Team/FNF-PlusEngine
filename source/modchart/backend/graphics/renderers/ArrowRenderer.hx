@@ -83,7 +83,8 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 			sourceTime: sourceTime,
 			lane: Adapter.instance.getLaneFromArrow(arrow),
 			player: player,
-			isTapArrow: Adapter.instance.isTapNote(arrow)
+			isTapArrow: Adapter.instance.isTapNote(arrow),
+			isHoldBody: false
 		};
 
 		arrowPosition.setTo(Adapter.instance.getDefaultReceptorX(arrowData.lane, arrowData.player) + Manager.ARROW_SIZEDIV2,

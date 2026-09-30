@@ -1,6 +1,3 @@
 Future
 Chip
 NotITG
-Bar
-BTY
-RonaTheRTD

@@ -1,7 +1,6 @@
 package objects;
 
 import backend.ClientPrefs;
-import shaders.ColorSwap;
 
 class SustainSplash extends FlxSprite
 {
@@ -10,8 +9,6 @@ class SustainSplash extends FlxSprite
 	static var atlasCache:Map<String, Dynamic> = new Map();
 
 	public var strumNote:StrumNote;
-
-	var colorSwap:ColorSwap;
 
 	var timer:FlxTimer;
 
@@ -53,18 +50,6 @@ class SustainSplash extends FlxSprite
 
 	function getHoldCoverPath():String
 	{
-		if (!ClientPrefs.data.noteRGB)
-		{
-			var noRgbCandidates:Array<String> = [
-				'holdCoversNoRGB/holdCover-Purple',
-				'holdCoversNoRGB/holdCover-Blue',
-				'holdCoversNoRGB/holdCover-Green',
-				'holdCoversNoRGB/holdCover-Red'
-			];
-			for (path in noRgbCandidates)
-				if (Paths.fileExists('images/$path.png', IMAGE) && Paths.fileExists('images/$path.xml', TEXT))
-					return path;
-		}
 		return 'holdCovers/holdCover-Vanilla';
 	}
 
@@ -119,14 +104,7 @@ class SustainSplash extends FlxSprite
 		}
 		clipRect = new flixel.math.FlxRect(0, !PlayState.isPixelStage ? 0 : -210, frameWidth, frameHeight);
 
-		if (!ClientPrefs.data.noteRGB)
-		{
-			if (colorSwap == null)
-				colorSwap = new ColorSwap();
-			Note.applyHSVToColorSwap(colorSwap, daNote.noteData);
-			shader = colorSwap.shader;
-		}
-		else if (daNote.rgbShader != null && daNote.rgbShader.enabled && daNote.shader != null)
+		if (daNote.rgbShader != null && daNote.rgbShader.enabled && daNote.shader != null)
 		{
 			shader = new objects.NoteSplash.PixelSplashShaderRef().shader;
 			shader.data.r.value = daNote.shader.data.r.value;

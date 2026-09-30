@@ -61,42 +61,33 @@ class TouchPad extends MobileInputManager implements IMobileControls
 	{
 		super();
 
+		DPad = resolveMode(DPad, MobileData.dpadModes, 'LEFT_FULL', 'd-pad');
+		Action = resolveMode(Action, MobileData.actionModes, 'A', 'action');
+
 		if (DPad != "NONE")
 		{
-			if (!MobileData.dpadModes.exists(DPad))
-				throw Language.getPhrase('touchpad_dpadmode_missing', 'The touchPad dpadMode "{1}" doesn\'t exist.', [DPad]);
-
 			for (buttonData in MobileData.dpadModes.get(DPad).buttons)
 			{
-				Reflect.setField(this, buttonData.button,
-					createButton(buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color),
-						Reflect.getProperty(this, buttonData.button).IDs));
-				add(Reflect.field(this, buttonData.button));
+				addButton(buttonData.button, buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color));
 			}
 		}
 
 		if (Action != "NONE")
 		{
-			if (!MobileData.actionModes.exists(Action))
-				throw Language.getPhrase('touchpad_actionmode_missing', 'The touchPad actionMode "{1}" doesn\'t exist.', [DPad]);
-
 			for (buttonData in MobileData.actionModes.get(Action).buttons)
 			{
-				Reflect.setField(this, buttonData.button,
-					createButton(buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color),
-						Reflect.getProperty(this, buttonData.button).IDs));
-				add(Reflect.field(this, buttonData.button));
+				addButton(buttonData.button, buttonData.x, buttonData.y, buttonData.graphic, CoolUtil.colorFromString(buttonData.color));
 			}
 		}
 
 		switch (Extra)
 		{
 			case SINGLE:
-				add(buttonExtra = createButton(0, FlxG.height - 137, 's', 0xFF0066FF));
+				buttonExtra = addButton('buttonExtra', 0, FlxG.height - 137, 's', 0xFF0066FF);
 				setExtrasPos();
 			case DOUBLE:
-				add(buttonExtra = createButton(0, FlxG.height - 137, 's', 0xFF0066FF));
-				add(buttonExtra2 = createButton(FlxG.width - 132, FlxG.height - 137, 'g', 0xA6FF00));
+				buttonExtra = addButton('buttonExtra', 0, FlxG.height - 137, 's', 0xFF0066FF);
+				buttonExtra2 = addButton('buttonExtra2', FlxG.width - 132, FlxG.height - 137, 'g', 0xA6FF00);
 				setExtrasPos();
 			case NONE: // nothing
 		}
@@ -106,6 +97,22 @@ class TouchPad extends MobileInputManager implements IMobileControls
 		updateTrackedButtons();
 
 		instance = this;
+	}
+
+	private static function resolveMode(Mode:String, Modes:Dynamic, Fallback:String, Kind:String):String
+	{
+		if (Mode == null || Mode.length == 0)
+			Mode = 'NONE';
+
+		if (Kind == 'd-pad' && Mode == 'FULL')
+			Mode = 'LEFT_FULL';
+
+		if (Mode == 'NONE' || Modes.exists(Mode))
+			return Mode;
+
+		var resolvedFallback = Modes.exists(Fallback) ? Fallback : 'NONE';
+		trace('Warning: touchPad $Kind mode "$Mode" does not exist. Falling back to "$resolvedFallback".');
+		return resolvedFallback;
 	}
 
 	override public function destroy()
@@ -160,6 +167,45 @@ class TouchPad extends MobileInputManager implements IMobileControls
 				int++;
 			}
 		}
+	}
+
+	public function addButton(FieldName:String, X:Float, Y:Float, Graphic:String, ?Color:FlxColor = 0xFFFFFF, ?IDs:Array<MobileInputID>):TouchButton
+	{
+		var resolvedIDs = IDs;
+		if (resolvedIDs == null && FieldName != null && FieldName.length > 0)
+		{
+			var currentButton:Dynamic = Reflect.getProperty(this, FieldName);
+			if (Std.isOfType(currentButton, TouchButton))
+				resolvedIDs = cast(currentButton, TouchButton).IDs;
+		}
+
+		return addExistingButton(createButton(X, Y, Graphic, Color, resolvedIDs), FieldName);
+	}
+
+	public function addButtons(Buttons:Array<TouchButton>):Array<TouchButton>
+	{
+		if (Buttons == null)
+			return [];
+
+		for (button in Buttons)
+			addExistingButton(button);
+
+		return Buttons;
+	}
+
+	public function addExistingButton(Button:TouchButton, ?FieldName:String):TouchButton
+	{
+		if (Button == null)
+			return null;
+
+		if (FieldName != null && FieldName.length > 0)
+			Reflect.setField(this, FieldName, Button);
+
+		if (members.indexOf(Button) == -1)
+			add(Button);
+
+		updateTrackedButtons();
+		return Button;
 	}
 
 	private function createButton(X:Float, Y:Float, Graphic:String, ?Color:FlxColor = 0xFFFFFF, ?IDs:Array<MobileInputID>):TouchButton

@@ -5,12 +5,12 @@ import flixel.FlxState;
 import objects.GlobalLoadingOverlay;
 import backend.ui.md3.NetworkCheckToast;
 #if HSCRIPT_ALLOWED
-import psychlua.HScript;
+import psychlua.backend.HScript;
 import crowplexus.hscript.Expr.Error as IrisError;
 import crowplexus.hscript.Printer;
 import crowplexus.iris.Iris;
 #end
-import psychlua.LuaUtils;
+import psychlua.backend.LuaUtils;
 #if sys
 import sys.FileSystem;
 #end
@@ -62,6 +62,8 @@ class MusicBeatState extends BaseMusicBeatState
 	#if HSCRIPT_ALLOWED
 	public var companionScript:HScript = null;
 	#end
+	var stateScriptDebugPanel:psychlua.backend.DebugLuaText = null;
+
 	// Optional constructor used by scripted hosts to pass script configuration.
 	public function new(?scriptsAllowed:Bool = false, ?scriptName:String = null)
 	{
@@ -103,7 +105,7 @@ class MusicBeatState extends BaseMusicBeatState
 			// Only use default transition if scripts didn't stop it
 			if (!LuaUtils.isStop(globalResult))
 			{
-				openSubState(new CustomFadeTransition(0.7, true));
+				openSubState(TransitionManager.create(0.7, true));
 			}
 		}
 		FlxTransitionableState.skipNextTransOut = false;
@@ -116,6 +118,47 @@ class MusicBeatState extends BaseMusicBeatState
 			_loadCompanionScript();
 		#end
 	}
+
+	#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
+	public static function addScriptTextToDebug(text:String, color:FlxColor):Bool
+	{
+		if (states.PlayState.instance != null)
+		{
+			states.PlayState.instance.addTextToDebug(text, color);
+			return true;
+		}
+
+		if (FlxG.state != null && FlxG.state.subState != null && Std.isOfType(FlxG.state.subState, MusicBeatSubstate))
+		{
+			cast(FlxG.state.subState, MusicBeatSubstate).addSubstateScriptTextToDebug(text, color);
+			return true;
+		}
+
+		if (FlxG.state != null && Std.isOfType(FlxG.state, MusicBeatState))
+		{
+			cast(FlxG.state, MusicBeatState).addStateScriptTextToDebug(text, color);
+			return true;
+		}
+
+		return false;
+	}
+
+	public function addStateScriptTextToDebug(text:String, color:FlxColor):Void
+	{
+		if (states.PlayState.instance == this)
+		{
+			states.PlayState.instance.addTextToDebug(text, color);
+			return;
+		}
+
+		if (stateScriptDebugPanel == null)
+		{
+			stateScriptDebugPanel = new psychlua.backend.DebugLuaText();
+			add(stateScriptDebugPanel);
+		}
+		stateScriptDebugPanel.pushMessage(text, color);
+	}
+	#end
 
 	public static var traceDisplay:TraceDisplay;
 	public static var timePassedOnState:Float = 0;
@@ -155,11 +198,34 @@ class MusicBeatState extends BaseMusicBeatState
 			_hasSavedFullscreen = true;
 		}
 
-		// Screenshot support with F5
+		// Screenshot support with F10 (F5 is used by Freeplay reload)
 		#if desktop
-		if (FlxG.keys.justPressed.F5)
+		if (FlxG.keys.justPressed.F10)
 		{
 			backend.Screenshot.capture();
+		}
+
+		if (FlxG.keys.justPressed.F12 && !Std.isOfType(FlxG.state, states.ModsMenuState))
+		{
+			persistentUpdate = persistentDraw = true;
+			#if HSCRIPT_ALLOWED
+			scripting.ScriptedStates.exitToEngine();
+			#else
+			#if MODS_ALLOWED
+			Mods.launchedMod = null;
+			Mods.currentModDirectory = '';
+			if (FlxG.save != null && FlxG.save.data != null)
+			{
+				FlxG.save.data.launchedMod = null;
+				FlxG.save.flush();
+			}
+			Mods.pushGlobalMods();
+			Mods.resetWindowBrand();
+			backend.Language.reloadPhrases();
+			#end
+			MusicBeatState.switchState(new states.ModsMenuState());
+			#end
+			return;
 		}
 		#end
 
@@ -184,8 +250,12 @@ class MusicBeatState extends BaseMusicBeatState
 			return;
 		}
 
-		// State replacement is opt-in only (explicit tryCreate usage).
-		// By default, hardcoded states run with companion scripts from scripts/states/*.
+		#if HSCRIPT_ALLOWED
+		nextState = backend.ScriptableState.tryCreateFromFallback(nextState);
+		#end
+		#if MODS_ALLOWED
+		preserveLaunchedModContext(nextState);
+		#end
 
 		// Call scripts before switching - they can stop the default transition
 		var globalResult = callOnGlobalScript('onSwitchState', [Type.getClassName(Type.getClass(nextState))]);
@@ -204,6 +274,31 @@ class MusicBeatState extends BaseMusicBeatState
 			startTransition(nextState);
 		FlxTransitionableState.skipNextTransIn = false;
 	}
+
+	#if MODS_ALLOWED
+	static function preserveLaunchedModContext(nextState:FlxState):Void
+	{
+		if (nextState == null || Mods.launchedMod == null || Mods.launchedMod.length < 1)
+			return;
+
+		#if HSCRIPT_ALLOWED
+		if (Std.isOfType(nextState, MusicBeatState)) {
+			var musicState:MusicBeatState = cast nextState;
+			if (musicState.isScriptedState && musicState.scriptOwnerMod != null && musicState.scriptOwnerMod.length > 0) {
+				Mods.currentModDirectory = musicState.scriptOwnerMod;
+				Mods.pushGlobalMods();
+				return;
+			}
+		}
+		#end
+
+		// Hardcoded states reached from a launched mod still belong to that
+		// launched asset context. Otherwise Credits/Mods/etc. can clear the mod
+		// folder and every Paths.image()/sound() lookup starts returning null.
+		Mods.currentModDirectory = Mods.launchedMod;
+		Mods.pushGlobalMods();
+	}
+	#end
 
 	public static function resetState()
 	{
@@ -275,15 +370,15 @@ class MusicBeatState extends BaseMusicBeatState
 			return;
 		}
 
-		FlxG.state.openSubState(new CustomFadeTransition(0.7, false));
+		FlxG.state.openSubState(TransitionManager.create(0.7, false));
 		if (nextState == FlxG.state)
 		{
 			var resetFn = _makeCurrentStateReset();
-			CustomFadeTransition.finishCallback = function() FlxG.switchState(resetFn);
+			TransitionManager.setFinishCallback(function() FlxG.switchState(resetFn));
 		}
 		else
 		{
-			CustomFadeTransition.finishCallback = function() FlxG.switchState(nextState);
+			TransitionManager.setFinishCallback(function() FlxG.switchState(nextState));
 		}
 	}
 
@@ -321,6 +416,12 @@ class MusicBeatState extends BaseMusicBeatState
 	override function destroy():Void
 	{
 		super.destroy();
+
+		if (stateScriptDebugPanel != null)
+		{
+			stateScriptDebugPanel.destroy();
+			stateScriptDebugPanel = null;
+		}
 
 		#if HSCRIPT_ALLOWED
 		if (companionScript != null)
@@ -407,8 +508,7 @@ class MusicBeatState extends BaseMusicBeatState
 		{
 			var msg = crowplexus.hscript.Printer.errorToString(e, false);
 			trace('[CompanionScript] HScript error in $path:\n$msg');
-			if (debug.TraceDisplay.instance != null)
-				debug.TraceDisplay.addHScriptError(msg, path);
+			addStateScriptTextToDebug('$path: $msg', FlxColor.RED);
 		}
 		catch (e:Dynamic)
 		{
@@ -455,7 +555,7 @@ class MusicBeatState extends BaseMusicBeatState
 				trace('[CompanionScript] Error calling $funcName: $e');
 				@:privateAccess
 				var fileName = companionScript.origin != null ? companionScript.origin : "CompanionScript";
-				debug.TraceDisplay.addHScriptError('Runtime error in $funcName: $e', fileName);
+				addStateScriptTextToDebug('$fileName: Runtime error in $funcName: $e', FlxColor.RED);
 			}
 		}
 		#end
@@ -491,6 +591,7 @@ class MusicBeatState extends BaseMusicBeatState
 		if (!stateScriptHooksEnabled())
 			return;
 
+		#if HSCRIPT_ALLOWED
 		#if MODS_ALLOWED
 		Mods.loadTopMod();
 		#end
@@ -672,6 +773,7 @@ class MusicBeatState extends BaseMusicBeatState
 				{
 					trace('GlobalScript: Error setting getPublicVar: $e');
 				}
+				#end
 
 				trace('GlobalScript: Functions configured successfully');
 
@@ -696,6 +798,7 @@ class MusicBeatState extends BaseMusicBeatState
 				catch (e:Dynamic)
 				{
 					trace('GlobalScript: Error calling onCreate: $e');
+					addScriptTextToDebug('$scriptPath: Runtime error in onCreate: $e', FlxColor.RED);
 				}
 
 				trace('GlobalScript initialized successfully from: $scriptPath');
@@ -707,8 +810,7 @@ class MusicBeatState extends BaseMusicBeatState
 					{
 						var errorMsg = Printer.errorToString(e, false);
 						trace('GlobalScript Error: $errorMsg');
-						if (TraceDisplay.instance != null)
-							TraceDisplay.addHScriptError(errorMsg, scriptPath);
+						addScriptTextToDebug('$scriptPath: $errorMsg', FlxColor.RED);
 					}
 					catch (printerError:Dynamic)
 					{
@@ -723,12 +825,11 @@ class MusicBeatState extends BaseMusicBeatState
 					#if HSCRIPT_ALLOWED
 					try
 					{
-						if (TraceDisplay.instance != null)
-							TraceDisplay.addHScriptError('Unexpected error: $e', scriptPath);
+						addScriptTextToDebug('$scriptPath: Unexpected error: $e', FlxColor.RED);
 					}
 					catch (displayError:Dynamic)
 					{
-						trace('GlobalScript: Could not add error to TraceDisplay: $displayError');
+						trace('GlobalScript: Could not add error to script debug overlay: $displayError');
 					}
 					#end
 				}
@@ -764,7 +865,7 @@ class MusicBeatState extends BaseMusicBeatState
 						trace('GlobalScript Error calling $funcToCall: $e');
 						@:privateAccess
 						var fileName = globalScript.origin != null ? globalScript.origin : "GlobalScript";
-						TraceDisplay.addHScriptError('Runtime error in $funcToCall: $e', fileName);
+						addScriptTextToDebug('$fileName: Runtime error in $funcToCall: $e', FlxColor.RED);
 					}
 				}
 				#end

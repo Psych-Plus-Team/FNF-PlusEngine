@@ -109,6 +109,19 @@ class EventManager {
 		return pf.getPercent(name, player);
 	}
 
+	public function cancelActiveModEvents(player:Int = -1):Void {
+		for (event in activeEvents) {
+			if (event == null || event.name == null)
+				continue;
+			if (player != -1 && event.player != player)
+				continue;
+
+			event.active = false;
+			event.fired = true;
+			event.callback = null;
+		}
+	}
+
 	private function insertSorted(vec:Vector<Event>, event:Event, resize:Bool = false) {
 		var len = getVectorLength(vec);
 		if (len >= vec.length) {

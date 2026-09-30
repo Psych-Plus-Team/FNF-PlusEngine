@@ -1,6 +1,7 @@
 package scripting;
 
 #if HSCRIPT_ALLOWED
+import backend.AssetLoader;
 import backend.Mods;
 import backend.Paths;
 import hxscript.Environment;
@@ -9,6 +10,7 @@ import hxscript.syntax.Expr;
 import hxscript.types.IScriptedType;
 import hxscript.types.ScriptedClass;
 import hxscript.types.TypeCollection;
+import openfl.utils.AssetType;
 import scripting.hscript.HScript;
 
 using StringTools;
@@ -107,19 +109,24 @@ class ScriptRegistry {
 		try {
 			return cls.typeCreateInstance(args == null ? [] : args);
 		} catch (e:haxe.Exception) {
-			HScript.error('Failed to instantiate "$path": ${e.details()}', errPos(path));
+			var pos:scripting.hscript.HScript.HScriptInfos = scriptPos(cls, path);
+			HScript.error('Failed to instantiate "$path": ${exceptionDetails(e)}', pos);
 			return null;
 		}
 	}
 
 	public static function classPaths(path:String):Array<String> {
-		var relative:String = path.split('.').join('/') + '.hx';
-		return [for (root in CLASS_ROOTS) root + relative];
+		var relatives:Array<String> = relativeClassPaths(path);
+		var paths:Array<String> = [];
+		for (root in CLASS_ROOTS)
+			for (relative in relatives)
+				paths.push(root + relative);
+		return paths;
 	}
 
 	public static function resolveClassFile(fullName:String, ?preferredMod:String):ResolvedScript {
 		for (candidate in classFileCandidates(fullName, preferredMod)) {
-			var exists:Bool = Paths.safeModPathExists(candidate.file);
+			var exists:Bool = AssetLoader.exists(candidate.file, AssetType.TEXT);
 			log('  check ${candidate.mod.length > 0 ? candidate.mod : "<shared>"} -> ${candidate.file} ${exists ? "OK" : "missing"}');
 			if (exists)
 				return candidate;
@@ -128,7 +135,7 @@ class ScriptRegistry {
 	}
 
 	static function classFileCandidates(fullName:String, ?preferredMod:String):Array<ResolvedScript> {
-		var relative:String = fullName.split('.').join('/') + '.hx';
+		var relatives:Array<String> = relativeClassPaths(fullName);
 		var candidates:Array<ResolvedScript> = [];
 		var mods:Array<String> = [];
 
@@ -149,14 +156,30 @@ class ScriptRegistry {
 
 		for (mod in mods)
 			for (root in CLASS_ROOTS)
-				candidates.push({file: Paths.mods(mod + '/' + root + relative), mod: mod});
+				for (relative in relatives)
+					candidates.push({file: Paths.mods(mod + '/' + root + relative), mod: mod});
 
 		for (root in CLASS_ROOTS) {
-			candidates.push({file: Paths.mods(root + relative), mod: SHARED_WORLD});
-			candidates.push({file: 'base_game/' + root + relative, mod: BASE_GAME_MOD});
+			for (relative in relatives) {
+				candidates.push({file: Paths.getSharedPath(root + relative), mod: SHARED_WORLD});
+				candidates.push({file: Paths.mods(root + relative), mod: SHARED_WORLD});
+				candidates.push({file: 'base_game/' + root + relative, mod: BASE_GAME_MOD});
+			}
 		}
 
 		return candidates;
+	}
+
+	static function relativeClassPaths(path:String):Array<String> {
+		var normal:String = path.split('.').join('/') + '.hx';
+		var parts:Array<String> = path.split('.');
+		var name:String = parts.length > 0 ? parts[parts.length - 1] : '';
+		if (!name.endsWith('Script') || name.length <= 'Script'.length)
+			return [normal];
+
+		parts[parts.length - 1] = name.substr(0, name.length - 'Script'.length);
+		var friendly:String = parts.join('/') + '.hx';
+		return friendly == normal ? [normal] : [friendly, normal];
 	}
 
 	static function worldFor(?mod:String):ScriptWorld {
@@ -190,8 +213,36 @@ class ScriptRegistry {
 	public static function makeSafe(cls:ScriptedClass):Void {
 		cls.safe = true;
 		cls.onInstanceError = function(e:Dynamic, fun:String, ?inst:Dynamic) {
-			HScript.error('${cls.path}.$fun(): $e', errPos(cls.path));
+			var file:String = cls.module != null && cls.module.origin != null ? cls.module.origin : cls.path;
+			var details:String = exceptionDetails(e);
+			// ScriptedClass catches constructor/method exceptions before they reach
+			// instantiateClass(). Ask the class interpreter for its last source
+			// position so null-reference errors include the real HScript line.
+			var pos:scripting.hscript.HScript.HScriptInfos = cast (cls.interp != null
+				? cls.interp.posInfos()
+				: errPos(file));
+			if (pos.fileName == null || pos.fileName.length == 0)
+				pos.fileName = file;
+			pos.showLine = true;
+			pos.funcName = fun;
+			HScript.error('${cls.path}.$fun(): $details', pos);
 		};
+	}
+
+	public static function exceptionDetails(e:Dynamic):String {
+		var text:String = Std.isOfType(e, haxe.Exception) ? (cast e : haxe.Exception).details() : Std.string(e);
+		if (text == null)
+			return '';
+
+		var lines:Array<String> = text.split('\n');
+		var kept:Array<String> = [];
+		for (line in lines) {
+			var trimmed:String = StringTools.trim(line);
+			if (StringTools.startsWith(trimmed, 'Called from '))
+				continue;
+			kept.push(line);
+		}
+		return kept.join('\n');
 	}
 
 	static function candidateNames(stage:String):Array<String> {
@@ -201,6 +252,26 @@ class ScriptRegistry {
 
 	static inline function errPos(name:String):scripting.hscript.HScript.HScriptInfos
 		return cast {fileName: name, showLine: false};
+
+	static function scriptPos(cls:ScriptedClass, fallback:String):scripting.hscript.HScript.HScriptInfos {
+		var pos:scripting.hscript.HScript.HScriptInfos = cast (cls != null && cls.interp != null
+			? cls.interp.posInfos()
+			: errPos(fallback));
+		if (pos.fileName == null || pos.fileName.length == 0)
+			pos.fileName = fallback;
+		pos.showLine = true;
+		return pos;
+	}
+
+	public static function modulePos(module:Module, file:String, fallback:String):scripting.hscript.HScript.HScriptInfos {
+		var pos:scripting.hscript.HScript.HScriptInfos = cast (module != null && module.interp != null
+			? module.interp.posInfos()
+			: errPos(fallback));
+		if (pos.fileName == null || pos.fileName.length == 0)
+			pos.fileName = file;
+		pos.showLine = true;
+		return pos;
+	}
 
 	public static function log(message:String):Void {
 		if (verbose)
@@ -280,11 +351,13 @@ class ScriptWorld {
 		}
 		#end
 
-		var code:String = Paths.safeFileContent(file);
+		var code:String = AssetLoader.loadText(file);
 		if (code == null || code.length == 0) {
 			HScript.error('Empty scripted class file "$file"', errPos(path));
 			return false;
 		}
+		code = ScriptPreprocessor.process(code);
+		code = ScriptPreprocessor.adaptFriendlyClassName(code, path);
 
 		loading.push(path);
 
@@ -294,15 +367,15 @@ class ScriptWorld {
 		var hadError:Bool = false;
 		module.onParsingError = function(e:haxe.Exception) {
 			hadError = true;
-			HScript.error('Parse error in "$file": ${e.details()}', errPos(path));
+			HScript.error('Parse error in "$file": ${ScriptRegistry.exceptionDetails(e)}', ScriptRegistry.modulePos(module, file, path));
 		};
 		module.onProgramError = function(e:haxe.Exception) {
 			hadError = true;
-			HScript.error('Runtime error in "$file": ${e.details()}', errPos(path));
+			HScript.error('Runtime error in "$file": ${ScriptRegistry.exceptionDetails(e)}', ScriptRegistry.modulePos(module, file, path));
 		};
 		module.onTypeError = function(e:haxe.Exception, type:IScriptedType) {
 			hadError = true;
-			HScript.error('Type error in "${type.name}" from "$file": ${e.details()}', errPos(path));
+			HScript.error('Type error in "${type.name}" from "$file": ${ScriptRegistry.exceptionDetails(e)}', ScriptRegistry.modulePos(module, file, path));
 		};
 
 		if (hadError) {

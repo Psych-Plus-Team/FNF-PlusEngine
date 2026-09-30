@@ -15,6 +15,7 @@ import cpp.vm.Gc;
 <target id="haxe">
 	<lib name="dwmapi.lib" if="windows"/>
 	<lib name="gdi32.lib" if="windows"/>
+	<lib name="user32.lib" if="windows"/>
 </target>
 ')
 @:cppFileCode('
@@ -22,6 +23,7 @@ import cpp.vm.Gc;
 #include <dwmapi.h>
 #include <winuser.h>
 #include <wingdi.h>
+#include <string>
 
 #define attributeDarkMode 20
 #define attributeDarkModeFallback 19
@@ -49,6 +51,9 @@ BOOL CALLBACK findByPID(HWND handle, LPARAM lParam) {
 }
 
 HWND curHandle = 0;
+HANDLE plusEngineInstanceMutex = NULL;
+static const char* PLUS_ENGINE_INSTANCE_PREFIX = "Local\\\\PlusEngine_InstanceSlot_";
+
 void getHandle() {
 	if (curHandle == (HWND)0) {
 		HandleData data;
@@ -64,6 +69,72 @@ class Native
 	public static function __init__():Void
 	{
 		registerDPIAware();
+	}
+
+	public static function reserveInstanceSlot(maxInstances:Int = 1):Bool
+	{
+		#if (cpp && windows)
+		if (maxInstances < 1)
+			maxInstances = 1;
+
+		return untyped __cpp__('
+			([](int slotCount) -> bool {
+				if (plusEngineInstanceMutex != NULL)
+					return true;
+
+				for (int i = 1; i <= slotCount; ++i) {
+					std::string mutexName = std::string(PLUS_ENGINE_INSTANCE_PREFIX) + std::to_string(i);
+					HANDLE handle = CreateMutexA(NULL, TRUE, mutexName.c_str());
+					if (handle == NULL)
+						continue;
+
+					if (GetLastError() != ERROR_ALREADY_EXISTS) {
+						plusEngineInstanceMutex = handle;
+						return true;
+					}
+
+					CloseHandle(handle);
+				}
+
+				return false;
+			})((int){0})
+		', maxInstances);
+		#else
+		return true;
+		#end
+	}
+
+	public static function showInstanceLimitMessage(maxInstances:Int = 1):Void
+	{
+		#if (cpp && windows)
+		untyped __cpp__('
+			([](int slotCount) {
+				std::string message = "Plus Engine is already running.\\n\\nCurrent instance limit: "
+					+ std::to_string(slotCount)
+					+ "\\nYou can change the maximum instance slots from Options > Legacy Settings.";
+
+				MessageBoxA(
+					NULL,
+					message.c_str(),
+					"Plus Engine",
+					MB_OK | MB_ICONEXCLAMATION | MB_SETFOREGROUND
+				);
+			})((int){0})
+		', maxInstances);
+		#end
+	}
+
+	public static function releaseInstanceSlot():Void
+	{
+		#if (cpp && windows)
+		untyped __cpp__('
+			if (plusEngineInstanceMutex != NULL) {
+				ReleaseMutex(plusEngineInstanceMutex);
+				CloseHandle(plusEngineInstanceMutex);
+				plusEngineInstanceMutex = NULL;
+			}
+		');
+		#end
 	}
 
 	public static function registerDPIAware():Void

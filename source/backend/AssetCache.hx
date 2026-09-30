@@ -30,20 +30,8 @@ class AssetCache
 		if (bitmap == null)
 			return null;
 
-		if (allowGPU && ClientPrefs.data.cacheOnGPU && bitmap.image != null)
-		{
-			bitmap.lock();
-			if (bitmap.__texture == null)
-			{
-				bitmap.image.premultiplied = true;
-				bitmap.getTexture(FlxG.stage.context3D);
-			}
-			bitmap.getSurface();
-			bitmap.disposeImage();
-			bitmap.image.data = null;
-			bitmap.image = null;
-			bitmap.readable = true;
-		}
+		if (allowGPU)
+			cacheBitmapOnGPU(bitmap);
 		#if android
 		else
 		{
@@ -57,6 +45,26 @@ class AssetCache
 		currentTrackedAssets.set(cacheKey, graphic);
 		remember(cacheKey);
 		return graphic;
+	}
+
+	static function cacheBitmapOnGPU(bitmap:BitmapData):Void
+	{
+		if (!ClientPrefs.data.cacheOnGPU || bitmap == null || bitmap.image == null || FlxG.stage == null || FlxG.stage.context3D == null)
+			return;
+
+		try
+		{
+			bitmap.lock();
+			bitmap.image.premultiplied = true;
+
+			var texture = bitmap.getTexture(FlxG.stage.context3D);
+			if (texture != null && bitmap.image != null)
+				bitmap.disposeImage();
+		}
+		catch (e:Dynamic)
+		{
+			trace('GPU cache upload failed for bitmap: $e');
+		}
 	}
 
 	public static function cacheSound(cacheKey:String, sound:Sound):Sound
@@ -76,7 +84,17 @@ class AssetCache
 			return false;
 
 		if (graphic.bitmap != null && graphic.bitmap.__texture != null)
-			graphic.bitmap.__texture.dispose();
+		{
+			try
+			{
+				graphic.bitmap.__texture.dispose();
+				graphic.bitmap.__texture = null;
+			}
+			catch (e:Dynamic)
+			{
+				trace('GPU texture dispose failed: $e');
+			}
+		}
 		FlxG.bitmap.remove(graphic);
 
 		return true;

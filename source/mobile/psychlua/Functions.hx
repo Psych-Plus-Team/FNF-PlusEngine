@@ -1,10 +1,10 @@
 package mobile.psychlua;
 
-import psychlua.CustomSubstate;
+import psychlua.backend.CustomSubstate;
 #if LUA_ALLOWED
 import lime.ui.Haptic;
-import psychlua.FunkinLua;
-import psychlua.LuaUtils;
+import psychlua.backend.FunkinLua;
+import psychlua.backend.LuaUtils;
 import mobile.backend.TouchUtil;
 #if android
 import mobile.backend.PsychJNI;

@@ -41,7 +41,7 @@ class CurveShader extends FlxShader
 		}
 
 		void main() {
-			// wtf the matrix 3 revolutions reference?!??!?!?!?!
+			// wtf the matrix 3 revolutions reference?!
 			mat3 matrix = mat3(
 				1., 0., wiggle( 0.5 + curveX / 10. ),
 				0., 1., wiggle( 0.5 + curveY / 10. ),

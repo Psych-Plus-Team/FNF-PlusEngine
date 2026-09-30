@@ -8,11 +8,15 @@ class LegacySettingsSubState extends BaseOptionsMenu
 		rpcTitle = 'Legacy Settings Menu';
 
 		var option:Option = new Option('Use Psych Score Text', 'If checked, keeps the original Psych Engine score text format during gameplay.',
-			'usePsychScoreText', BOOL);
+			'psychScoreText', BOOL);
 		addOption(option);
 
 		var option:Option = new Option('Vanilla Transition', 'If checked, uses the vanilla Psych Engine transition instead of the custom one.',
 			'vanillaTransition', BOOL);
+		addOption(option);
+
+		var option:Option = new Option('Options Menu Style', 'Changes the Options menus between Plus cards and Psych classic.', 'optionsMenuStyle',
+			STRING, ['Plus', 'Psych']);
 		addOption(option);
 
 		var option:Option = new Option('Instant Window Close', 'If checked, closing the game exits instantly instead of fading the window out.',
@@ -25,12 +29,12 @@ class LegacySettingsSubState extends BaseOptionsMenu
 
 		var option:Option = new Option('Script Deprecation Warnings',
 			'If checked, deprecated Lua/HScript compatibility APIs will print warnings to the debug console. Disable to silence noisy mods.',
-			'scriptDeprecationWarnings', BOOL);
+			'scriptWarns', BOOL);
 		addOption(option);
 
 		#if MODS_ALLOWED
 		var option:Option = new Option('Mod Security',
-			'If checked, scans mod Lua/HScript and skips scripts from mods with untrusted sensitive APIs.', 'modSecurityEnabled', BOOL);
+			'If checked, scans mod Lua/HScript and skips scripts from mods with untrusted sensitive APIs.', 'modSecure', BOOL);
 		option.onChange = function()
 		{
 			ClientPrefs.saveSettings();

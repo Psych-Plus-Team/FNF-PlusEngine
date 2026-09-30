@@ -138,7 +138,7 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			if (lime.app.Application.current != null
 				&& lime.app.Application.current.window != null
 				&& Reflect.hasField(lime.app.Application.current.window, 'vsync'))
-				Reflect.setProperty(lime.app.Application.current.window, 'vsync', ClientPrefs.data.vsync);
+				Reflect.setProperty(lime.app.Application.current.window, 'vsync', ClientPrefs.getEffectiveVSync());
 		}
 		catch (_:Dynamic) {}
 	}

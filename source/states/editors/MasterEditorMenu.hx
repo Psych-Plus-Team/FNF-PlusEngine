@@ -28,6 +28,7 @@ class MasterEditorMenu extends MusicBeatState
 	private var curSelected = 0;
 	private var curDirectory = 0;
 	private var directoryTxt:FlxText;
+	private var disabledTxt:FlxText;
 
 	override function create()
 	{
@@ -56,6 +57,13 @@ class MasterEditorMenu extends MusicBeatState
 			grpTexts.add(leText);
 			leText.snapToPosition();
 		}
+
+		disabledTxt = new FlxText(90, 0, FlxG.width - 180, Language.getPhrase('note_rgb_disabled_editor', 'Note RGB is disabled!!!'), 24);
+		disabledTxt.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		disabledTxt.borderSize = 2;
+		disabledTxt.alpha = 0.75;
+		disabledTxt.visible = false;
+		add(disabledTxt);
 
 		#if MODS_ALLOWED
 		var textBG:FlxSprite = new FlxSprite(0, FlxG.height - 42).makeGraphic(FlxG.width, 42, 0xFF000000);
@@ -124,7 +132,7 @@ class MasterEditorMenu extends MusicBeatState
 		}
 		#end
 
-		if (controls.BACK || (touchPad != null && touchPad.buttonB.justPressed))
+		if (controls.BACK || (touchPad != null && touchPad.buttonB.justPressed) #if android || FlxG.android.justReleased.BACK #end)
 		{
 			MusicBeatState.switchState(new MainMenuState());
 		}
@@ -132,6 +140,12 @@ class MasterEditorMenu extends MusicBeatState
 		if (controls.ACCEPT || (touchPad != null && touchPad.buttonA.justPressed))
 		{
 			// ← SOLUCION: Usar índice en lugar de string traducido
+			if (!canSelect(curSelected))
+			{
+				FlxG.sound.play(Paths.sound('cancelMenu'), 0.4);
+				return;
+			}
+
 			switch (curSelected)
 			{
 				case 0: // Chart Editor
@@ -160,17 +174,40 @@ class MasterEditorMenu extends MusicBeatState
 		for (num => item in grpTexts.members)
 		{
 			item.targetY = num - curSelected;
-			item.alpha = 0.6;
+			item.alpha = canSelect(num) ? 0.6 : 0.25;
 			if (item.targetY == 0)
-				item.alpha = 1;
+				item.alpha = canSelect(num) ? 1 : 0.35;
+
+			if (num == 7 && !canSelect(num))
+			{
+				disabledTxt.visible = true;
+				disabledTxt.x = item.x;
+				disabledTxt.y = item.y + item.height + 8;
+			}
 		}
+		if (canSelect(7))
+			disabledTxt.visible = false;
 	}
 
 	function changeSelection(change:Int = 0)
 	{
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
+		var direction:Int = change < 0 ? -1 : 1;
+		var target:Int = curSelected + change;
+		for (i in 0...options.length)
+		{
+			var next:Int = FlxMath.wrap(target + (i * direction), 0, options.length - 1);
+			if (canSelect(next))
+			{
+				curSelected = next;
+				return;
+			}
+		}
 		curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
 	}
+
+	function canSelect(index:Int):Bool
+		return index != 7 || ClientPrefs.data.noteRGB;
 
 	#if MODS_ALLOWED
 	function changeDirectory(change:Int = 0)

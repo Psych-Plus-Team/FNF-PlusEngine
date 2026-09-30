@@ -18,9 +18,8 @@ class NotesColorSubState extends MusicBeatSubstate
 	var curSelectedMode:Int = 0;
 	var curSelectedNote:Int = 0;
 	var onPixel:Bool = false;
-	var usingRGB:Bool = true;
+	var classicMode:Bool = false;
 	var dataArray:Array<Array<FlxColor>>;
-	var dataHSV:Array<Array<Float>>;
 
 	var hexTypeLine:FlxSprite;
 	var hexTypeNum:Int = -1;
@@ -48,27 +47,18 @@ class NotesColorSubState extends MusicBeatSubstate
 	var _lastControllerMode:Bool = false;
 	var tipTxt:FlxText;
 
-	// NotITG warning message
-	var notITGWarningText:FlxText;
 	var colorModeText:FlxText;
 
 	public function new()
 	{
 		super();
 
-		if (!ClientPrefs.data.noteRGB)
-		{
-			close();
-			FlxG.state.openSubState(new NotesColorLegacySubState());
-			return;
-		}
-
 		#if DISCORD_ALLOWED
 		DiscordClient.changePresence("Note Colors Menu", null);
 		#end
 
 		onPixel = PlayState.isPixelStage;
-		usingRGB = ClientPrefs.data.noteRGB;
+		classicMode = Note.usesClassicColors();
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.color = 0xFFEA71FD;
 		bg.screenCenter();
@@ -155,14 +145,6 @@ class NotesColorSubState extends MusicBeatSubstate
 		hexTypeLine.visible = false;
 		add(hexTypeLine);
 
-		// NotITG warning text - MUST be created BEFORE spawnNotes() is called
-		notITGWarningText = new FlxText(0, 5, FlxG.width, '', 26);
-		notITGWarningText.setFormat(Paths.font("vcr.ttf"), 26, FlxColor.RED, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		notITGWarningText.borderSize = 3;
-		notITGWarningText.visible = false;
-		notITGWarningText.scrollFactor.set();
-		add(notITGWarningText);
-
 		colorModeText = new FlxText(30, 86, 0, '', 20);
 		colorModeText.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		colorModeText.borderSize = 2;
@@ -225,8 +207,7 @@ class NotesColorSubState extends MusicBeatSubstate
 	{
 		if (colorModeText == null)
 			return;
-		var modeLabel:String = usingRGB ? 'RGB' : 'HSL';
-		colorModeText.text = 'Color Mode: ' + modeLabel + ' (TAB)';
+		colorModeText.text = 'Color Mode: ' + (classicMode ? 'Classic H/S/B' : 'RGB');
 	}
 
 	var _storedColor:FlxColor;
@@ -332,15 +313,6 @@ class NotesColorSubState extends MusicBeatSubstate
 			onPixel = !onPixel;
 			spawnNotes();
 			updateNotes(true);
-			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
-		}
-		else if (FlxG.keys.justPressed.TAB)
-		{
-			ClientPrefs.data.noteRGB = !ClientPrefs.data.noteRGB;
-			usingRGB = ClientPrefs.data.noteRGB;
-			spawnNotes();
-			updateNotes(true);
-			updateColorModeText();
 			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
 		}
 
@@ -490,8 +462,13 @@ class NotesColorSubState extends MusicBeatSubstate
 						modeBG.visible = notesBG.visible = false;
 						curSelectedNote = note.ID;
 						onModeColumn = false;
-						bigNote.rgbShader.parent = Note.globalRgbShaders[note.ID];
-						bigNote.shader = Note.globalRgbShaders[note.ID].shader;
+						if (!classicMode)
+						{
+							bigNote.rgbShader.parent = Note.globalRgbShaders[note.ID];
+							bigNote.shader = Note.globalRgbShaders[note.ID].shader;
+						}
+						else
+							Note.applyHSVToColorSwap(bigNote.colorSwap, note.ID);
 						updateNotes();
 						FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
 					}
@@ -578,32 +555,36 @@ class NotesColorSubState extends MusicBeatSubstate
 		}
 		else if (touchPad.buttonC.justPressed || controls.RESET && hexTypeNum < 0)
 		{
-			if (FlxG.keys.pressed.SHIFT || FlxG.gamepads.anyPressed(LEFT_SHOULDER))
+			if (classicMode)
 			{
-				if (usingRGB)
+				if (FlxG.keys.pressed.SHIFT || FlxG.gamepads.anyPressed(LEFT_SHOULDER))
 				{
 					for (i in 0...3)
-					{
-						var strumRGB:RGBShaderReference = myNotes.members[curSelectedNote].rgbShader;
-						var color:FlxColor = !onPixel ? ClientPrefs.defaultData.arrowRGB[curSelectedNote][i] : ClientPrefs.defaultData.arrowRGBPixel[curSelectedNote][i];
-						switch (i)
-						{
-							case 0:
-								getShader().r = strumRGB.r = color;
-							case 1:
-								getShader().g = strumRGB.g = color;
-							case 2:
-								getShader().b = strumRGB.b = color;
-						}
-						dataArray[curSelectedNote][i] = color;
-					}
+						classicHSV(curSelectedNote)[i] = 0;
 				}
 				else
+					classicHSV(curSelectedNote)[curSelectedMode] = 0;
+			}
+			else if (FlxG.keys.pressed.SHIFT || FlxG.gamepads.anyPressed(LEFT_SHOULDER))
+			{
+				for (i in 0...3)
 				{
-					dataHSV[curSelectedNote] = [0, 0, 0];
+					var strumRGB:RGBShaderReference = myNotes.members[curSelectedNote].rgbShader;
+					var color:FlxColor = !onPixel ? ClientPrefs.defaultData.arrowRGB[curSelectedNote][i] : ClientPrefs.defaultData.arrowRGBPixel[curSelectedNote][i];
+					switch (i)
+					{
+						case 0:
+							getShader().r = strumRGB.r = color;
+						case 1:
+							getShader().g = strumRGB.g = color;
+						case 2:
+							getShader().b = strumRGB.b = color;
+					}
+					dataArray[curSelectedNote][i] = color;
 				}
 			}
-			setShaderColor(!onPixel ? ClientPrefs.defaultData.arrowRGB[curSelectedNote][curSelectedMode] : ClientPrefs.defaultData.arrowRGBPixel[curSelectedNote][curSelectedMode]);
+			if (!classicMode)
+				setShaderColor(!onPixel ? ClientPrefs.defaultData.arrowRGB[curSelectedNote][curSelectedMode] : ClientPrefs.defaultData.arrowRGBPixel[curSelectedNote][curSelectedMode]);
 			FlxG.sound.play(Paths.sound('cancelMenu'), 0.6);
 			updateColors();
 		}
@@ -678,8 +659,13 @@ class NotesColorSubState extends MusicBeatSubstate
 
 		modeBG.visible = false;
 		notesBG.visible = true;
-		bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
-		bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		if (!classicMode)
+		{
+			bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
+			bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		}
+		else
+			Note.applyHSVToColorSwap(bigNote.colorSwap, curSelectedNote);
 		updateNotes();
 		FlxG.sound.play(Paths.sound('scrollMenu'));
 	}
@@ -702,9 +688,7 @@ class NotesColorSubState extends MusicBeatSubstate
 
 	public function spawnNotes()
 	{
-		usingRGB = ClientPrefs.data.noteRGB;
 		dataArray = !onPixel ? ClientPrefs.data.arrowRGB : ClientPrefs.data.arrowRGBPixel;
-		dataHSV = ClientPrefs.data.arrowHSV;
 		if (onPixel)
 			PlayState.stageUI = "pixel";
 
@@ -766,12 +750,10 @@ class NotesColorSubState extends MusicBeatSubstate
 		{
 			Note.initializeGlobalRGBShader(i);
 			var newNote:StrumNote = new StrumNote(150 + (480 / dataArray.length * i), 200, i, 0);
-			newNote.useRGBShader = true;
+			newNote.useRGBShader = !classicMode;
 			newNote.setGraphicSize(102);
 			newNote.updateHitbox();
 			newNote.ID = i;
-			// Re-check NotITG skin to apply proper settings
-			newNote.checkNotITGSkin();
 			myNotes.add(newNote);
 		}
 
@@ -779,8 +761,13 @@ class NotesColorSubState extends MusicBeatSubstate
 		bigNote.setPosition(250, 325);
 		bigNote.setGraphicSize(250);
 		bigNote.updateHitbox();
-		bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
-		bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		if (!classicMode)
+		{
+			bigNote.rgbShader.parent = Note.globalRgbShaders[curSelectedNote];
+			bigNote.shader = Note.globalRgbShaders[curSelectedNote].shader;
+		}
+		else
+			Note.applyHSVToColorSwap(bigNote.colorSwap, curSelectedNote);
 		for (i in 0...Note.colArray.length)
 		{
 			if (!onPixel)
@@ -808,59 +795,30 @@ class NotesColorSubState extends MusicBeatSubstate
 				note.animation.curAnim.finish();
 		}
 		bigNote.animation.play('note$curSelectedNote', true);
+		if (classicMode)
+			Note.applyHSVToColorSwap(bigNote.colorSwap, curSelectedNote);
 		updateColors();
-		updateNotITGWarning(); // Check if NotITG is being used
-	}
-
-	function updateNotITGWarning()
-	{
-		// Verificar que el texto de advertencia exista
-		if (notITGWarningText == null)
-			return;
-
-		// Check if the current note skin is NotITG
-		var isNotITG:Bool = false;
-		var skin:String = Note.resolveNoteSkinPath(null, PlayState.isPixelStage);
-
-		if (skin != null)
-			isNotITG = skin.toLowerCase().contains('notitg');
-
-		if (isNotITG)
-		{
-			notITGWarningText.text = Language.getPhrase("note_colors_notitg", "RGB SHADERS DISABLED - NotITG skin preserves original colors");
-			notITGWarningText.visible = true;
-			// Hacer que el texto parpadee
-			FlxTween.cancelTweensOf(notITGWarningText);
-			FlxTween.tween(notITGWarningText, {alpha: 0}, 0.5, {
-				type: PINGPONG,
-				ease: FlxEase.sineInOut
-			});
-		}
-		else
-		{
-			FlxTween.cancelTweensOf(notITGWarningText);
-			notITGWarningText.visible = false;
-			notITGWarningText.alpha = 1;
-		}
 	}
 
 	function updateColors(specific:Null<FlxColor> = null)
 	{
 		var color:FlxColor = getShaderColor();
 		var wheelColor:FlxColor = specific == null ? getShaderColor() : specific;
-		if (usingRGB)
+		if (classicMode)
+		{
+			var hsv:Array<Float> = classicHSV(curSelectedNote);
+			alphabetR.text = 'H ' + Std.string(Math.round(hsv[0]));
+			alphabetG.text = 'S ' + Std.string(Math.round(hsv[1]));
+			alphabetB.text = 'B ' + Std.string(Math.round(hsv[2]));
+			alphabetHex.text = 'CLASSIC';
+		}
+		else
 		{
 			alphabetR.text = Std.string(color.red);
 			alphabetG.text = Std.string(color.green);
 			alphabetB.text = Std.string(color.blue);
+			alphabetHex.text = color.toHexString(false, false);
 		}
-		else
-		{
-			alphabetR.text = Std.string(Std.int(dataHSV[curSelectedNote][0]));
-			alphabetG.text = Std.string(Std.int(dataHSV[curSelectedNote][1]));
-			alphabetB.text = Std.string(Std.int(dataHSV[curSelectedNote][2]));
-		}
-		alphabetHex.text = color.toHexString(false, false);
 		for (letter in alphabetHex.letters)
 			letter.color = color;
 
@@ -874,6 +832,19 @@ class NotesColorSubState extends MusicBeatSubstate
 		}
 		colorGradientSelector.y = colorGradient.y + colorGradient.height * (1 - color.brightness);
 
+		if (classicMode)
+		{
+			for (note in myNotes)
+			{
+				if (note.animation.curAnim == null || note.animation.curAnim.name == 'static')
+					Note.resetHSVColorSwap(note.colorSwap);
+				else
+					Note.applyHSVToColorSwap(note.colorSwap, note.ID);
+			}
+			Note.applyHSVToColorSwap(bigNote.colorSwap, curSelectedNote);
+			return;
+		}
+
 		var strumRGB:RGBShaderReference = myNotes.members[curSelectedNote].rgbShader;
 		switch (curSelectedMode)
 		{
@@ -886,52 +857,62 @@ class NotesColorSubState extends MusicBeatSubstate
 		}
 	}
 
-	function getBaseModeColor(noteIndex:Int, modeIndex:Int):FlxColor
-	{
-		return !onPixel ? ClientPrefs.defaultData.arrowRGB[noteIndex][modeIndex] : ClientPrefs.defaultData.arrowRGBPixel[noteIndex][modeIndex];
-	}
-
 	function setShaderColor(value:FlxColor)
 	{
-		if (usingRGB)
+		if (classicMode)
 		{
-			dataArray[curSelectedNote][curSelectedMode] = value;
+			var hsv:Array<Float> = classicHSV(curSelectedNote);
+			switch (curSelectedMode)
+			{
+				case 0:
+					var hue:Float = value.hue;
+					hsv[0] = Math.round(hue > 180 ? hue - 360 : hue);
+				case 1:
+					hsv[1] = Math.round((value.saturation * 200) - 100);
+				case 2:
+					hsv[2] = Math.round((value.brightness * 200) - 100);
+			}
 			return;
 		}
-
-		var baseColor:FlxColor = getBaseModeColor(curSelectedNote, curSelectedMode);
-		var hueOffset:Int = FlxMath.wrap(Math.round(value.hue - baseColor.hue), -180, 180);
-		var satOffset:Float = (value.saturation - baseColor.saturation) * 100;
-		var brightOffset:Float = baseColor.brightness > 0 ? ((value.brightness / baseColor.brightness) - 1) * 100 : value.brightness * 100;
-
-		dataHSV[curSelectedNote][0] = Math.round(FlxMath.bound(hueOffset, -180, 180));
-		dataHSV[curSelectedNote][1] = Math.round(FlxMath.bound(satOffset, -100, 100));
-		dataHSV[curSelectedNote][2] = Math.round(FlxMath.bound(brightOffset, -100, 100));
+		dataArray[curSelectedNote][curSelectedMode] = value;
 	}
 
 	function getShaderColor()
 	{
-		if (usingRGB)
-			return dataArray[curSelectedNote][curSelectedMode];
-
-		var baseColor:FlxColor = getBaseModeColor(curSelectedNote, curSelectedMode);
-		var hue:Int = FlxMath.wrap(Math.round(baseColor.hue + dataHSV[curSelectedNote][0]), 0, 360);
-		var sat:Float = FlxMath.bound(baseColor.saturation + (dataHSV[curSelectedNote][1] / 100), 0, 1);
-		var bright:Float = FlxMath.bound(baseColor.brightness * (1 + (dataHSV[curSelectedNote][2] / 100)), 0, 1);
-		return FlxColor.fromHSB(hue, sat, bright);
+		if (classicMode)
+			return classicColor(curSelectedNote);
+		return dataArray[curSelectedNote][curSelectedMode];
 	}
 
 	function getShader()
 		return Note.globalRgbShaders[curSelectedNote];
 
+	function classicHSV(note:Int):Array<Float>
+	{
+		if (ClientPrefs.data.arrowHSV == null)
+			ClientPrefs.data.arrowHSV = [];
+		while (ClientPrefs.data.arrowHSV.length <= note)
+			ClientPrefs.data.arrowHSV.push([0, 0, 0]);
+		var hsv:Array<Float> = ClientPrefs.data.arrowHSV[note];
+		while (hsv.length < 3)
+			hsv.push(0);
+		return hsv;
+	}
+
+	function classicColor(note:Int):FlxColor
+	{
+		var hsv:Array<Float> = classicHSV(note);
+		var hue:Float = hsv[0] % 360;
+		if (hue < 0)
+			hue += 360;
+		var sat:Float = FlxMath.bound((hsv[1] + 100) / 200, 0, 1);
+		var brt:Float = FlxMath.bound((hsv[2] + 100) / 200, 0, 1);
+		return FlxColor.fromHSB(hue, sat, brt);
+	}
+
 	override function destroy()
 	{
-		// Cancelar el tween del texto de advertencia
-		if (notITGWarningText != null)
-			FlxTween.cancelTweensOf(notITGWarningText);
-
 		Note.globalRgbShaders = [];
 		super.destroy();
 	}
 }
-

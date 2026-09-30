@@ -148,7 +148,6 @@ class ZhHK
 		"description_pop_up_score" => "如果選中，擊中音符時會顯示你獲得的分數。",
 		"description_auto_pause" => "如果選中，當螢幕失去焦點時遊戲自動暫停。",
 		"description_disable_reset_button" => "如果選中，按重置不會做任何事。",
-		"description_hitsound_volume" => "有趣的音符在你擊中時發出\"滴答\"聲。",
 		"description_rating_offset" => "改變擊中\"超棒！\"需要多晚/多早\n更高的值意味著你需要擊中得更晚。",
 		"description_flawless_hit_window" => "改變你擊中史詩！的時間量（毫秒）。",
 		"description_sick_hit_window" => "改變你擊中\"超棒！\"的時間量（毫秒）。",
@@ -427,7 +426,6 @@ class ZhHK
 		"setting_auto_pause" => "Auto Pause",
 		"setting_pop_up_score" => "Combo and Rating Pop-ups",
 		"setting_disable_reset_button" => "Disable Reset Button",
-		"setting_hitsound_volume" => "Hitsound Volume",
 		"setting_rating_offset" => "Rating Offset",
 		"setting_flawless_hit_window" => "flawless! Hit Window",
 		"setting_sick_hit_window" => "Sick! Hit Window",
@@ -508,7 +506,6 @@ class ZhHK
 		"touchpad_actionmode_missing" => "This touchpad mode is missing its action buttons configuration.",
 		"touchpad_dpadmode_missing" => "This touchpad mode is missing its d-pad configuration.",
 		"modchart_converter" => "Modchart Converter",
-		"note_colors_notitg" => "RGB SHADERS DISABLED - NotITG skin preserves original colors",
 		"new_freeplay_song_time" => "Time: {1}",
 	];
 }

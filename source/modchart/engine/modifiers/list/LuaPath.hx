@@ -72,7 +72,8 @@ class LuaPath extends PathModifier {
 			lane: params.lane,
 			player: params.player,
 			isTapArrow: params.isTapArrow,
-			straightHolds: params.straightHolds
+			straightHolds: params.straightHolds,
+			isHoldBody: params.isHoldBody
 		};
 
 		pathOffset.z = pos.z;

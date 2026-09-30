@@ -2,7 +2,7 @@ package backend;
 
 import backend.AssetLoader;
 import backend.Song;
-import psychlua.ModchartSprite;
+import psychlua.backend.ModchartSprite;
 
 typedef StageFile =
 {

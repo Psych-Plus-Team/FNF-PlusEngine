@@ -10,7 +10,7 @@ import lime.system.System;
 import slushithings.windows.WindowsCPP;
 import slushithings.windows.winGDIThings.SlushiWinGDI;
 import slushithings.windows.winGDIThings.WinGDIThread;
-import psychlua.LuaUtils;
+import psychlua.backend.LuaUtils;
 import backend.ClientPrefs;
 #end
 

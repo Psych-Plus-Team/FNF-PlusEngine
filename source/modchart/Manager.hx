@@ -2,12 +2,10 @@ package modchart;
 
 import flixel.FlxBasic;
 import flixel.tweens.FlxEase.EaseFunction;
-import flixel.util.FlxSort;
 import haxe.ds.StringMap;
-import haxe.ds.Vector;
 import modchart.backend.core.Node.NodeFunction;
 import modchart.engine.events.types.CallbackEvent;
-import psychlua.LuaUtils;
+import psychlua.backend.LuaUtils;
 
 using StringTools;
 
@@ -71,6 +69,7 @@ final class Manager extends FlxBasic
 	private var __primary:Bool = false;
 	private var __renderRequested:Bool = false;
 	private var __wasRendering:Bool = false;
+	private var __hasRenderableModchartContent:Bool = false;
 
 	/** Exposes renderer stats for debug overlays. */
 	public var rendererStats(get, never):CtxRenderer;
@@ -132,8 +131,12 @@ final class Manager extends FlxBasic
 		__renderRequested = false;
 	}
 
-	public inline function requestRender():Void
+	public inline function requestRender(?hasRenderableContent:Bool = true):Void
+	{
 		__renderRequested = true;
+		if (hasRenderableContent)
+			__hasRenderableModchartContent = true;
+	}
 
 	/**
 	 * Internal helper function to apply a function to each playfield.
@@ -206,6 +209,27 @@ final class Manager extends FlxBasic
 	{
 		requestRender();
 		iteratePlayfields((pf) -> pf.setPercent(name, value, player), field);
+	}
+
+	/**
+	 * Immediately resets all touched modifiers to their engine defaults.
+	 *
+	 * Most modifiers default to 0. Multipliers and visibility values such as xmod,
+	 * scale and alpha return to 1, while hidden/sudden thresholds keep their native defaults.
+	 */
+	public inline function resetModsNow(player:Int = -1, field:Int = -1)
+	{
+		requestRender();
+		iteratePlayfields((pf) -> pf.resetModsNow(player), field);
+	}
+
+	/**
+	 * Schedules a full modifier reset on a beat.
+	 */
+	public inline function resetMods(beat:Float, player:Int = -1, field:Int = -1)
+	{
+		requestRender();
+		iteratePlayfields((pf) -> pf.resetMods(beat, player), field);
 	}
 
 	/**
@@ -476,10 +500,9 @@ final class Manager extends FlxBasic
 	 */
 	public function addPlayfield(?name:String, ?beat:Float):Int
 	{
-		requestRender();
-
 		if (beat != null && !Math.isNaN(beat))
 		{
+			requestRender();
 			__scheduledPlayfieldOps.push({
 				beat: beat,
 				add: true,
@@ -493,10 +516,12 @@ final class Manager extends FlxBasic
 
 		if (name == null || name.trim().length <= 0)
 		{
+			requestRender(playfields.length > 0);
 			playfields.push(new PlayField());
 			return playfields.length - 1;
 		}
 
+		requestRender();
 		final entry = __getOrCreateNamedPlayfield(name);
 		__activateNamedPlayfield(entry);
 		return __findPlayfieldIndex(entry.playfield);
@@ -559,7 +584,10 @@ final class Manager extends FlxBasic
 	 */
 	override function update(elapsed:Float):Void
 	{
-		if (!__primary)
+		if (!__primary || Adapter.instance == null)
+			return;
+
+		if (!__hasRuntimeWork())
 			return;
 
 		super.update(elapsed);
@@ -569,7 +597,7 @@ final class Manager extends FlxBasic
 		final beat = Adapter.instance.getCurrentBeat();
 
 		iteratePlayfields(pf -> pf.beginFrame(__frameToken, songPos, beat));
-		__updateScheduledPlayfieldOps(Adapter.instance.getCurrentBeat());
+		__updateScheduledPlayfieldOps(beat);
 
 		iteratePlayfields(pf -> pf.update(elapsed));
 	}
@@ -579,7 +607,7 @@ final class Manager extends FlxBasic
 	 */
 	override function draw():Void
 	{
-		final shouldRender = __primary && shouldRenderModchart();
+		final shouldRender = __primary && Adapter.instance != null && renderer != null && shouldRenderModchart();
 
 		if (!shouldRender)
 		{
@@ -590,7 +618,7 @@ final class Manager extends FlxBasic
 		}
 
 		__wasRendering = true;
-		var playerItems = Adapter.instance.getArrowItems();
+		final playerItems = Adapter.instance.getArrowItems();
 
 		if (playerItems == null)
 			return;
@@ -603,7 +631,37 @@ final class Manager extends FlxBasic
 		if (state != null && (!state.modchartManagerEnabled || !state.modchartControlsStrumRender))
 			return false;
 
-		return __renderRequested || Config.RENDER_ARROW_PATHS || activePlayfieldCount > 1 || totalEventCount > 0;
+		return Config.RENDER_ARROW_PATHS || __hasExtraPlayfields() || (__renderRequested && __hasRenderableModchartContent) || __hasEvents();
+	}
+
+	private inline function __hasRuntimeWork():Bool
+	{
+		return Config.RENDER_ARROW_PATHS || __renderRequested || __scheduledPlayfieldOps.length > 0 || __hasExtraPlayfields() || __hasEvents();
+	}
+
+	private function __hasExtraPlayfields():Bool
+	{
+		var count = 0;
+		for (playfield in playfields)
+		{
+			if (playfield == null)
+				continue;
+
+			count++;
+			if (count > 1)
+				return true;
+		}
+		return false;
+	}
+
+	private function __hasEvents():Bool
+	{
+		for (playfield in playfields)
+		{
+			if (playfield != null && playfield.events.totalEvents > 0)
+				return true;
+		}
+		return false;
 	}
 
 	/**

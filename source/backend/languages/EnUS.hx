@@ -351,8 +351,6 @@ class EnUS
 		"description_pop_up_score" => "If checked, shows combo and rating pop-ups when you hit notes.",
 		"setting_disable_reset_button" => "Disable Reset Button",
 		"description_disable_reset_button" => "If checked, pressing Reset won't do anything.",
-		"setting_hitsound_volume" => "Hitsound Volume",
-		"description_hitsound_volume" => "Funny notes go \"Tick!\" when you hit them.",
 		"setting_rating_offset" => "Rating Offset",
 		"description_rating_offset" => "Changes how late/early you have to hit for a \"Sick!\"\nHigher values mean you have to hit later.",
 		"setting_use_flawless_rating" => "Use Flawless Rating",
@@ -446,6 +444,7 @@ class EnUS
 		"dialogue_editor" => "Dialogue Editor",
 		"dialogue_portrait_editor" => "Dialogue Portrait Editor",
 		"note_splash_editor" => "Note Splash Editor",
+		"note_rgb_disabled_editor" => "Note RGB is disabled!!!",
 		"no_mod_directory_loaded" => "< No mod directory loaded. >",
 		"loaded_mod_directory" => "< Mod directory loaded: {1} >",
 		"time_hours" => "HRS",
@@ -526,7 +525,6 @@ class EnUS
 		"touchpad_dpadmode_missing" => "This touchpad mode is missing its d-pad configuration.",
 		// Misc UI / Translator Notes
 		"modchart_converter" => "Modchart Converter",
-		"note_colors_notitg" => "RGB SHADERS DISABLED - NotITG skin preserves original colors",
 		// Translator reference:
 		// The following families are generated dynamically by the engine and
 		// resolve to concrete keys already declared above:

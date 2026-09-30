@@ -36,8 +36,6 @@ class TextureOptimizer
 		// This saves RAM without breaking coordinates
 		if (tier == 0 && bitmap.image != null)
 		{
-			trace('TextureOptimizer: Disposing CPU-side data for ${bitmap.width}x${bitmap.height} texture (tier $tier)');
-
 			// Lock bitmap to prevent modifications
 			bitmap.lock();
 

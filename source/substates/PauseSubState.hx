@@ -323,7 +323,7 @@ class PauseSubState extends MusicBeatSubstate
 
 		super.update(elapsed);
 
-		if (controls.BACK)
+		if (controls.BACK #if android || FlxG.android.justReleased.BACK #end)
 		{
 			close();
 			return;

@@ -8,16 +8,16 @@ import backend.Screenshot;
 import objects.MaterialVolumeTray;
 import flixel.FlxGame;
 import flixel.FlxState;
+import InitState.InitialState;
 import openfl.Lib;
 import openfl.display.Sprite;
 import openfl.display.Bitmap;
 import openfl.display.BitmapData;
 import openfl.display.StageScaleMode;
 import lime.app.Application;
-import states.TitleState;
 #if HSCRIPT_ALLOWED
 import crowplexus.iris.Iris;
-import psychlua.HScript.HScriptInfos;
+import psychlua.backend.HScript.HScriptInfos;
 #end
 import openfl.events.KeyboardEvent;
 import flixel.util.FlxTimer;
@@ -39,7 +39,7 @@ class Main extends Sprite
 	public static final game = {
 		width: 1280, // WINDOW width
 		height: 720, // WINDOW height
-		initialState: TitleState, // initial game state
+		initialState: InitialState, // initial game state
 		framerate: 60, // default framerate
 		skipSplash: true, // if the default flixel splash screen should be skipped
 		startFullscreen: false // if the game should start at fullscreen mode
@@ -63,6 +63,16 @@ class Main extends Sprite
 
 	public static function main():Void
 	{
+		#if (cpp && windows)
+		final maxInstanceSlots:Int = ClientPrefs.loadMaxInstanceSlotsEarly();
+		if (!backend.Native.reserveInstanceSlot(maxInstanceSlots))
+		{
+			backend.Native.showInstanceLimitMessage(maxInstanceSlots);
+			Sys.exit(0);
+			return;
+		}
+		#end
+
 		Lib.current.addChild(new Main());
 		#if cpp
 		cpp.NativeGc.enable(true);
@@ -176,7 +186,7 @@ class Main extends Sprite
 		scripting.ScriptBackend.setup();
 		#end
 
-		#if LUA_ALLOWED Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(psychlua.CallbackHandler.call)); #end
+		#if LUA_ALLOWED Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(psychlua.backend.CallbackHandler.call)); #end
 		Controls.instance = new Controls();
 		ClientPrefs.loadDefaultKeys();
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
@@ -266,7 +276,7 @@ class Main extends Sprite
 		try
 		{
 			if (Application.current != null && Application.current.window != null && Reflect.hasField(Application.current.window, 'vsync'))
-				Reflect.setProperty(Application.current.window, 'vsync', ClientPrefs.data.vsync);
+				Reflect.setProperty(Application.current.window, 'vsync', ClientPrefs.getEffectiveVSync());
 		}
 		catch (_:Dynamic) {}
 

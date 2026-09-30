@@ -475,7 +475,10 @@ class Character extends FlxSprite
 	override function update(elapsed:Float)
 	{
 		if (currentUsesAnimateAtlas())
+		{
 			atlas.update(elapsed);
+			stabilizeAnimateAtlasFrame();
+		}
 
 		if (debugMode || isAnimationNull())
 		{
@@ -544,6 +547,14 @@ class Character extends FlxSprite
 			playAnim('$name-loop');
 
 		super.update(elapsed);
+	}
+
+	override function updateAnimation(elapsed:Float):Void
+	{
+		if (currentUsesAnimateAtlas())
+			return;
+
+		super.updateAnimation(elapsed);
 	}
 
 	inline public function isAnimationNull():Bool
@@ -796,7 +807,9 @@ class Character extends FlxSprite
 			atlas.scrollFactor = scrollFactor;
 			atlas.scale = scale;
 			atlas.offset = offset;
-			atlas.origin = origin;
+			// FlxAnimate.origin stores the atlas transformationPoint/pivot.
+			// Replacing it with the Character sprite origin makes some Texture Atlas
+			// characters drift between frames or animations.
 			atlas.x = x;
 			atlas.y = y;
 			atlas.angle = angle;
@@ -809,6 +822,15 @@ class Character extends FlxSprite
 			atlas.colorTransform = colorTransform;
 			atlas.color = color;
 		}
+	}
+
+	function stabilizeAnimateAtlasFrame():Void
+	{
+		if (atlas == null || atlas.anim == null || atlas.anim.curInstance == null)
+			return;
+
+		@:privateAccess
+		atlas.anim.curInstance.updateRender(0, atlas.anim.curFrame, atlas.anim.symbolDictionary, atlas.anim.swfRender);
 	}
 
 	public override function destroy()

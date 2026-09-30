@@ -3,36 +3,75 @@ package scripting;
 #if HSCRIPT_ALLOWED
 import hxscript.syntax.Expr.ImportMode;
 import hxscript.types.TypeCollection;
+import flixel.FlxG;
 
 class ScriptGlobals {
 	public static var registeredCount(default, null):Int = 0;
 	public static var skippedCount(default, null):Int = 0;
+	static var modSaveCache:Map<String, flixel.util.FlxSave> = new Map();
 
 	static var keepScriptError:Class<ScriptError> = ScriptError;
 	static var keepScriptBytes:Class<ScriptBytes> = ScriptBytes;
 	static var keepScriptDraw:Class<ScriptDraw> = ScriptDraw;
+	static var keepAssetLoader:Class<backend.AssetLoader> = backend.AssetLoader;
+	static var keepScriptHttp:Class<backend.ScriptHttp> = backend.ScriptHttp;
+	static var keepBuildInfo:Class<backend.BuildInfo> = backend.BuildInfo;
+	static var keepSecurityReview:Class<backend.SecurityReview> = backend.SecurityReview;
+	static var keepTransitionManager:Class<backend.TransitionManager> = backend.TransitionManager;
+	static var keepTouchUtil:Class<mobile.backend.TouchUtil> = mobile.backend.TouchUtil;
 	static var keepABotSpectrum:Class<objects.ABotSpectrum> = objects.ABotSpectrum;
+	static var keepCursor:Class<objects.Cursor> = objects.Cursor;
 	static var keepPsychFlxAnimate:Class<backend.PsychFlxAnimate> = backend.PsychFlxAnimate;
+	#if DISCORD_ALLOWED
+	static var keepDiscordClient:Class<backend.DiscordClient> = backend.DiscordClient;
+	#end
 	static var keepCutsceneHandler:Class<cutscenes.CutsceneHandler> = cutscenes.CutsceneHandler;
 	static var keepRainShader:Class<shaders.RainShader> = shaders.RainShader;
 	static var keepGameOverSubstate:Class<substates.GameOverSubstate> = substates.GameOverSubstate;
+	static var keepStickerSubState:Class<substates.StickerSubState> = substates.StickerSubState;
+	static var keepTitleState:Class<states.TitleState> = states.TitleState;
+	static var keepMainMenuState:Class<states.MainMenuState> = states.MainMenuState;
+	static var keepStoryMenuState:Class<states.StoryMenuState> = states.StoryMenuState;
+	static var keepFreeplayState:Class<states.FreeplayState> = states.FreeplayState;
+	static var keepFreeplayStateSelector:Class<states.FreeplayStateSelector> = states.FreeplayStateSelector;
+	static var keepCreditsState:Class<states.CreditsState> = states.CreditsState;
+	static var keepAchievementsMenuState:Class<states.AchievementsMenuState> = states.AchievementsMenuState;
+	static var keepResetScoreSubState:Class<substates.ResetScoreSubState> = substates.ResetScoreSubState;
+	static var keepOptionsState:Class<options.OptionsState> = options.OptionsState;
+	static var keepGameplayChangersSubstate:Class<options.GameplayChangersSubstate> = options.GameplayChangersSubstate;
+	static var keepFlxBitmapText:Class<flixel.text.FlxBitmapText> = flixel.text.FlxBitmapText;
+	static var keepFlxMouseEvent:Dynamic = flixel.input.mouse.FlxMouseEvent;
+	static var keepFlxVideoSprite:Class<hxvlc.flixel.FlxVideoSprite> = hxvlc.flixel.FlxVideoSprite;
 
 	public static final TYPE_IMPORTS:Array<String> = [
 		'backend.Paths',
+		'backend.Achievements',
+		'backend.AssetLoader',
+			'backend.ScriptHttp',
+		'haxe.Json',
+		'backend.BuildInfo',
+		'backend.SecurityReview',
+		'mobile.backend.TouchUtil',
+		'mobile.backend.MobileData',
 		'backend.Controls',
 		'backend.CoolUtil',
 		'backend.MusicBeatState',
 		'backend.MusicBeatSubstate',
 		'backend.CustomFadeTransition',
+		'backend.TransitionManager',
 		'backend.ClientPrefs',
 		'backend.Conductor',
 		'backend.BaseStage',
 		'backend.PsychFlxAnimate',
+		#if DISCORD_ALLOWED
+		'backend.DiscordClient',
+		#end
 		'backend.Difficulty',
 		'backend.Mods',
 		'backend.Language',
 		'backend.PsychCamera',
 		'backend.Song',
+		'backend.StageData',
 		'backend.Highscore',
 		'backend.WeekData',
 		'objects.Alphabet',
@@ -40,19 +79,38 @@ class ScriptGlobals {
 		'objects.Character',
 		'objects.HealthIcon',
 		'objects.ABotSpectrum',
+		'objects.Cursor',
 		'objects.Note',
 		'objects.NoteSplash',
 		'objects.StrumNote',
-		'psychlua.CustomSubstate',
-		'psychlua.ModchartSprite',
+		'objects.MenuItem',
+		'psychlua.backend.CustomSubstate',
+		'psychlua.backend.ModchartSprite',
 		'scripting.ScriptBytes',
 		'scripting.ScriptDraw',
 		'scripting.ScriptError',
 		'cutscenes.CutsceneHandler',
 		'shaders.RainShader',
+		'states.TitleState',
+		'states.MainMenuState',
+		'states.StoryMenuState',
+		'states.ModsMenuState',
 		'states.PlayState',
+		'states.FreeplayState',
+		'states.FreeplayStateSelector',
+		'states.CreditsState',
+		'states.AchievementsMenuState',
 		'states.LoadingState',
+		'options.OptionsState',
+		'options.GameplayChangersSubstate',
 		'substates.GameOverSubstate',
+		'substates.ResetScoreSubState',
+		'substates.StickerSubState',
+		'flixel.text.FlxBitmapText',
+		'flixel.input.mouse.FlxMouseEvent',
+		'hxvlc.flixel.FlxVideoSprite',
+		'states.ModsMenuState',
+		'states.editors.MasterEditorMenu',
 		'flixel.FlxG',
 		'flixel.FlxBasic',
 		'flixel.FlxObject',
@@ -63,13 +121,16 @@ class ScriptGlobals {
 		'flixel.math.FlxPoint',
 		'flixel.util.FlxTimer',
 		'flixel.util.FlxColor',
+		'flixel.util.FlxAxes',
 		'flixel.util.FlxSort',
 		'flixel.util.FlxStringUtil',
 		'flixel.text.FlxText',
 		'flixel.tweens.FlxEase',
 		'flixel.tweens.FlxTween',
 		'flixel.group.FlxGroup',
+		'flixel.group.FlxTypedGroup',
 		'flixel.group.FlxSpriteGroup',
+		'flixel.graphics.FlxGraphic',
 		'flixel.ui.FlxButton',
 		'flixel.ui.FlxBar',
 		'flixel.addons.display.FlxBackdrop',
@@ -77,6 +138,7 @@ class ScriptGlobals {
 		'flixel.addons.display.FlxRuntimeShader',
 		'flixel.effects.FlxFlicker',
 		'flixel.addons.transition.FlxTransitionableState',
+		'openfl.utils.AssetType',
 		'openfl.display.Sprite',
 		'openfl.display.Bitmap',
 		'openfl.display.BitmapData',
@@ -95,6 +157,7 @@ class ScriptGlobals {
 		'openfl.text.TextField',
 		'openfl.text.TextFormat',
 		'openfl.utils.Assets',
+		'openfl.filters.ShaderFilter',
 		'openfl.media.Sound',
 		'openfl.events.Event',
 		'openfl.events.MouseEvent',
@@ -102,10 +165,10 @@ class ScriptGlobals {
 		'lime.system.System',
 		'lime.utils.Assets',
 		'lime.math.Rectangle',
-		'lime.math.Vector2'
+		'lime.math.Vector2',
 	];
 
-	public static final buildTarget:String = psychlua.LuaUtils.getBuildTarget();
+	public static final buildTarget:String = psychlua.backend.LuaUtils.getBuildTarget();
 
 	public static function register():Void {
 		registeredCount = 0;
@@ -142,10 +205,49 @@ class ScriptGlobals {
 
 		set('controls', backend.Controls.instance);
 		set('buildTarget', buildTarget);
+		set('BuildInfo', backend.BuildInfo);
+		set('TransitionManager', backend.TransitionManager);
+		set('Json', haxe.Json);
+		set('parseJson', parseJson);
+		set('stringifyJson', stringifyJson);
+		set('ScriptHttp', backend.ScriptHttp);
+		set('Http', backend.ScriptHttp);
+		set('Cursor', objects.Cursor);
+		set('setCursor', function(name:String, ?scale:Float = 1.0, ?offsetX:Int = 0, ?offsetY:Int = 0):Bool return objects.Cursor.setCustom(name, scale, offsetX, offsetY, mod));
+		set('resetCursor', function():Void objects.Cursor.resetCustom());
+		set('TouchUtil', mobile.backend.TouchUtil);
+		set('X', flixel.util.FlxAxes.X);
+		set('Y', flixel.util.FlxAxes.Y);
+		set('XY', flixel.util.FlxAxes.XY);
+		set('TEXT', openfl.utils.AssetType.TEXT);
+		set('IMAGE', openfl.utils.AssetType.IMAGE);
+		set('SOUND', openfl.utils.AssetType.SOUND);
+		set('MUSIC', openfl.utils.AssetType.MUSIC);
+		set('BINARY', openfl.utils.AssetType.BINARY);
+		set('FONT', openfl.utils.AssetType.FONT);
+		#if DISCORD_ALLOWED
+		set('DiscordClient', backend.DiscordClient);
+		set('Discord', backend.DiscordClient);
+		#end
 		set('getVar', getVar);
 		set('setVar', setVar);
 		set('removeVar', removeVar);
+		set('getModSave', function(key:String, ?defaultValue:Dynamic = null, ?modName:String = null):Dynamic {
+			return getModSave(key, defaultValue, modName == null ? mod : modName);
+		});
+		set('setModSave', function(key:String, value:Dynamic, ?modName:String = null):Dynamic {
+			return setModSave(key, value, modName == null ? mod : modName);
+		});
+		set('flushModSave', function(?modName:String = null):Void flushModSave(modName == null ? mod : modName));
 		set('debugPrint', debugPrint);
+		set('getObjX', getObjX);
+		set('getObjY', getObjY);
+		set('setObjX', setObjX);
+		set('setObjY', setObjY);
+		set('setObjScale', setObjScale);
+		set('lerp', lerp);
+		set('clamp', clamp);
+		set('randomFloat', randomFloat);
 		set('switchState', switchState);
 		set('switchToState', function(name:String, ?args:Array<Dynamic>):Bool return ScriptedStates.switchToState(name, args));
 		set('openScriptedSubstate', function(name:String, ?args:Array<Dynamic>):Bool return ScriptedStates.openSubstate(name, args));
@@ -164,16 +266,16 @@ class ScriptGlobals {
 		set('getModSetting', function(saveTag:String, ?modName:String):Dynamic {
 			if (modName == null)
 				modName = mod;
-			return psychlua.LuaUtils.getModSetting(saveTag, modName);
+			return psychlua.backend.LuaUtils.getModSetting(saveTag, modName);
 		});
 
 		sharedInput(set);
 
-		set('Function_Stop', psychlua.LuaUtils.Function_Stop);
-		set('Function_Continue', psychlua.LuaUtils.Function_Continue);
-		set('Function_StopLua', psychlua.LuaUtils.Function_StopLua);
-		set('Function_StopHScript', psychlua.LuaUtils.Function_StopHScript);
-		set('Function_StopAll', psychlua.LuaUtils.Function_StopAll);
+		set('Function_Stop', psychlua.backend.LuaUtils.Function_Stop);
+		set('Function_Continue', psychlua.backend.LuaUtils.Function_Continue);
+		set('Function_StopLua', psychlua.backend.LuaUtils.Function_StopLua);
+		set('Function_StopHScript', psychlua.backend.LuaUtils.Function_StopHScript);
+		set('Function_StopAll', psychlua.backend.LuaUtils.Function_StopAll);
 	}
 
 	public static function getVar(name:String):Dynamic
@@ -191,8 +293,127 @@ class ScriptGlobals {
 		return true;
 	}
 
+	public static function resolveModSaveName(?modName:String = null):String {
+		var folder:String = modName;
+		if (folder == null || folder.length <= 0)
+			folder = backend.Mods.launchedMod;
+		if (folder == null || folder.length <= 0)
+			folder = backend.Mods.currentModDirectory;
+		if (folder == null || folder.length <= 0)
+			folder = 'global';
+
+		folder = StringTools.replace(folder, '\\', '_');
+		folder = StringTools.replace(folder, '/', '_');
+		folder = StringTools.replace(folder, ':', '_');
+		folder = StringTools.replace(folder, ' ', '_');
+		folder = StringTools.replace(folder, '{', '');
+		folder = StringTools.replace(folder, '}', '');
+		folder = StringTools.replace(folder, '(', '');
+		folder = StringTools.replace(folder, ')', '');
+		folder = StringTools.replace(folder, '[', '');
+		folder = StringTools.replace(folder, ']', '');
+		return folder;
+	}
+
+	static function getModSaveFile(?modName:String = null):flixel.util.FlxSave {
+		var saveName:String = resolveModSaveName(modName);
+		var cached:flixel.util.FlxSave = modSaveCache.get(saveName);
+		if (cached != null)
+			return cached;
+
+		var save:flixel.util.FlxSave = new flixel.util.FlxSave();
+		save.bind(saveName, backend.CoolUtil.getSavePath() + '/mods');
+		modSaveCache.set(saveName, save);
+		return save;
+	}
+
+	static function getLegacyModSaveBucket(saveName:String):Dynamic {
+		var root:Dynamic = FlxG.save.data.modSaves;
+		if (root == null)
+			return null;
+
+		var bucket:Dynamic = Reflect.field(root, saveName);
+		if (bucket != null)
+			return bucket;
+
+		var launched:String = backend.Mods.launchedMod;
+		if (launched != null && launched.length > 0)
+			return Reflect.field(root, launched);
+
+		return null;
+	}
+
+	public static function getModSave(key:String, ?defaultValue:Dynamic = null, ?modName:String = null):Dynamic {
+		var saveName:String = resolveModSaveName(modName);
+		var save:flixel.util.FlxSave = getModSaveFile(saveName);
+		var value:Dynamic = Reflect.field(save.data, key);
+		if (value == null) {
+			var legacyBucket:Dynamic = getLegacyModSaveBucket(saveName);
+			if (legacyBucket != null) {
+				var legacyValue:Dynamic = Reflect.field(legacyBucket, key);
+				if (legacyValue != null) {
+					Reflect.setField(save.data, key, legacyValue);
+					save.flush();
+					return legacyValue;
+				}
+			}
+		}
+		return value == null ? defaultValue : value;
+	}
+
+	public static function setModSave(key:String, value:Dynamic, ?modName:String = null):Dynamic {
+		var save:flixel.util.FlxSave = getModSaveFile(modName);
+		Reflect.setField(save.data, key, value);
+		save.flush();
+		return value;
+	}
+
+	public static function flushModSave(?modName:String = null):Void
+		getModSaveFile(modName).flush();
+
 	public static function debugPrint(text:String, ?color:FlxColor):Void
 		ScriptError.show(text, color == null ? FlxColor.WHITE : color);
+
+	public static function parseJson(text:String):Dynamic
+		return haxe.Json.parse(text);
+
+	public static function stringifyJson(value:Dynamic, ?replacer:Dynamic = null, ?space:Dynamic = null):String
+		return haxe.Json.stringify(value, replacer, space);
+
+	public static function getObjX(obj:Dynamic):Float
+		return obj == null ? 0 : Reflect.getProperty(obj, 'x');
+
+	public static function getObjY(obj:Dynamic):Float
+		return obj == null ? 0 : Reflect.getProperty(obj, 'y');
+
+	public static function setObjX(obj:Dynamic, value:Float):Float {
+		if (obj != null)
+			Reflect.setProperty(obj, 'x', value);
+		return value;
+	}
+
+	public static function setObjY(obj:Dynamic, value:Float):Float {
+		if (obj != null)
+			Reflect.setProperty(obj, 'y', value);
+		return value;
+	}
+
+	public static function setObjScale(obj:Dynamic, x:Float, ?y:Float):Void {
+		if (obj == null)
+			return;
+		var scale:Dynamic = Reflect.getProperty(obj, 'scale');
+		if (scale != null)
+			scale.set(x, y == null ? x : y);
+	}
+
+	public static inline function lerp(a:Float, b:Float, ratio:Float):Float
+		return a + (b - a) * ratio;
+
+	public static inline function clamp(value:Float, min:Float, max:Float):Float
+		return Math.max(min, Math.min(max, value));
+
+	public static function randomFloat(min:Float, max:Float):Float
+		return min + (max - min) * (FlxG.random.int(0, 1000000) / 1000000.0);
 
 	public static function switchState(state:flixel.FlxState):Void
 		backend.MusicBeatState.switchState(state);

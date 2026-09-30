@@ -53,10 +53,10 @@ class TraceDisplay extends Sprite
 	/**
 	 * Máximo número de traces a mostrar
 	 */
-	public var maxTraces:Int = 80;
+	public var maxTraces:Int = 48;
 
-	public var maxStoredLines:Int = 80;
-	public var maxVisibleLines:Int = 18;
+	public var maxStoredLines:Int = 56;
+	public var maxVisibleLines:Int = 14;
 
 	private static inline final TEXT_PADDING:Int = 8;
 
@@ -78,6 +78,7 @@ class TraceDisplay extends Sprite
 	private var baseX:Float = 0;
 	private var baseY:Float = 0;
 	private var shownAmount:Float = 0;
+	private var dirty:Bool = true;
 
 	/**
 	 * Referencia al trace original de Haxe
@@ -239,6 +240,7 @@ class TraceDisplay extends Sprite
 			{
 				trace.count++;
 				trace.timestamp = haxe.Timer.stamp();
+				dirty = true;
 				if (isVisible)
 				{
 					updateDisplay();
@@ -257,6 +259,7 @@ class TraceDisplay extends Sprite
 
 		traces.push(traceInfo);
 		enforceTraceLimits();
+		dirty = true;
 
 		// Actualizar display si está visible
 		if (isVisible)
@@ -491,6 +494,8 @@ class TraceDisplay extends Sprite
 	{
 		if (!isVisible)
 			return;
+		if (!dirty)
+			return;
 
 		var displayText:String = "=== TRACES ===\n";
 
@@ -505,6 +510,7 @@ class TraceDisplay extends Sprite
 
 		textDisplay.text = displayText;
 		updateBackground();
+		dirty = false;
 	}
 
 	/**
@@ -581,6 +587,7 @@ class TraceDisplay extends Sprite
 	public function clear():Void
 	{
 		traces = [];
+		dirty = true;
 		if (isVisible)
 		{
 			updateDisplay();

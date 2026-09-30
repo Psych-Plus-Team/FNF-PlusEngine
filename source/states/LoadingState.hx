@@ -16,7 +16,7 @@ import objects.GlobalLoadingOverlay;
 import objects.Note;
 import objects.NoteSplash;
 #if HSCRIPT_ALLOWED
-import psychlua.HScript;
+import psychlua.backend.HScript;
 import crowplexus.iris.Iris;
 import crowplexus.hscript.Expr.Error as IrisError;
 import crowplexus.hscript.Printer;
@@ -450,7 +450,7 @@ class LoadingState extends MusicBeatState
 		{
 			for (key => bitmap in pending)
 			{
-				if (bitmap != null && Paths.cacheBitmap(pendingKeys.get(key), bitmap) != null)
+				if (bitmap != null && Paths.cacheBitmap(key, null, bitmap) != null)
 				{
 				} // trace('finished preloading image $key');
 				else

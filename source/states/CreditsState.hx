@@ -26,6 +26,15 @@ class CreditsState extends MusicBeatState
 
 	override function create()
 	{
+		#if MODS_ALLOWED
+		// A launched mod must remain the active asset context while CreditsState
+		// probes credit files and icons from other enabled mods.
+		var previousModDirectory:String = Mods.currentModDirectory;
+		var launchedModDirectory:String = Mods.launchedMod;
+		if (launchedModDirectory != null && launchedModDirectory.length > 0)
+			Mods.currentModDirectory = launchedModDirectory;
+		#end
+
 		#if DISCORD_ALLOWED
 		DiscordClient.changePresence("In the Menus", null);
 		#end
@@ -276,7 +285,7 @@ class CreditsState extends MusicBeatState
 				if (credit[1] != null && credit[1].length > 0)
 				{
 					var icon:AttachedSprite = new AttachedSprite(str);
-					if (str.endsWith('-pixel'))
+					if (StringTools.endsWith(str, '-pixel'))
 						icon.antialiasing = false;
 					icon.xAdd = optionText.width + 10;
 					icon.sprTracker = optionText;
@@ -284,7 +293,9 @@ class CreditsState extends MusicBeatState
 					iconArray.push(icon);
 					add(icon);
 				}
-				Mods.currentModDirectory = '';
+				#if MODS_ALLOWED
+				Mods.currentModDirectory = (Mods.launchedMod != null && Mods.launchedMod.length > 0) ? Mods.launchedMod : previousModDirectory;
+				#end
 
 				if (curSelected == -1)
 					curSelected = i;
@@ -313,6 +324,10 @@ class CreditsState extends MusicBeatState
 		addTouchPad('UP_DOWN', 'A_B');
 
 		super.create();
+
+		#if MODS_ALLOWED
+		Mods.currentModDirectory = (Mods.launchedMod != null && Mods.launchedMod.length > 0) ? Mods.launchedMod : previousModDirectory;
+		#end
 	}
 
 	var quitting:Bool = false;
@@ -445,7 +460,7 @@ class CreditsState extends MusicBeatState
 		}
 
 		descText.text = creditsStuff[curSelected][2];
-		if (descText.text.trim().length > 0)
+		if (StringTools.trim(descText.text).length > 0)
 		{
 			descText.visible = true;
 			descBg.visible = true;
@@ -482,7 +497,7 @@ class CreditsState extends MusicBeatState
 			var firstarray:Array<String> = File.getContent(creditsFile).split('\n');
 			for (i in firstarray)
 			{
-				var arr:Array<String> = i.replace('\\n', '\n').split("::");
+				var arr:Array<String> = StringTools.replace(i, '\\n', '\n').split("::");
 				if (arr.length >= 5)
 					arr.push(folder);
 				creditsStuff.push(arr);

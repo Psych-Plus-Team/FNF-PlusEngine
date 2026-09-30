@@ -148,7 +148,6 @@ class JpJP
 		"description_auto_pause" => "チェックすると、画面がフォーカスを失った場合にゲームが自動的にポーズされます。",
 		"description_pop_up_score" => "チェックすると、ノートをヒットしたときに獲得したスコアが表示されます。",
 		"description_disable_reset_button" => "チェックすると、リセットを押しても何もしません。",
-		"description_hitsound_volume" => "ノートをヒットすると面白い「ティック！」音がします。",
 		"description_rating_offset" => "「最高！」をヒットするタイミングの遅い/早いを変更\n高い値はより遅くヒットする必要があることを意味します。",
 		"description_flawless_hit_window" => "エピック！をヒットできる時間をミリ秒で変更します。",
 		"description_sick_hit_window" => "「最高！」をヒットできる時間を\nミリ秒で変更します。",
@@ -420,7 +419,6 @@ class JpJP
 		"setting_auto_pause" => "Auto Pause",
 		"setting_pop_up_score" => "Combo and Rating Pop-ups",
 		"setting_disable_reset_button" => "Disable Reset Button",
-		"setting_hitsound_volume" => "Hitsound Volume",
 		"setting_rating_offset" => "Rating Offset",
 		"setting_flawless_hit_window" => "flawless! Hit Window",
 		"setting_sick_hit_window" => "Sick! Hit Window",
@@ -505,7 +503,6 @@ class JpJP
 		"touchpad_actionmode_missing" => "This touchpad mode is missing its action buttons configuration.",
 		"touchpad_dpadmode_missing" => "This touchpad mode is missing its d-pad configuration.",
 		"modchart_converter" => "Modchart Converter",
-		"note_colors_notitg" => "RGB SHADERS DISABLED - NotITG skin preserves original colors",
 		"new_freeplay_song_time" => "Time: {1}",
 	];
 }

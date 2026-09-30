@@ -262,8 +262,6 @@ class DeDE
 		"description_pop_up_score" => "Wenn deaktiviert, werden die Combo und Bewertungs-Pop-ups deaktiviert.",
 		"setting_disable_reset_button" => "Reset-Taste deaktivieren",
 		"description_disable_reset_button" => "Wenn aktiviert, macht das Drücken von Reset nichts",
-		"setting_hitsound_volume" => "Treffer-Sound-Lautstärke",
-		"description_hitsound_volume" => "Lustige Noten machen \"tick!\" wenn du sie triffst",
 		"setting_rating_offset" => "Bewertungs-Versatz",
 		"description_rating_offset" => "Ändert wie spät/früh du treffen musst für ein \"Sick!\"\nHöhere Werte bedeuten dass du später treffen musst",
 		"setting_flawless_hit_window" => "\"flawless!\"-Treffer-Fenster",
@@ -535,7 +533,6 @@ class DeDE
 		"touchpad_actionmode_missing" => "This touchpad mode is missing its action buttons configuration.",
 		"touchpad_dpadmode_missing" => "This touchpad mode is missing its d-pad configuration.",
 		"modchart_converter" => "Modchart Converter",
-		"note_colors_notitg" => "RGB SHADERS DISABLED - NotITG skin preserves original colors",
 		"new_freeplay_song_time" => "Zeit: {1}",
 	];
 }

@@ -262,8 +262,6 @@ class FrFR
 		"description_pop_up_score" => "Si coché, affiche le combo et la note au-dessus de la barre de santé.",
 		"setting_disable_reset_button" => "Désactiver le bouton reset",
 		"description_disable_reset_button" => "Si coché, appuyer sur reset ne fera rien",
-		"setting_hitsound_volume" => "Son de frappe des notes",
-		"description_hitsound_volume" => "Les notes amusantes font \"tic !\" quand vous les touchez",
 		"setting_rating_offset" => "Décalage de notation",
 		"description_rating_offset" =>
 		"Change à quel point tard/tôt vous devez frapper pour un \"Sick!\"\nLes valeurs plus élevées signifient que vous devez frapper plus tard",
@@ -536,7 +534,6 @@ class FrFR
 		"touchpad_actionmode_missing" => "This touchpad mode is missing its action buttons configuration.",
 		"touchpad_dpadmode_missing" => "This touchpad mode is missing its d-pad configuration.",
 		"modchart_converter" => "Modchart Converter",
-		"note_colors_notitg" => "RGB SHADERS DISABLED - NotITG skin preserves original colors",
 		"new_freeplay_song_time" => "Temps : {1}",
 	];
 }

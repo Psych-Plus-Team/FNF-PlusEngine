@@ -6,7 +6,6 @@ import openfl.net.FileReference;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
 import openfl.events.MouseEvent;
-import openfl.events.TouchEvent;
 import openfl.geom.Point;
 import objects.Character;
 import objects.HealthIcon;
@@ -56,9 +55,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 	var cameraPosition:Point = new Point();
 	var isDragging:Bool = false;
-	var isDraggingChar:Bool = false;
-	var dragStartTouch:FlxPoint = FlxPoint.get();
-	var dragStartPos:Array<Float> = [0, 0];
+	var draggingCharacter:Bool = false;
 
 	public function new(char:String = null, goToPlayState:Bool = true)
 	{
@@ -114,8 +111,8 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		addCharacter();
 
-		cameraFollowPointer = new FlxSprite().makeGraphic(40, 40, FlxColor.WHITE);
-		cameraFollowPointer.alpha = 0.65;
+		cameraFollowPointer = new FlxSprite().makeGraphic(6, 6, FlxColor.LIME);
+		cameraFollowPointer.alpha = controls.mobileC ? 0.25 : 0.45;
 
 		healthBar = new Bar(30, FlxG.height - 75);
 		healthBar.scrollFactor.set();
@@ -173,10 +170,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			FlxG.stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseEvent);
 			FlxG.stage.addEventListener(MouseEvent.MOUSE_MOVE, onMouseEvent);
 			FlxG.stage.addEventListener(MouseEvent.MOUSE_UP, onMouseEvent);
-
-			FlxG.stage.addEventListener(TouchEvent.TOUCH_BEGIN, onTouchEvent);
-			FlxG.stage.addEventListener(TouchEvent.TOUCH_MOVE, onTouchEvent);
-			FlxG.stage.addEventListener(TouchEvent.TOUCH_END, onTouchEvent);
 		}
 
 		if (ClientPrefs.data.cacheOnGPU)
@@ -214,7 +207,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			"Ctrl + Z - Undo Last Paste or Reset",
 			"W/S - Previous/Next Animation",
 			"Space - Replay Animation",
-			"Arrow Keys/Mouse & Right Click - Move Offset",
+			"Arrow Keys - Move Offset",
 			"A/D - Frame Advance (Back/Forward)",
 			"",
 			"OTHER",
@@ -320,7 +313,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	{
 		var tab_group = UI_box.getTab('Ghost').menu;
 
-		// var hideGhostButton:PsychUIButton = null;
 		var makeGhostButton:PsychUIButton = new PsychUIButton(25, 15, "Make Ghost", function()
 		{
 			var anim = anims[curAnim];
@@ -336,9 +328,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 					ghost.animation.pause();
 				}
 				else
-					if (myAnim != null) // This is VERY unoptimized and bad, I hope to find a better replacement that loads only a specific frame as bitmap in the future.
+					if (myAnim != null)
 				{
-					if (animateGhost == null) // If I created the animateGhost on create() and you didn't load an atlas, it would crash the game on destroy, so we create it here
+					if (animateGhost == null)
 					{
 						animateGhost = new FlxAnimate(ghost.x, ghost.y);
 						animateGhost.showPivot = false;
@@ -378,19 +370,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 					if (otherSpr != null)
 						otherSpr.visible = false;
 				}
-				/*hideGhostButton.active = true;
-					hideGhostButton.alpha = 1; */
 				trace('created ghost image');
 			}
 		});
-
-		/*hideGhostButton = new PsychUIButton(20 + makeGhostButton.width, makeGhostButton.y, "Hide Ghost", function() {
-				ghost.visible = false;
-				hideGhostButton.active = false;
-				hideGhostButton.alpha = 0.6;
-			});
-			hideGhostButton.active = false;
-			hideGhostButton.alpha = 0.6; */
 
 		var highlightGhost:PsychUICheckBox = new PsychUICheckBox(20 + makeGhostButton.x + makeGhostButton.width, makeGhostButton.y, "Highlight Ghost", 100);
 		highlightGhost.onClick = function()
@@ -417,7 +399,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		ghostAlphaSlider.label = 'Opacity:';
 
 		tab_group.add(makeGhostButton);
-		// tab_group.add(hideGhostButton);
 		tab_group.add(highlightGhost);
 		tab_group.add(ghostAlphaSlider);
 	}
@@ -787,7 +768,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 	public function UIEvent(id:String, sender:Dynamic)
 	{
-		// trace(id, sender);
 		if (id == PsychUICheckBox.CLICK_EVENT)
 			unsavedProgress = true;
 
@@ -910,7 +890,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			var animAnim:String = '' + anim.anim;
 			var animName:String = '' + anim.name;
 			var animFps:Int = anim.fps;
-			var animLoop:Bool = !!anim.loop; // Bruh
+			var animLoop:Bool = !!anim.loop;
 			var animIndices:Array<Int> = anim.indices;
 			addAnimation(animAnim, animName, animFps, animLoop, animIndices, anim.animType, anim.renderType);
 		}
@@ -953,6 +933,47 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	var holdingFrameElapsed:Float = 0;
 	var undoOffsets:Array<Float> = null;
 
+	function handleMouseDrag():Void
+	{
+		if (character == null || character.scale.x == 0 || character.scale.y == 0)
+			return;
+
+		if (!draggingCharacter)
+		{
+			if (!isMouseOverUI() && FlxG.mouse.justPressed && FlxG.mouse.overlaps(character, camEditor))
+				draggingCharacter = true;
+			return;
+		}
+
+		var anim:AnimArray = (curAnim >= 0 && curAnim < anims.length) ? anims[curAnim] : null;
+		if (anim == null || anim.offsets == null)
+		{
+			draggingCharacter = false;
+			return;
+		}
+
+		var zoom:Float = FlxG.camera.zoom;
+		if (zoom <= 0) zoom = 1;
+
+		var dx:Float = (FlxG.mouse.deltaScreenX / zoom) / character.scale.x;
+		var dy:Float = (FlxG.mouse.deltaScreenY / zoom) / character.scale.y;
+
+		if (character.flipX)
+			dx *= -1;
+
+		character.offset.x -= dx;
+		character.offset.y -= dy;
+
+		anim.offsets[0] = Std.int(character.offset.x);
+		anim.offsets[1] = Std.int(character.offset.y);
+
+		character.addOffset(anim.anim, character.offset.x, character.offset.y);
+		updateText();
+
+		if (FlxG.mouse.justReleased)
+			draggingCharacter = false;
+	}
+
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
@@ -963,61 +984,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			return;
 		}
 		ClientPrefs.toggleVolumeKeys(true);
-
-		if (!ClientPrefs.data.dragCharacterToMove)
-		{
-			isDraggingChar = false;
-		}
-		else
-		{
-			if (FlxG.mouse.justPressed && !isMouseOverUI() && !controls.mobileC)
-			{
-				var mouseWorld:FlxPoint = FlxG.mouse.getWorldPosition();
-				if (character.overlapsPoint(mouseWorld))
-				{
-					isDraggingChar = true;
-					dragStartTouch.set(mouseWorld.x, mouseWorld.y);
-					var anim = anims[curAnim];
-					if (anim != null)
-					{
-						dragStartPos[0] = character.offset.x;
-						dragStartPos[1] = character.offset.y;
-					}
-					else
-					{
-						dragStartPos[0] = 0;
-						dragStartPos[1] = 0;
-					}
-				}
-			}
-
-			if (isDraggingChar && !controls.mobileC)
-			{
-				if (FlxG.mouse.justReleased)
-				{
-					isDraggingChar = false;
-				}
-				else
-				{
-					var mouseWorld:FlxPoint = FlxG.mouse.getWorldPosition();
-					var deltaX:Float = mouseWorld.x - dragStartTouch.x;
-					var deltaY:Float = mouseWorld.y - dragStartTouch.y;
-
-					character.offset.x = dragStartPos[0] - deltaX;
-					character.offset.y = dragStartPos[1] - deltaY;
-
-					var anim = anims[curAnim];
-					if (anim != null && anim.offsets != null)
-					{
-						anim.offsets[0] = Std.int(character.offset.x);
-						anim.offsets[1] = Std.int(character.offset.y);
-						character.addOffset(anim.anim, character.offset.x, character.offset.y);
-						updateText();
-						unsavedProgress = true;
-					}
-				}
-			}
-		}
 
 		var shiftMult:Float = 1;
 		var ctrlMult:Float = 1;
@@ -1030,7 +996,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		if (FlxG.keys.pressed.CONTROL)
 			ctrlMult = 0.25;
 
-		// CAMERA CONTROLS
 		if (FlxG.keys.pressed.J)
 			FlxG.camera.scroll.x -= elapsed * 500 * shiftMult * ctrlMult;
 		if (FlxG.keys.pressed.K)
@@ -1059,7 +1024,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		if (lastZoom != FlxG.camera.zoom)
 			cameraZoomText.text = 'Zoom: ' + FlxMath.roundDecimal(FlxG.camera.zoom, 2) + 'x';
 
-		// CHARACTER CONTROLS
 		var changedAnim:Bool = false;
 		if (anims.length > 1)
 		{
@@ -1125,13 +1089,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		else
 			holdingArrowsTime = 0;
 
-		if (FlxG.mouse.pressedRight && (FlxG.mouse.deltaScreenX != 0 || FlxG.mouse.deltaScreenY != 0))
-		{
-			character.offset.x -= FlxG.mouse.deltaScreenX;
-			character.offset.y -= FlxG.mouse.deltaScreenY;
-			changedOffset = true;
-		}
-
 		if (FlxG.keys.pressed.CONTROL)
 		{
 			if (FlxG.keys.justPressed.C)
@@ -1167,6 +1124,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			character.offset.y = copiedOffset[1];
 			changedOffset = true;
 		}
+
+		if (ClientPrefs.data.dragCharacterToMove)
+			handleMouseDrag();
 
 		var anim = anims[curAnim];
 		if (changedOffset && anim != null && anim.offsets != null)
@@ -1228,7 +1188,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 				}
 
 				txt = 'Frames: ( $frames / ${length - 1} )';
-				// if(character.animation.curAnim.paused) txt += ' - PAUSED';
 				clr = FlxColor.WHITE;
 			}
 		}
@@ -1236,7 +1195,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			frameAdvanceText.text = txt;
 		frameAdvanceText.color = clr;
 
-		// OTHER CONTROLS
 		if (FlxG.keys.justPressed.F12 || touchPad.buttonS.justPressed)
 			silhouettes.visible = !silhouettes.visible;
 
@@ -1274,22 +1232,18 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		}
 	}
 
-	final assetFolder = 'week1'; // load from assets/week1/
+	final assetFolder = 'week1';
 
 	inline function loadBG()
 	{
 		var lastLoaded = Paths.currentLevel;
 		Paths.setCurrentLevel(assetFolder);
 
-		/////////////
-		// bg data //
-		/////////////
 		camEditor.bgColor = FlxColor.TRANSPARENT;
 		new BackgroundStage();
 
 		dadPosition.set(100, 100);
 		bfPosition.set(770, 100);
-		/////////////
 
 		Paths.currentLevel = lastLoaded;
 	}
@@ -1379,7 +1333,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 	inline function updatePresence()
 	{
 		#if DISCORD_ALLOWED
-		// Updating Discord Rich Presence
 		DiscordClient.changePresence("Character Editor", "Character: " + _char, healthIcon.getCharacter());
 		#end
 	}
@@ -1566,7 +1519,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		for (anim in anims)
 			animList.push(anim.anim);
 		if (animList.length < 1)
-			animList.push('NO ANIMATIONS'); // Prevents crash
+			animList.push('NO ANIMATIONS');
 
 		animationDropDown.list = animList;
 	}
@@ -1585,9 +1538,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		FlxG.log.notice("Successfully saved file.");
 	}
 
-	/**
-	 * Called when the save file dialog is cancelled.
-	 */
 	function onSaveCancel(_):Void
 	{
 		if (_file == null)
@@ -1598,9 +1548,6 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		_file = null;
 	}
 
-	/**
-	 * Called if there is an error while saving the gameplay recording.
-	 */
 	function onSaveError(_):Void
 	{
 		if (_file == null)
@@ -1659,93 +1606,28 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		switch (e.type)
 		{
 			case MouseEvent.MOUSE_DOWN:
-				if (isDraggingChar)
-					return;
 				if (!isMouseOverUI())
 				{
-					var mouse = new Point(e.stageX, e.stageY);
-					cameraPosition.x = FlxG.camera.scroll.x + mouse.x;
-					cameraPosition.y = FlxG.camera.scroll.y + mouse.y;
-					isDragging = true;
+					var overChar:Bool = ClientPrefs.data.dragCharacterToMove
+						&& character != null
+						&& FlxG.mouse.overlaps(character, camEditor);
+
+					if (!overChar)
+					{
+						var mouse = new Point(e.stageX, e.stageY);
+						cameraPosition.x = FlxG.camera.scroll.x + mouse.x;
+						cameraPosition.y = FlxG.camera.scroll.y + mouse.y;
+						isDragging = true;
+					}
 				}
 
-			case MouseEvent.MOUSE_MOVE if (isDragging && !isDraggingChar):
+			case MouseEvent.MOUSE_MOVE if (isDragging):
 				var mouse = new Point(e.stageX, e.stageY);
 				FlxG.camera.scroll.x = cameraPosition.x - mouse.x;
 				FlxG.camera.scroll.y = cameraPosition.y - mouse.y;
 
 			case MouseEvent.MOUSE_UP:
 				isDragging = false;
-		}
-	}
-
-	function getWorldFromScreen(screenX:Float, screenY:Float):FlxPoint
-	{
-		var cam = FlxG.camera;
-		return FlxPoint.get((screenX - cam.x) / cam.zoom + cam.scroll.x, (screenY - cam.y) / cam.zoom + cam.scroll.y);
-	}
-
-	function onTouchEvent(e:TouchEvent):Void
-	{
-		if (!controls.mobileC || FlxG.stage == null)
-			return;
-
-		if (!ClientPrefs.data.dragCharacterToMove)
-		{
-			isDraggingChar = false;
-			return;
-		}
-
-		var touchX:Float = e.stageX;
-		var touchY:Float = e.stageY;
-
-		switch (e.type)
-		{
-			case TouchEvent.TOUCH_BEGIN:
-				var mouseWorld = getWorldFromScreen(touchX, touchY);
-				if (character.overlapsPoint(mouseWorld) && !isMouseOverUI())
-				{
-					isDraggingChar = true;
-					isDragging = false;
-					dragStartTouch.set(mouseWorld.x, mouseWorld.y);
-					var anim = anims[curAnim];
-					if (anim != null)
-					{
-						dragStartPos[0] = character.offset.x;
-						dragStartPos[1] = character.offset.y;
-					}
-					else
-					{
-						dragStartPos[0] = 0;
-						dragStartPos[1] = 0;
-					}
-				}
-				mouseWorld.put();
-
-			case TouchEvent.TOUCH_MOVE:
-				if (isDraggingChar)
-				{
-					var mouseWorld = getWorldFromScreen(touchX, touchY);
-					var deltaX = mouseWorld.x - dragStartTouch.x;
-					var deltaY = mouseWorld.y - dragStartTouch.y;
-
-					character.offset.x = dragStartPos[0] - deltaX;
-					character.offset.y = dragStartPos[1] - deltaY;
-
-					var anim = anims[curAnim];
-					if (anim != null && anim.offsets != null)
-					{
-						anim.offsets[0] = Std.int(character.offset.x);
-						anim.offsets[1] = Std.int(character.offset.y);
-						character.addOffset(anim.anim, character.offset.x, character.offset.y);
-						updateText();
-						unsavedProgress = true;
-					}
-					mouseWorld.put();
-				}
-
-			case TouchEvent.TOUCH_END:
-				isDraggingChar = false;
 		}
 	}
 
@@ -1756,17 +1638,10 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 			FlxG.stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseEvent);
 			FlxG.stage.removeEventListener(MouseEvent.MOUSE_MOVE, onMouseEvent);
 			FlxG.stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseEvent);
-
-			FlxG.stage.removeEventListener(TouchEvent.TOUCH_BEGIN, onTouchEvent);
-			FlxG.stage.removeEventListener(TouchEvent.TOUCH_MOVE, onTouchEvent);
-			FlxG.stage.removeEventListener(TouchEvent.TOUCH_END, onTouchEvent);
 		}
 
-		if (dragStartTouch != null)
-			dragStartTouch.put();
 		isDragging = false;
-		isDraggingChar = false;
+		draggingCharacter = false;
 		super.destroy();
 	}
 }
-

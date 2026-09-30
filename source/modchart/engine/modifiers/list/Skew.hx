@@ -8,24 +8,36 @@ import modchart.backend.core.TransformMode;
 class Skew extends Modifier {
 	var xID = 0;
 	var yID = 0;
+	var noteSkewID = 0;
+	var noteSkewXID = 0;
+	var noteSkewYID = 0;
 	var fieldXID = 0;
 	var fieldYID = 0;
 
 	// Per-lane IDs to avoid Std.string(lane) allocations in hot path
 	var xLaneIDs:Array<Int>;
 	var yLaneIDs:Array<Int>;
+	var noteSkewLaneIDs:Array<Int>;
+	var noteSkewXLaneIDs:Array<Int>;
+	var noteSkewYLaneIDs:Array<Int>;
 
 	public function new(pf) {
 		super(pf);
 
 		xID = findID('skewX');
 		yID = findID('skewY');
+		noteSkewID = findID('noteSkew');
+		noteSkewXID = findID('noteSkewX');
+		noteSkewYID = findID('noteSkewY');
 		fieldXID = findID('fieldSkewX');
 		fieldYID = findID('fieldSkewY');
 
 		final maxKeys = 16;
 		xLaneIDs = [for (i in 0...maxKeys) findID('skewX' + i)];
 		yLaneIDs = [for (i in 0...maxKeys) findID('skewY' + i)];
+		noteSkewLaneIDs = [for (i in 0...maxKeys) findID('noteSkew' + i)];
+		noteSkewXLaneIDs = [for (i in 0...maxKeys) findID('noteSkewX' + i)];
+		noteSkewYLaneIDs = [for (i in 0...maxKeys) findID('noteSkewY' + i)];
 	}
 
 	override public function render(curPos:Vector3, params:ModifierParameters) {
@@ -61,6 +73,11 @@ class Skew extends Modifier {
 
 		data.skewX += getUnsafeLaneAdd(xID, xLaneIDs[lane], player);
 		data.skewY += getUnsafeLaneAdd(yID, yLaneIDs[lane], player);
+		if (!params.isHoldBody) {
+			data.skewX += getUnsafeLaneAdd(noteSkewID, noteSkewLaneIDs[lane], player);
+			data.skewX += getUnsafeLaneAdd(noteSkewXID, noteSkewXLaneIDs[lane], player);
+			data.skewY += getUnsafeLaneAdd(noteSkewYID, noteSkewYLaneIDs[lane], player);
+		}
 
 		return data;
 	}

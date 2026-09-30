@@ -4,6 +4,14 @@ import backend.AssetLoader;
 import openfl.utils.AssetType;
 import openfl.utils.Assets;
 import haxe.Json;
+import lime.app.Application;
+import lime.graphics.Image;
+
+#if sys
+import sys.FileSystem;
+#end
+
+using StringTools;
 
 typedef ModsList =
 {
@@ -16,6 +24,9 @@ class Mods
 {
 	static public var currentModDirectory:String = '';
 	static public var launchedMod:String = null;
+	public static inline var DEFAULT_WINDOW_TITLE:String = "Friday Night Funkin': Plus Engine";
+	public static inline var BASE_GAME_MOD_FOLDER:String = "Friday Night Funkin";
+	public static inline var BASE_GAME_LOCAL_FOLDER:String = "base_game";
 	public static final ignoreModFolders:Array<String> = [
 		'characters',
 		'custom_events',
@@ -38,14 +49,24 @@ class Mods
 	inline public static function getGlobalMods()
 		return globalMods;
 
-	inline public static function pushGlobalMods() // prob a better way to do this but idc
+	public static function pushGlobalMods() // prob a better way to do this but idc
 	{
 		globalMods = [];
+		// A launched mod is an isolated runtime context. Keep it first so
+		// merged asset lookups and global scripts cannot silently fall back to
+		// another enabled mod while that context is active.
+		if (launchedMod != null && launchedMod.length > 0)
+			pushGlobalMod(launchedMod);
+		pushGlobalMod(BASE_GAME_MOD_FOLDER);
+
 		for (mod in parseList().enabled)
 		{
+			if (isBaseGameMod(mod) || mod == launchedMod)
+				continue;
+
 			var pack:Dynamic = getPack(mod);
 			if (pack != null && pack.runsGlobally)
-				globalMods.push(mod);
+				pushGlobalMod(mod);
 		}
 		return globalMods;
 	}
@@ -165,6 +186,62 @@ class Mods
 		return null;
 	}
 
+	public static function applyWindowBrand(?folder:String = null):Void
+	{
+		#if (MODS_ALLOWED && desktop)
+		if (folder == null || folder.length < 1)
+			folder = launchedMod;
+		if (folder == null || folder.length < 1)
+		{
+			resetWindowBrand();
+			return;
+		}
+
+		var window = (Application.current != null) ? Application.current.window : null;
+		if (window == null)
+			return;
+
+		var pack:Dynamic = getPack(folder);
+		var title:String = (pack != null && Reflect.hasField(pack, 'windowTitle')) ? Std.string(Reflect.field(pack, 'windowTitle')) : null;
+		if (title == null || title.trim().length < 1)
+			title = (pack != null && Reflect.hasField(pack, 'name')) ? Std.string(Reflect.field(pack, 'name')) : null;
+		window.title = (title != null && title.trim().length > 0) ? title : DEFAULT_WINDOW_TITLE;
+
+		#if sys
+		var iconPath:String = Paths.mods(folder + '/icon.ico');
+		if (!FileSystem.exists(iconPath))
+			iconPath = Paths.mods(folder + '/icon.png');
+		if (FileSystem.exists(iconPath))
+		{
+			try
+				window.setIcon(Image.fromFile(iconPath))
+			catch (e:Dynamic)
+				trace('Failed to apply window icon for "$folder": $e');
+		}
+		#end
+		#end
+	}
+
+	public static function resetWindowBrand():Void
+	{
+		#if desktop
+		var window = (Application.current != null) ? Application.current.window : null;
+		if (window == null)
+			return;
+
+		window.title = DEFAULT_WINDOW_TITLE;
+		#if sys
+		if (FileSystem.exists('icon.ico'))
+		{
+			try
+				window.setIcon(Image.fromFile('icon.ico'))
+			catch (e:Dynamic)
+				trace('Failed to reset window icon: $e');
+		}
+		#end
+		#end
+	}
+
 	public static var updatedOnState:Bool = false;
 
 	inline public static function parseList():ModsList
@@ -183,17 +260,24 @@ class Mods
 					continue;
 
 				var dat = mod.split("|");
-				list.all.push(dat[0]);
-				if (dat[1] == "1")
-					list.enabled.push(dat[0]);
+				var folder:String = dat[0];
+				var forced:Bool = isRequiredGlobalMod(folder);
+
+				if (!list.all.contains(folder))
+					list.all.push(folder);
+
+				if (dat[1] == "1" || forced)
+					list.enabled.push(folder);
 				else
-					list.disabled.push(dat[0]);
+					list.disabled.push(folder);
 			}
 		}
 		catch (e)
 		{
 			trace(e);
 		}
+
+		ensureRequiredGlobalMods(list);
 		#end
 		return list;
 	}
@@ -210,10 +294,19 @@ class Mods
 				fileStr += '\n';
 
 			var on = '1';
-			if (list.disabled.contains(mod))
+			if (list.disabled.contains(mod) && !isRequiredGlobalMod(mod))
 				on = '0';
 			fileStr += '$mod|$on';
 		}
+
+		#if MODS_ALLOWED
+		if (requiredBaseGameAvailable() && !list.all.contains(BASE_GAME_MOD_FOLDER))
+		{
+			if (fileStr.length > 0)
+				fileStr += '\n';
+			fileStr += BASE_GAME_MOD_FOLDER + '|1';
+		}
+		#end
 
 		var path:String = #if android StorageUtil.getModsListPath() #else Sys.getCwd() + 'modsList.txt' #end;
 		try
@@ -244,13 +337,19 @@ class Mods
 				if (folder.trim().length > 0 && Paths.safeModIsDirectory(folderPath) && !added.contains(folder))
 				{
 					added.push(folder);
-					list.push([folder, (dat[1] == "1")]);
+					list.push([folder, (dat[1] == "1") || isRequiredGlobalMod(folder)]);
 				}
 			}
 		}
 		catch (e)
 		{
 			trace(e);
+		}
+
+		if (requiredBaseGameAvailable() && !added.contains(BASE_GAME_MOD_FOLDER))
+		{
+			added.push(BASE_GAME_MOD_FOLDER);
+			list.push([BASE_GAME_MOD_FOLDER, true]);
 		}
 
 		// Scan for folders that aren't on modsList.txt yet
@@ -274,7 +373,7 @@ class Mods
 		{
 			if (fileStr.length > 0)
 				fileStr += '\n';
-			fileStr += values[0] + '|' + (values[1] ? '1' : '0');
+			fileStr += values[0] + '|' + ((values[1] || isRequiredGlobalMod(values[0])) ? '1' : '0');
 		}
 
 		try
@@ -292,12 +391,25 @@ class Mods
 
 	public static function loadTopMod()
 	{
+		#if MODS_ALLOWED
+		if (launchedMod != null && launchedMod.length > 0)
+		{
+			currentModDirectory = launchedMod;
+			return;
+		}
+		#end
+
 		Mods.currentModDirectory = '';
 
 		#if MODS_ALLOWED
 		var list:Array<String> = Mods.parseList().enabled;
-		if (list != null && list[0] != null)
-			Mods.currentModDirectory = list[0];
+		if (list != null)
+			for (mod in list)
+				if (mod != null && mod.length > 0 && !isRequiredGlobalMod(mod))
+				{
+					Mods.currentModDirectory = mod;
+					break;
+				}
 		#end
 	}
 
@@ -335,6 +447,50 @@ class Mods
 				return music;
 		}
 		return 'freakyMenu';
+	}
+
+	public static function getEditionName(?folder:String = null):String
+	{
+		#if MODS_ALLOWED
+		function read(candidate:String):String
+		{
+			if (candidate == null || StringTools.trim(candidate).length < 1)
+				return '';
+
+			var value:Dynamic = getPackField(candidate, 'editionName');
+			if (value == null)
+				value = getPackField(candidate, 'edition');
+
+			if (value == null)
+				return '';
+
+			var text:String = StringTools.trim(Std.string(value));
+			return text.length > 0 ? text : '';
+		}
+
+		var direct:String = read(folder);
+		if (direct.length > 0)
+			return direct;
+
+		var current:String = read(currentModDirectory);
+		if (current.length > 0)
+			return current;
+
+		for (mod in getGlobalMods())
+		{
+			var global:String = read(mod);
+			if (global.length > 0)
+				return global;
+		}
+
+		for (mod in parseList().enabled)
+		{
+			var enabled:String = read(mod);
+			if (enabled.length > 0)
+				return enabled;
+		}
+		#end
+		return '';
 	}
 
 	public static function getLuaMode(folder:String):String
@@ -383,6 +539,64 @@ class Mods
 		#else
 		return null;
 		#end
+	}
+
+	public static function isBaseGameMod(folder:String):Bool
+		return normalizeModFolder(folder) == normalizeModFolder(BASE_GAME_MOD_FOLDER);
+
+	public static function isRequiredGlobalMod(folder:String):Bool
+		return isBaseGameMod(folder) && requiredBaseGameAvailable();
+
+	static function ensureRequiredGlobalMods(list:ModsList):Void
+	{
+		if (!requiredBaseGameAvailable())
+			return;
+
+		if (!list.all.contains(BASE_GAME_MOD_FOLDER))
+			list.all.push(BASE_GAME_MOD_FOLDER);
+
+		list.disabled.remove(BASE_GAME_MOD_FOLDER);
+		if (!list.enabled.contains(BASE_GAME_MOD_FOLDER))
+			list.enabled.push(BASE_GAME_MOD_FOLDER);
+	}
+
+	static function pushGlobalMod(folder:String):Void
+	{
+		if (folder == null || folder.length < 1 || !requiredOrInstalled(folder) || globalMods.contains(folder))
+			return;
+
+		globalMods.push(folder);
+	}
+
+	static function requiredOrInstalled(folder:String):Bool
+	{
+		#if MODS_ALLOWED
+		if (isBaseGameMod(folder))
+			return requiredBaseGameAvailable();
+
+		return Paths.safeModIsDirectory(Paths.mods(folder));
+		#else
+		return false;
+		#end
+	}
+
+	static function requiredBaseGameAvailable():Bool
+	{
+		#if MODS_ALLOWED
+		return Paths.safeModIsDirectory(Paths.mods(BASE_GAME_MOD_FOLDER)) || Paths.safeModIsDirectory(BASE_GAME_LOCAL_FOLDER);
+		#else
+		return false;
+		#end
+	}
+
+	static function normalizeModFolder(folder:String):String
+	{
+		if (folder == null)
+			return '';
+		var normalized:String = StringTools.trim(folder).replace('\\', '/');
+		while (normalized.endsWith('/'))
+			normalized = normalized.substr(0, normalized.length - 1);
+		return normalized.toLowerCase();
 	}
 
 	static function packBool(folder:String, field:String, fallback:Bool):Bool

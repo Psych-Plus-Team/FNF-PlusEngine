@@ -2,6 +2,8 @@ package backend;
 
 import backend.AssetLoader;
 import backend.ui.md3.NetworkCheckToast;
+import flixel.util.FlxColor;
+import flixel.FlxG;
 import openfl.utils.AssetType;
 import openfl.utils.Assets;
 import lime.utils.Assets as LimeAssets;
@@ -11,6 +13,22 @@ import lime.utils.Assets as LimeAssets;
 #end
 class CoolUtil
 {
+	/** Psych-compatible menu sound shim for scripts. */
+	public static function playMenuSFX(selection:Int = 0, volume:Float = 1.0):Void
+	{
+		var key:String = switch (selection)
+		{
+			case 1: 'menu/confirm';
+			case 2: 'menu/cancel';
+			case 3: 'scrollMenu';
+			default: 'scrollMenu';
+		};
+		FlxG.sound.play(Paths.sound(key), volume);
+	}
+	/** Script-facing non-inline color interpolation shim. */
+	public static function lerpColor(color1:Int, color2:Int, ratio:Float):Int
+		return cast FlxColor.interpolate(color1, color2, ratio);
+
 	public static var hasUpdate:Bool = false;
 	public static var latestVersion:String = "";
 	public static final haxeExtensions:Array<String> = ["hx", "hscript", "hsc", "hxs"];
@@ -167,6 +185,36 @@ class CoolUtil
 		else if (newValue > max)
 			newValue = max;
 		return newValue;
+	}
+
+	public static function formatScore(score:Int):String
+	{
+		if (score >= 1000000)
+			return Std.string(Math.round(score / 10000) / 100) + "M";
+		if (score >= 10000)
+			return Std.string(Math.round(score / 10) / 100) + "K";
+		return Std.string(score);
+	}
+
+	public static function botplayType(value:Dynamic):String
+	{
+		var kind:String = Std.string(value);
+		return (kind == 'CPU' || kind == 'BotplayCPU') ? 'CPU' : 'Normal';
+	}
+
+	public static function botplayCPUHits(diff:Float, safeZone:Float):Bool
+	{
+		var window:Float = Math.max(1, safeZone);
+		var edge:Float = boundTo(diff / window, 0, 1);
+		return FlxG.random.float() <= 0.985 - (edge * 0.28);
+	}
+
+	public static function botplayCPUHitMs(safeZone:Float):Float
+	{
+		var range:Float = Math.max(1, safeZone);
+		if (FlxG.random.bool(18))
+			return FlxG.random.float(-range * 0.72, range * 0.72);
+		return FlxG.random.float(-range * 0.28, range * 0.28);
 	}
 
 	inline public static function coolTextFile(path:String):Array<String>

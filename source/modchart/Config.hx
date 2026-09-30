@@ -65,12 +65,12 @@ class Config
 	 * When enabled, performance will be affected
 	 * due to path computation.
 	 * 
-	 * Synced with: `ClientPrefs.data.renderArrowPaths`
+	 * Synced with: `ClientPrefs.data.arrowPaths`
 	 */
 	public static var RENDER_ARROW_PATHS(get, never):Bool;
 
 	private static inline function get_RENDER_ARROW_PATHS():Bool
-		return ClientPrefs.data.renderArrowPaths;
+		return ClientPrefs.data.arrowPaths;
 
 	/**
 	 * Extra configurations for the Arrow Paths.
@@ -81,13 +81,13 @@ class Config
 	private static function get_ARROW_PATHS_CONFIG():ArrowPathConfig
 	{
 		return {
-			APPLY_COLOR: ClientPrefs.data.styledArrowPaths,
-			APPLY_ALPHA: ClientPrefs.data.styledArrowPaths,
+			APPLY_COLOR: ClientPrefs.data.styledPaths,
+			APPLY_ALPHA: ClientPrefs.data.styledPaths,
 			APPLY_DEPTH: true,
-			APPLY_SCALE: ClientPrefs.data.styledArrowPaths,
+			APPLY_SCALE: ClientPrefs.data.styledPaths,
 			RESOLUTION: 1.0,
 			BASE_DIVISIONS: 60,
-			LENGTH: ClientPrefs.data.arrowPathBoundary
+			LENGTH: ClientPrefs.data.pathBounds
 		};
 	}
 
@@ -112,12 +112,12 @@ class Config
 	 * Custom modifiers must manually check
 	 * this config value for compatibility.
 	 *
-	 * Synced with: `ClientPrefs.data.columnSpecificModifiers`
+	 * Synced with: `ClientPrefs.data.colMods`
 	 */
 	public static var COLUMN_SPECIFIC_MODIFIERS(get, never):Bool;
 
 	private static inline function get_COLUMN_SPECIFIC_MODIFIERS():Bool
-		return ClientPrefs.data.columnSpecificModifiers;
+		return ClientPrefs.data.colMods;
 
 	/**
 	 * Shows the sustains behind the strums

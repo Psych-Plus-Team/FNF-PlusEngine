@@ -269,8 +269,6 @@ class PtBR
 		"description_disable_reset_button" => "Se marcado, apertar Reset não irá matar o jogador.",
 		"setting_pop_up_score" => "Pontuação Pop-up",
 		"description_pop_up_score" => "Se marcado, mostra a pontuação que você ganha ao acertar uma nota.",
-		"setting_hitsound_volume" => "Volume do Som de Acerto",
-		"description_hitsound_volume" => "As notas fazem um som de \"Tick!\" quando você as apertam",
 		"setting_rating_offset" => "Offset de Acerto",
 		"description_rating_offset" => "Adianta/atrasa o tempo de acertar, valores altos farão com que você acerte mais cedo/tarde.",
 		"setting_flawless_hit_window" => "Janela de Acerto \"flawless!\"",
@@ -535,7 +533,6 @@ class PtBR
 		"touchpad_actionmode_missing" => "This touchpad mode is missing its action buttons configuration.",
 		"touchpad_dpadmode_missing" => "This touchpad mode is missing its d-pad configuration.",
 		"modchart_converter" => "Modchart Converter",
-		"note_colors_notitg" => "RGB SHADERS DISABLED - NotITG skin preserves original colors",
 		"new_freeplay_song_time" => "Tempo: {1}",
 	];
 }

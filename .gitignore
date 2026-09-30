@@ -13,6 +13,7 @@ export/*
 # .github/
 .tmp/*
 .tmp*
+.codex/
 node_modules/
 *.code-workspace
 vs_Community.exe

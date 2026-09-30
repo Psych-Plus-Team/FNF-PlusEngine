@@ -93,11 +93,14 @@ using StringTools;
 			final evType = possibleLastEvent.getType();
 			if (evType == EASE) {
 				var castedEvent:EaseEvent = cast possibleLastEvent;
-				entryPerc = castedEvent.target;
+				@:privateAccess
+				final from = castedEvent.entryPerc != null ? castedEvent.entryPerc : event.getModPercent(event.name, event.player);
+				entryPerc = FlxMath.lerp(from, castedEvent.target, castedEvent.ease(1));
 			} else if (evType == ADD) {
 				var castedEvent:AddEvent = cast possibleLastEvent;
 				@:privateAccess
-				entryPerc = (castedEvent.entryPerc != null ? castedEvent.entryPerc : event.getModPercent(event.name, event.player)) + castedEvent.addAmount;
+				final from = castedEvent.entryPerc != null ? castedEvent.entryPerc : event.getModPercent(event.name, event.player);
+				entryPerc = FlxMath.lerp(from, from + castedEvent.addAmount, castedEvent.ease(1));
 			} else {
 				entryPerc = possibleLastEvent.target;
 			}

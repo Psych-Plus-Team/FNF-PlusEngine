@@ -13,8 +13,9 @@ final class ModifierParameters {
 	var player:Int = 0;
 	var isTapArrow:Bool = false;
 	var straightHolds:Bool = false;
+	var isHoldBody:Bool = false;
 
 	public function toString() {
-		return 'ModifierParameters(songTime: $songTime, hitTime: $hitTime, distance: $distance, sourceTime: $sourceTime, curBeat: $curBeat, lane: $lane, player: $player, straightHolds: $straightHolds)';
+		return 'ModifierParameters(songTime: $songTime, hitTime: $hitTime, distance: $distance, sourceTime: $sourceTime, curBeat: $curBeat, lane: $lane, player: $player, straightHolds: $straightHolds, isHoldBody: $isHoldBody)';
 	}
 }

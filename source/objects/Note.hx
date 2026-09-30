@@ -16,7 +16,9 @@ typedef EventNote =
 	strumTime:Float,
 	event:String,
 	value1:String,
-	value2:String
+	value2:String,
+	?value3:String,
+	?value4:String
 }
 
 typedef NoteSplashData =
@@ -34,7 +36,7 @@ typedef NoteSplashData =
 
 /**
  * The note object used as a data structure to spawn and manage notes during gameplay.
- * 
+ *
  * If you want to make a custom note type, you should search for: "function set_noteType"
 **/
 class Note extends FlxSprite
@@ -109,7 +111,7 @@ class Note extends FlxSprite
 	public static var swagWidth:Float = 160 * 0.7;
 	public static var colArray:Array<String> = ['purple', 'blue', 'green', 'red'];
 	public static var defaultNoteSkin(default, never):String = 'noteSkins/NOTE_assets';
-	public static var noRgbNoteSkin(default, never):String = 'noteSkinsNoRGB/NOTE_assets';
+	public static var classicNoteSkin(default, never):String = 'NOTE_assets';
 
 	public var noteSplashData:NoteSplashData = {
 		disabled: false,
@@ -161,8 +163,6 @@ class Note extends FlxSprite
 
 	function get_hitsoundVolume():Float
 	{
-		if (ClientPrefs.data.hitsoundVolume > 0)
-			return ClientPrefs.data.hitsoundVolume;
 		return hitsoundForce ? hitsoundVolume : 0.0;
 	}
 
@@ -196,17 +196,6 @@ class Note extends FlxSprite
 
 	public function defaultRGB()
 	{
-		if (!ClientPrefs.data.noteRGB)
-		{
-			if (colorSwap == null)
-				colorSwap = new ColorSwap();
-			applyHSVToColorSwap(colorSwap, noteData);
-			if (rgbShader != null)
-				rgbShader.enabled = false;
-			shader = colorSwap.shader;
-			return;
-		}
-
 		if (rgbShader == null)
 			return;
 
@@ -216,10 +205,23 @@ class Note extends FlxSprite
 		rgbShader.b = arr[2];
 	}
 
+	function applyClassicHSV():Void
+	{
+		if (!usesClassicColors())
+			return;
+		if (colorSwap == null)
+			colorSwap = new ColorSwap();
+		shader = colorSwap.shader;
+		applyHSVToColorSwap(colorSwap, noteData);
+		if (rgbShader != null)
+			rgbShader.enabled = false;
+	}
+
 	private function set_noteType(value:String):String
 	{
 		noteSplashData.texture = PlayState.SONG != null ? PlayState.SONG.splashSkin : NoteSplash.getDefaultNoteSplashPath();
 		defaultRGB();
+		applyClassicHSV();
 
 		if (noteData > -1 && noteType != value)
 		{
@@ -227,19 +229,27 @@ class Note extends FlxSprite
 			{
 				case 'Hurt Note':
 					ignoreNote = mustPress;
-					// reloadNote('HURTNOTE_assets');
-					// this used to change the note texture to HURTNOTE_assets.png,
-					// but i've changed it to something more optimized with the implementation of RGBPalette:
+					if (usesClassicColors())
+					{
+						reloadNote('HURTNOTE_assets');
+						noteSplashData.texture = 'HURTnoteSplashes';
+						if (colorSwap != null)
+							resetHSVColorSwap(colorSwap);
+					}
 
 					// note colors
-					rgbShader.r = 0xFF101010;
-					rgbShader.g = 0xFFFF0000;
-					rgbShader.b = 0xFF990022;
+					if (rgbShader != null)
+					{
+						rgbShader.r = 0xFF101010;
+						rgbShader.g = 0xFFFF0000;
+						rgbShader.b = 0xFF990022;
+					}
 
 					// splash data and colors
 					noteSplashData.r = 0xFFFF0000;
 					noteSplashData.g = 0xFF101010;
-					noteSplashData.texture = 'noteSplashes/noteSplashes-electric';
+					if (!usesClassicColors())
+						noteSplashData.texture = 'noteSplashes/noteSplashes-electric';
 
 					// gameplay data
 					lowPriority = true;
@@ -258,7 +268,7 @@ class Note extends FlxSprite
 			if (value != null && value.length > 1)
 				NoteTypesConfig.applyNoteTypeData(this, value);
 			if (hitsound != 'hitsound'
-				&& (ClientPrefs.data.hitSounds != "None" || hitsoundForce)
+				&& hitsoundForce
 				&& hitsoundVolume > 0
 				&& !precachedHitsounds.exists(hitsound))
 			{
@@ -300,13 +310,11 @@ class Note extends FlxSprite
 		if (noteData > -1)
 		{
 			rgbShader = new RGBShaderReference(this, initializeGlobalRGBShader(noteData));
-			if (PlayState.SONG != null && PlayState.SONG.disableNoteRGB)
+			if (!usesRGBShader())
 				rgbShader.enabled = false;
-			if (!ClientPrefs.data.noteRGB)
+			if (usesClassicColors())
 			{
 				colorSwap = new ColorSwap();
-				applyHSVToColorSwap(colorSwap, noteData);
-				rgbShader.enabled = false;
 				shader = colorSwap.shader;
 			}
 			texture = '';
@@ -317,6 +325,7 @@ class Note extends FlxSprite
 				var animToPlay:String = '';
 				animToPlay = colArray[noteData % colArray.length];
 				animation.play(animToPlay + 'Scroll');
+				applyClassicHSV();
 			}
 		}
 
@@ -393,6 +402,12 @@ class Note extends FlxSprite
 		return globalRgbShaders[colorIndex];
 	}
 
+	public static inline function usesClassicColors():Bool
+		return !ClientPrefs.data.noteRGB;
+
+	public static inline function usesRGBShader():Bool
+		return ClientPrefs.data.noteRGB && (PlayState.SONG == null || !PlayState.SONG.disableNoteRGB);
+
 	public static function normalizeNoteData(noteData:Int):Int
 	{
 		var length:Int = colArray != null && colArray.length > 0 ? colArray.length : 4;
@@ -437,25 +452,6 @@ class Note extends FlxSprite
 		if (pixel != null)
 			usePixel = pixel;
 		var arr:Array<FlxColor> = getPaletteFrom(usePixel ? ClientPrefs.data.arrowRGBPixel : ClientPrefs.data.arrowRGB, colorIndex);
-
-		if (!ClientPrefs.data.noteRGB)
-		{
-			var baseArr:Array<FlxColor> = getPaletteFrom(usePixel ? ClientPrefs.defaultData.arrowRGBPixel : ClientPrefs.defaultData.arrowRGB, colorIndex);
-			var hsvArr:Array<Float> = getNoteHSV(colorIndex);
-			if (baseArr != null)
-			{
-				var legacy:Array<FlxColor> = [];
-				for (i in 0...3)
-				{
-					var baseColor:FlxColor = baseArr[i];
-					var hue:Int = FlxMath.wrap(Math.round(baseColor.hue + hsvArr[0]), 0, 360);
-					var sat:Float = FlxMath.bound(baseColor.saturation + (hsvArr[1] / 100), 0, 1);
-					var bright:Float = FlxMath.bound(baseColor.brightness * (1 + (hsvArr[2] / 100)), 0, 1);
-					legacy.push(FlxColor.fromHSB(hue, sat, bright));
-				}
-				return legacy;
-			}
-		}
 
 		if (arr == null)
 			arr = getPaletteFrom(usePixel ? ClientPrefs.defaultData.arrowRGBPixel : ClientPrefs.defaultData.arrowRGB, colorIndex);
@@ -509,7 +505,7 @@ class Note extends FlxSprite
 
 		var skinPixel:String = skin;
 		var lastScaleY:Float = scale.y;
-		var skinPostfix:String = getNoteSkinPostfix();
+		var skinPostfix:String = usesClassicColors() ? '' : getNoteSkinPostfix();
 		var customSkin:String = skin + skinPostfix;
 		if (customSkin == _lastValidChecked || noteSkinPathExists(customSkin, PlayState.isPixelStage))
 		{
@@ -562,25 +558,6 @@ class Note extends FlxSprite
 
 		if (animName != null)
 			animation.play(animName, true);
-
-		// Detectar si es NotITG y bloquear el shader
-		if (skin != null && skin.toLowerCase().contains('notitg'))
-		{
-			if (rgbShader != null)
-			{
-				rgbShader.forceDisabled = true;
-				rgbShader.enabled = false;
-			}
-			shader = null;
-		}
-		else
-		{
-			// Desbloquear shader para skins normales
-			if (rgbShader != null)
-				rgbShader.forceDisabled = false;
-			if (!ClientPrefs.data.noteRGB && colorSwap != null)
-				shader = colorSwap.shader;
-		}
 	}
 
 	public static function getNoteSkinPostfix()
@@ -604,12 +581,10 @@ class Note extends FlxSprite
 
 	public static function getDefaultNoteSkinPath(?pixel:Null<Bool>):String
 	{
-		var preferred:String = ClientPrefs.data.noteRGB ? defaultNoteSkin : noRgbNoteSkin;
-		var fallback:String = ClientPrefs.data.noteRGB ? noRgbNoteSkin : defaultNoteSkin;
-		if (noteSkinPathExists(preferred, pixel))
-			return preferred;
-		if (noteSkinPathExists(fallback, pixel))
-			return fallback;
+		if (usesClassicColors() && noteSkinPathExists(classicNoteSkin, pixel))
+			return classicNoteSkin;
+		if (noteSkinPathExists(defaultNoteSkin, pixel))
+			return defaultNoteSkin;
 		return defaultNoteSkin;
 	}
 
@@ -618,13 +593,20 @@ class Note extends FlxSprite
 		if (skin == null || skin.length < 1)
 			skin = getDefaultNoteSkinPath(pixel);
 
-		var postfix:String = getNoteSkinPostfix();
-		if (postfix.length > 0)
+		if (!usesClassicColors())
 		{
-			var customSkin:String = skin + postfix;
-			if (noteSkinPathExists(customSkin, pixel))
-				return customSkin;
+			var postfix:String = getNoteSkinPostfix();
+			if (postfix.length > 0)
+			{
+				var customSkin:String = skin + postfix;
+				if (noteSkinPathExists(customSkin, pixel))
+					return customSkin;
+			}
 		}
+		if (noteSkinPathExists(skin, pixel))
+			return skin;
+		if (usesClassicColors() && noteSkinPathExists(classicNoteSkin, pixel))
+			return classicNoteSkin;
 		return skin;
 	}
 

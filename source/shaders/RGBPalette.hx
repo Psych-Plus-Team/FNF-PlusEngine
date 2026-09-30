@@ -71,8 +71,6 @@ class RGBShaderReference
 	public var b(default, set):FlxColor;
 	public var mult(default, set):Float;
 	public var enabled(default, set):Bool = true;
-	public var forceDisabled:Bool = false; // Para NotITG - bloquea la activación del shader
-
 	public var parent:RGBPalette;
 
 	private var _owner:FlxSprite;
@@ -128,14 +126,6 @@ class RGBShaderReference
 			return (enabled = false);
 
 		var ownsCurrentShader:Bool = ownsShader();
-
-		// Si forceDisabled está activado (NotITG), NUNCA activar el shader
-		if (forceDisabled)
-		{
-			if (ownsCurrentShader)
-				_owner.shader = null;
-			return (enabled = false);
-		}
 
 		if (value)
 		{

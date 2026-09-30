@@ -143,7 +143,7 @@ class Conductor
 			totalPos += ((60 / curBPM) * 1000 / 4) * deltaSteps;
 		}
 
-		// Procesar eventos de cambio de BPM (usado por charts de StepMania)
+		// Process BPM change events.
 		if (song.events != null)
 		{
 			for (event in song.events)

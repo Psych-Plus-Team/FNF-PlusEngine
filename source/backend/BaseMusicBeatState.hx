@@ -232,7 +232,14 @@ class BaseMusicBeatState extends FlxState
 
 	override function openSubState(SubState:FlxSubState):Void
 	{
-		if (!(SubState is CustomFadeTransition))
+		var scriptedTransition:Bool = false;
+		if (Std.isOfType(SubState, MusicBeatSubstate))
+		{
+			var musicSubState:MusicBeatSubstate = cast SubState;
+			scriptedTransition = musicSubState.isScriptedSubstate && musicSubState.scriptName == 'TransitionSubstate';
+		}
+
+		if (!(SubState is CustomFadeTransition) && !scriptedTransition)
 			GlobalLoadingOverlay.pulse();
 		super.openSubState(SubState);
 	}
@@ -322,15 +329,15 @@ class BaseMusicBeatState extends FlxState
 		if (nextState == null)
 			nextState = FlxG.state;
 		GlobalLoadingOverlay.showPersistent();
-		FlxG.state.openSubState(new CustomFadeTransition(0.7, false));
+		FlxG.state.openSubState(TransitionManager.create(0.7, false));
 		if (nextState == FlxG.state)
 		{
 			var resetFn = _makeCurrentStateReset();
-			CustomFadeTransition.finishCallback = function() FlxG.switchState(resetFn);
+			TransitionManager.setFinishCallback(function() FlxG.switchState(resetFn));
 		}
 		else
 		{
-			CustomFadeTransition.finishCallback = function() FlxG.switchState(nextState);
+			TransitionManager.setFinishCallback(function() FlxG.switchState(nextState));
 		}
 	}
 

@@ -41,12 +41,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			splashes.add(splash);
 		}
 
-		// options
-		var noteRgbOption:Option = new Option('Use Note RGB', 'If enabled, notes use RGB palette colors. If disabled, note colors use HSL offsets.',
-			'noteRGB', BOOL);
-		addOption(noteRgbOption);
-		noteRgbOption.onChange = onChangeNoteRGBMode;
-
 		var noteSkins:Array<String> = getNoteSkinsList();
 		if (noteSkins.length > 0)
 		{
@@ -76,6 +70,15 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		option.decimals = 1;
 		addOption(option);
 		option.onChange = playNoteSplashes;
+
+		var option:Option = new Option('RGB Notes', 'If unchecked, uses Classic Psych 0.6.3-style note colors and root note assets.', 'noteRGB', BOOL);
+		addOption(option);
+		option.onChange = function()
+		{
+			syncSkinOptions();
+			onChangeNoteSkin();
+			onChangeSplashSkin();
+		};
 
 		var option:Option = new Option('Hide HUD', 'If checked, hides most HUD elements.', 'hideHud', BOOL);
 		addOption(option);
@@ -109,6 +112,12 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		var option:Option = new Option('Flashing Lights', "Uncheck this if you're sensitive to flashing lights!", 'flashing', BOOL);
 		addOption(option);
 
+		#if VIDEOS_ALLOWED
+		var option:Option = new Option('Title Intro Video', 'If checked, plays the intro video before the title intro once per launch.',
+			'titleIntroVideo', BOOL);
+		addOption(option);
+		#end
+
 		var option:Option = new Option('Camera Zooms', "If unchecked, the camera won't zoom in on a beat hit.", 'camZooms', BOOL);
 		addOption(option);
 
@@ -122,7 +131,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		var option:Option = new Option('Time Text Bump', 'If unchecked, disables the time text bump animation on beat.', 'timeBump', BOOL);
 		addOption(option);
 
-		var option:Option = new Option('Show Version Text on Gameplay', 'If checked, shows the version text during gameplay.', 'versionTextOnGameplay', BOOL);
+		var option:Option = new Option('Show Version Text on Gameplay', 'If checked, shows the version text during gameplay.', 'showVersionText', BOOL);
 		addOption(option);
 
 		var option:Option = new Option('Abbreviate Score', 'If enabled, the score will be abbreviated (e.g. 10.00K, 1.00M).', 'abbreviateScore', BOOL);
@@ -130,7 +139,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 
 		var option:Option = new Option('Dynamic Combo Digits',
 			'If checked, the combo will appear with two digits in first combo, and only\nwhen it reaches 100 combo will it become three digits.',
-			'dynamicComboDigits', BOOL);
+			'dynamicCombo', BOOL);
 		addOption(option);
 
 		var option:Option = new Option('NF Rating Style', 'If checked, ratings and combo numbers bop in place instead of flying/fading.', 'nfRatingStyle',
@@ -186,7 +195,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		option.onChange = syncPopupVisibility;
 
 		var option:Option = new Option('Show Early/Late Sprites',
-			'Shows Early or Late tags on the top corners of the rating sprite depending on hit timing.', 'showEarlyLateSprites', BOOL);
+			'Shows Early or Late tags on the top corners of the rating sprite depending on hit timing.', 'showTimingTags', BOOL);
 		addOption(option);
 		option.onChange = syncPopupVisibility;
 
@@ -208,13 +217,10 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			}
 		};
 
-		var option:Option = new Option('Judgement Counter', 'Show the judgement counter during gameplay.', 'judgementCounter', BOOL);
+		var option:Option = new Option('Show End Countdown', 'If checked, shows a countdown in the last seconds of the song.', 'endCountdown', BOOL);
 		addOption(option);
 
-		var option:Option = new Option('Show End Countdown', 'If checked, shows a countdown in the last seconds of the song.', 'showEndCountdown', BOOL);
-		addOption(option);
-
-		var option:Option = new Option('End Countdown Seconds', 'How many seconds before the song ends the countdown appears (10-30).', 'endCountdownSeconds',
+		var option:Option = new Option('End Countdown Seconds', 'How many seconds before the song ends the countdown appears (10-30).', 'endCountSecs',
 			INT);
 		option.displayFormat = '%vs';
 		option.scrollSpeed = 1;
@@ -243,6 +249,7 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		super();
 		add(notes);
 		add(splashes);
+		syncSkinOptions();
 		setPreviewActive(false);
 	}
 
@@ -314,13 +321,11 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		});
 	}
 
-	function onChangeNoteRGBMode()
+	function syncSkinOptions():Void
 	{
-		Note.globalRgbShaders = [];
 		refreshNoteSkinOptionList();
 		refreshSplashSkinOptionList();
-		onChangeNoteSkin();
-		onChangeSplashSkin();
+		refreshOptionAlphas();
 	}
 
 	function changeNoteSkin(note:StrumNote)
@@ -329,26 +334,19 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 
 		note.texture = skin; // Load texture and anims (setter calls reloadNote automatically)
 		note.playAnim('static');
-
-		// Verificar si el skin es NotITG
-		note.checkNotITGSkin();
 	}
 
 	function getNoteSkinsList():Array<String>
 	{
-		var preferred:String = ClientPrefs.data.noteRGB ? 'images/noteSkins/list.txt' : 'images/noteSkinsNoRGB/list.txt';
-		var fallback:String = ClientPrefs.data.noteRGB ? 'images/noteSkinsNoRGB/list.txt' : 'images/noteSkins/list.txt';
-		return buildSkinOptionList(preferred, fallback, ClientPrefs.defaultData.noteSkin);
+		return buildSkinOptionList('images/noteSkins/list.txt', ClientPrefs.defaultData.noteSkin);
 	}
 
 	function getSplashSkinsList():Array<String>
 	{
-		var preferred:String = ClientPrefs.data.noteRGB ? 'images/noteSplashes/list.txt' : 'images/noteSplashesNoRGB/list.txt';
-		var fallback:String = ClientPrefs.data.noteRGB ? 'images/noteSplashesNoRGB/list.txt' : 'images/noteSplashes/list.txt';
-		return buildSkinOptionList(preferred, fallback, ClientPrefs.defaultData.splashSkin);
+		return buildSkinOptionList('images/noteSplashes/list.txt', ClientPrefs.defaultData.splashSkin);
 	}
 
-	function buildSkinOptionList(preferredPath:String, fallbackPath:String, defaultValue:String):Array<String>
+	function buildSkinOptionList(preferredPath:String, defaultValue:String):Array<String>
 	{
 		var list:Array<String> = [];
 		addSkinOption(list, defaultValue);
@@ -356,13 +354,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 		var preferred:Array<String> = Mods.mergeAllTextsNamed(preferredPath);
 		for (value in preferred)
 			addSkinOption(list, value);
-
-		if (list.length <= 1)
-		{
-			var fallback:Array<String> = Mods.mergeAllTextsNamed(fallbackPath);
-			for (value in fallback)
-				addSkinOption(list, value);
-		}
 		return list;
 	}
 

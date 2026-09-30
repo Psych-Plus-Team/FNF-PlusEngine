@@ -5,12 +5,10 @@ class Highscore
 	public static var weekScores:Map<String, Int> = new Map();
 	public static var songScores:Map<String, Int> = new Map<String, Int>();
 	public static var songRating:Map<String, Float> = new Map<String, Float>();
-	public static var songAccuracySystem:Map<String, String> = new Map<String, String>();
 
 	// Opponent Mode - Separate scores
 	public static var songScoresOpponent:Map<String, Int> = new Map<String, Int>();
 	public static var songRatingOpponent:Map<String, Float> = new Map<String, Float>();
-	public static var songAccuracySystemOpponent:Map<String, String> = new Map<String, String>();
 
 	public static function resetSong(song:String, diff:Int = 0):Void
 	{
@@ -25,8 +23,7 @@ class Highscore
 		setWeekScore(daWeek, 0);
 	}
 
-	public static function saveScore(song:String, score:Int = 0, ?diff:Int = 0, ?rating:Float = -1, ?isOpponentMode:Bool = false,
-			?accuracySystem:String = null):Void
+	public static function saveScore(song:String, score:Int = 0, ?diff:Int = 0, ?rating:Float = -1, ?isOpponentMode:Bool = false):Void
 	{
 		if (song == null)
 			return;
@@ -34,40 +31,28 @@ class Highscore
 
 		// Select the correct map based on the mode
 		var scoreMap:Map<String, Int> = isOpponentMode ? songScoresOpponent : songScores;
-		var ratingMap:Map<String, Float> = isOpponentMode ? songRatingOpponent : songRating;
-		var systemMap:Map<String, String> = isOpponentMode ? songAccuracySystemOpponent : songAccuracySystem;
 
 		if (scoreMap.exists(daSong))
 		{
 			if (scoreMap.get(daSong) < score)
 			{
 				setScore(daSong, score, isOpponentMode);
-				// Wife3 allows negative ratings and ratings greater than 1.0; we only save them if they were specified (other than -1).
 				if (rating != -1)
 					setRating(daSong, rating, isOpponentMode);
-				if (accuracySystem != null)
-					setAccuracySystem(daSong, accuracySystem, isOpponentMode);
 			}
 			// If the score is the same but the rating is better, update only the rating
 			else if (scoreMap.get(daSong) == score && rating != -1)
 			{
 				var currentRating:Float = getRating(song, diff, isOpponentMode);
 				if (rating > currentRating)
-				{
 					setRating(daSong, rating, isOpponentMode);
-					if (accuracySystem != null)
-						setAccuracySystem(daSong, accuracySystem, isOpponentMode);
-				}
 			}
 		}
 		else
 		{
 			setScore(daSong, score, isOpponentMode);
-			// Wife3 allows negative ratings and ratings greater than 1.0; we only save them if they were specified
 			if (rating != -1)
 				setRating(daSong, rating, isOpponentMode);
-			if (accuracySystem != null)
-				setAccuracySystem(daSong, accuracySystem, isOpponentMode);
 		}
 	}
 
@@ -127,32 +112,6 @@ class Highscore
 		FlxG.save.flush();
 	}
 
-	static function setAccuracySystem(song:String, system:String, isOpponentMode:Bool = false):Void
-	{
-		if (isOpponentMode)
-		{
-			songAccuracySystemOpponent.set(song, system);
-			FlxG.save.data.songAccuracySystemOpponent = songAccuracySystemOpponent;
-		}
-		else
-		{
-			songAccuracySystem.set(song, system);
-			FlxG.save.data.songAccuracySystem = songAccuracySystem;
-		}
-		FlxG.save.flush();
-	}
-
-	public static function getAccuracySystem(song:String, diff:Int, isOpponentMode:Bool = false):String
-	{
-		var daSong:String = formatSong(song, diff);
-		var systemMap:Map<String, String> = isOpponentMode ? songAccuracySystemOpponent : songAccuracySystem;
-
-		if (!systemMap.exists(daSong))
-			return 'Unknown';
-
-		return systemMap.get(daSong);
-	}
-
 	public static function formatSong(song:String, diff:Int):String
 	{
 		return Paths.formatToSongPath(song) + Difficulty.getFilePath(diff);
@@ -189,10 +148,6 @@ class Highscore
 		if (FlxG.save.data.songRating != null)
 			songRating = FlxG.save.data.songRating;
 
-		// Load accuracy systems
-		if (FlxG.save.data.songAccuracySystem != null)
-			songAccuracySystem = FlxG.save.data.songAccuracySystem;
-
 		// Load Opponent Mode scores
 		if (FlxG.save.data.songScoresOpponent != null)
 			songScoresOpponent = FlxG.save.data.songScoresOpponent;
@@ -200,8 +155,6 @@ class Highscore
 		if (FlxG.save.data.songRatingOpponent != null)
 			songRatingOpponent = FlxG.save.data.songRatingOpponent;
 
-		if (FlxG.save.data.songAccuracySystemOpponent != null)
-			songAccuracySystemOpponent = FlxG.save.data.songAccuracySystemOpponent;
 	}
 }
 

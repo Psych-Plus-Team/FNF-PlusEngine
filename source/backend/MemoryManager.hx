@@ -187,13 +187,8 @@ class MemoryManager
 		#if android
 		var now:Float = Timer.stamp();
 		if (now - lastAggressiveCleanupTime < AGGRESSIVE_CLEANUP_COOLDOWN)
-		{
-			trace('MemoryManager: Skipping duplicate aggressive cleanup');
 			return;
-		}
 		lastAggressiveCleanupTime = now;
-
-		trace('MemoryManager: Performing aggressive memory cleanup...');
 
 		// Clear Paths caches
 		Paths.clearUnusedMemory();
@@ -203,8 +198,6 @@ class MemoryManager
 
 		// Clear Preloaded Characters
 		clearPreloadedCharacters();
-
-		trace('MemoryManager: Cleaning complete');
 		#end
 	}
 
@@ -249,8 +242,6 @@ class MemoryManager
 
 		if (PlayState.instance.camOther != null && PlayState.instance.camOther.filters != null)
 			PlayState.instance.camOther.filters = [];
-
-		trace('MemoryManager: Cleaned-up shaders');
 		#end
 	}
 
@@ -265,10 +256,7 @@ class MemoryManager
 		var currentMemory:Float = getMemoryUsage();
 
 		if (currentMemory > thresholdMB)
-		{
-			trace('MemoryManager: Threshold exceeded (${Math.round(currentMemory)} MB > ${thresholdMB} MB). Cleaning in progress...');
 			aggressiveCleanup();
-		}
 		#end
 	}
 }

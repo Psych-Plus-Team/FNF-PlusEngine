@@ -305,7 +305,7 @@ class StoryMenuState extends MusicBeatState
 			if (FlxG.keys.justPressed.CONTROL || (touchPad != null && touchPad.buttonX.justPressed))
 			{
 				persistentUpdate = false;
-				openSubState(backend.ScriptableSubstate.tryCreate('GameplayChangersSubstate', new GameplayChangersSubstate()));
+				openSubState(backend.ScriptableSubstate.tryCreate('options.GameplayChangersSubstate', new GameplayChangersSubstate()));
 				removeTouchPad();
 			}
 			else if (controls.RESET || (touchPad != null && touchPad.buttonY.justPressed))

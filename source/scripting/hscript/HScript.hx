@@ -45,7 +45,7 @@ class HScript {
 
 	public static function setupConfig():Void {
 		hxscript.Config.interpClass = PsychInterp;
-		hxscript.Config.strictAccess = true;
+		hxscript.Config.strictAccess = false;
 
 		for (base in scripting.bridges.Bridges.bases)
 			hxscript.Config.globalImports.set(base, ImportMode.INormal);
@@ -210,8 +210,8 @@ class HScript {
 		set('Character', objects.Character);
 		set('Alphabet', objects.Alphabet);
 		set('Note', objects.Note);
-		set('CustomSubstate', psychlua.CustomSubstate);
-		set('ModchartSprite', psychlua.ModchartSprite);
+		set('CustomSubstate', psychlua.backend.CustomSubstate);
+		set('ModchartSprite', psychlua.backend.ModchartSprite);
 		#if (!flash && sys)
 		set('FlxRuntimeShader', flixel.addons.display.FlxRuntimeShader);
 		#end

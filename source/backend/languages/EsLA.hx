@@ -151,7 +151,6 @@ class EsLA
 		"language_menu" => "Ajustes de idioma",
 		"mobile_controls_tip" => "Presiona {1} para ir al Menú de Controles Móviles",
 		// Note Colors Menu
-		"note_colors_notitg" => "Shaders RGB Desactivados - La skin NotITG preserva los colores originales",
 		"note_colors_tip" => "Presione RESET para restablecer la parte de nota seleccionada.",
 		"note_colors_hold_tip" => "Manten presionado {1} y luego presione la tecla RESET para restablecer completamente la nota seleccionada.",
 		"note_colors_shift" => "Shift",
@@ -310,8 +309,6 @@ class EsLA
 		"description_disable_reset_button" => "Si está marcado, presionar reiniciar no hará nada",
 		"setting_game_over_vibration" => "Vibración al perder",
 		"description_game_over_vibration" => "Si está marcado, su dispositivo vibrará al perder.",
-		"setting_hitsound_volume" => "Sonido al tocar notas",
-		"description_hitsound_volume" => "Las notas divertidas hacen \"¡tick!\" cuando las tocas",
 		"setting_rating_offset" => "Retraso de calificación",
 		"description_rating_offset" =>
 		"Cambia qué tan tarde/temprano tienes que golpear para un \"¡Sick!\"\nLos valores más altos significan que tienes que golpear más tarde",
@@ -334,9 +331,6 @@ class EsLA
 		"description_show_end_countdown" => "Si está marcado, muestra una cuenta regresiva al final de la canción.",
 		"setting_end_countdown_seconds" => "Seg. de cuenta regresiva:",
 		"description_end_countdown_seconds" => "Cuántos segundos debe durar la cuenta regresiva al final de la canción.\n(10 - 30)",
-		"setting_accuracy_system" => "Sistema de precisión:",
-		"description_accuracy_system" =>
-		"¿Qué sistema de cálculo de precisión prefieres?\nWife3 - Precisión en ms de StepMania\nPsych - Basado en Rating Mod\nSimple - Aciertos básicos/total\nosu!mania - Sistema de juicio ponderado\nDJMAX - Sistema de bonificación de combo\nITG - Sistema de puntos de baile\n\n",
 		"setting_system_score_multiplier" => "Multiplicador de puntuación del sistema",
 		"description_system_score_multiplier" => "Ajusta el multiplicador de puntuación al tocar notas.",
 		// Modchart Options
@@ -445,6 +439,7 @@ class EsLA
 		"dialogue_editor" => "Editor de Diálogos",
 		"dialogue_portrait_editor" => "Editor de Dial. Ava.",
 		"note_splash_editor" => "Editor de Salpicaduras",
+		"note_rgb_disabled_editor" => "Note RGB esta desactivado!!!",
 		"no_mod_directory_loaded" => "< No se ha cargado ningúna carpeta de mods. >",
 		"loaded_mod_directory" => "< Carpeta de mods cargada: {1} >",
 		"time_hours" => "hrs",

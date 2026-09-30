@@ -8,9 +8,6 @@ class Rating
 	public var image:String = '';
 	public var hitWindow:Null<Float> = 0.0; // ms
 
-	// NOTE: ratingMod is no longer used with the Wife3 Accuracy system
-	// Wife3 calculates accuracy based on timing deviation (ms) rather than fixed values
-	// This value is retained for compatibility with scripts and the old system (commented out)
 	public var ratingMod:Float = 1;
 
 	public var score:Int = 500;
