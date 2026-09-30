@@ -348,8 +348,6 @@ class IdID
 		"description_disable_hold_animations" => "Jika dicentang, tidak memicu animasi hold pada saat menekan sustain note mirip seperti halnya di V-Slice.",
 		"setting_game_over_vibration" => "Getar Game Over",
 		"description_game_over_vibration" => "Jika dicentang, perangkat Anda akan bergetar saat kalah.",
-		"setting_hitsound_volume" => "Hitsound Volume",
-		"description_hitsound_volume" => "Notes lucu berbunyi \"Tick!\" saat Anda hit.",
 		"setting_rating_offset" => "Penyesuaian Rating",
 		"description_rating_offset" =>
 		"Mengubah seberapa terlambat/awal Anda harus menekan untuk mendapatkan \"Sick!\"\nNilai yang lebih tinggi berarti Anda harus menekan lebih terlambat.",

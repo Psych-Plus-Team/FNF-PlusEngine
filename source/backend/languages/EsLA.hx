@@ -310,8 +310,6 @@ class EsLA
 		"description_disable_reset_button" => "Si está marcado, presionar reiniciar no hará nada",
 		"setting_game_over_vibration" => "Vibración al perder",
 		"description_game_over_vibration" => "Si está marcado, su dispositivo vibrará al perder.",
-		"setting_hitsound_volume" => "Sonido al tocar notas",
-		"description_hitsound_volume" => "Las notas divertidas hacen \"¡tick!\" cuando las tocas",
 		"setting_rating_offset" => "Retraso de calificación",
 		"description_rating_offset" =>
 		"Cambia qué tan tarde/temprano tienes que golpear para un \"¡Sick!\"\nLos valores más altos significan que tienes que golpear más tarde",

@@ -176,7 +176,6 @@ class ClassResolver
 		'noReset' => 'noReset',
 		'noResetButton' => 'noReset',
 		'healthBarAlpha' => 'healthBarAlpha',
-		'hitsoundVolume' => 'hitsoundVolume',
 		'pauseMusic' => 'pauseMusic',
 		'checkForUpdates' => 'checkForUpdates',
 		'comboStacking' => 'comboStacking',

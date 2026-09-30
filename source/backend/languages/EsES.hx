@@ -277,7 +277,6 @@ class EsES
 		"description_disable_reset_button" => "Si está marcado, pulsar reiniciar no hará nada",
 		"setting_pop_up_score" => "Sprite de combo y rating",
 		"description_pop_up_score" => "Si está activado, los sprite de combo y rating aparecerán.",
-		"description_hitsound_volume" => "Las notas divertidas hacen \"¡tic!\" cuando las tocas",
 		"setting_rating_offset" => "Desfase de calificación",
 		"description_rating_offset" =>
 		"Cambia qué tan tarde/temprano tienes que golpear para un \"¡Sick!\"\nLos valores más altos significan que tienes que golpear más tarde",
@@ -515,7 +514,6 @@ class EsES
 		"theme_accent_preview" => "Preview",
 		"theme_accent_accent" => "Accent",
 		"theme_accent_hex_label" => "HEX {1}",
-		"setting_hitsound_volume" => "Hitsound Volume",
 		"loading_timeout" => "Loading is taking too long...\nPress ESC to return",
 		"difficulty_erect" => "Erect",
 		"difficulty_nightmare" => "Nightmare",

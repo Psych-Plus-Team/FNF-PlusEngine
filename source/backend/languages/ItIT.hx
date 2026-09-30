@@ -261,8 +261,6 @@ class ItIT
 		"description_pop_up_score" => "Se selezionato, mostra il punteggio a comparsa quando colpisci una nota.",
 		"setting_disable_reset_button" => "Disabilita pulsante reset",
 		"description_disable_reset_button" => "Se selezionato, premere reset non farà nulla",
-		"setting_hitsound_volume" => "Suono colpo note",
-		"description_hitsound_volume" => "Le note divertenti fanno \"tic!\" quando le colpisci",
 		"setting_rating_offset" => "Offset valutazione",
 		"description_rating_offset" => "Cambia quanto tardi/presto devi colpire per un \"Sick!\"\nValori più alti significano che devi colpire più tardi",
 		"setting_flawless_hit_window" => "Finestra colpo \"flawless!\"",

@@ -252,8 +252,6 @@ class NlNL
 		"description_auto_pause" => "Als aangevinkt, pauzeert het spel automatisch als het scherm niet gefocust is.",
 		"setting_disable_reset_button" => "Reset knop uitschakelen",
 		"description_disable_reset_button" => "Als aangevinkt, doet het indrukken van reset niets",
-		"setting_hitsound_volume" => "Raak geluid volume",
-		"description_hitsound_volume" => "Leuke noten maken \"tik!\" wanneer je ze raakt",
 		"setting_rating_offset" => "Beoordeling offset",
 		"description_rating_offset" => "Verandert hoe laat/vroeg je moet raken voor een \"Sick!\"\nHogere waarden betekenen dat je later moet raken",
 		"setting_flawless_hit_window" => "\"Flawless!\" raak venster",

@@ -163,8 +163,6 @@ class Note extends FlxSprite
 
 	function get_hitsoundVolume():Float
 	{
-		if (ClientPrefs.data.hitsoundVolume > 0)
-			return ClientPrefs.data.hitsoundVolume;
 		return hitsoundForce ? hitsoundVolume : 0.0;
 	}
 
@@ -270,7 +268,7 @@ class Note extends FlxSprite
 			if (value != null && value.length > 1)
 				NoteTypesConfig.applyNoteTypeData(this, value);
 			if (hitsound != 'hitsound'
-				&& (ClientPrefs.data.hitSounds != "None" || hitsoundForce)
+				&& hitsoundForce
 				&& hitsoundVolume > 0
 				&& !precachedHitsounds.exists(hitsound))
 			{
