@@ -25,8 +25,7 @@ class ClassResolver
 
 	static final packageAliasRules:Array<{oldPrefix:String, newPrefix:String}> = [
 		{oldPrefix: 'psychlua.actorframe.', newPrefix: 'psychlua.backend.actorframe.'},
-		{oldPrefix: 'psychlua.', newPrefix: 'psychlua.backend.'},
-		{oldPrefix: 'backend3D.', newPrefix: 'backend.milkshape.'}
+		{oldPrefix: 'psychlua.', newPrefix: 'psychlua.backend.'}
 	];
 
 	static inline function shouldShowDeprecatedWarnings():Bool
@@ -112,7 +111,6 @@ class ClassResolver
 		'psychlua.LuaHostContext' => 'psychlua.backend.LuaHostContext',
 		'psychlua.LuaHostKind' => 'psychlua.backend.LuaHostKind',
 		'psychlua.LuaUtils' => 'psychlua.backend.LuaUtils',
-		'psychlua.Mesh3DRenderer' => 'psychlua.backend.Mesh3DRenderer',
 		'psychlua.ModchartAnimateSprite' => 'psychlua.backend.ModchartAnimateSprite',
 		'psychlua.ModchartSprite' => 'psychlua.backend.ModchartSprite',
 		'psychlua.ScriptRegistry' => 'psychlua.backend.ScriptRegistry',
@@ -127,11 +125,6 @@ class ClassResolver
 		'psychlua.LegacyCompatFunctions' => 'psychlua.LegacyFunctions',
 		'psychlua.LuaModchart' => 'psychlua.ModchartFunctions',
 		'psychlua.LuaVideo' => 'psychlua.VideoFunctions',
-		'backend3D.MilkShapeAsciiParser' => 'backend.milkshape.MilkShapeAsciiParser',
-		'backend3D.SM3DData' => 'backend.milkshape.SM3DData',
-		'backend3D.SM3DPath' => 'backend.milkshape.SM3DPath',
-		'backend3D.SMCoordinateConverter' => 'backend.milkshape.SMCoordinateConverter',
-		'backend3D.SMModelFile' => 'backend.milkshape.SMModelFile',
 		// ===== hxCodec / hxvlc compatibility for Psych 0.6.x video scripts =====
 		'vlc.MP4Handler' => 'objects.hxcodec.v2_5_0.MP4Handler',
 		'vlc.MP4Sprite' => 'objects.hxcodec.v2_5_0.MP4Sprite',

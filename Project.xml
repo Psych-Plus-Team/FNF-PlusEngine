@@ -22,7 +22,7 @@
 	<!-- ______________________ PSYCH ENGINE CUSTOMIZATION ______________________ -->
 
 	<define name="MODS_ALLOWED" if="desktop || mobile" />
-	<define name="MODCHARTS_NOTITG_ALLOWED" if="desktop || mobile" />
+	<define name="MODCHART_ALLOWED" if="desktop || mobile" />
 	<define name="HSCRIPT_ALLOWED" if="desktop || mobile" />
 	<define name="LUA_ALLOWED" if="cpp" />
 	<define name="ACHIEVEMENTS_ALLOWED" />
@@ -31,7 +31,6 @@
 	<define name="IRIS_DEBUG"/>
 	<define name="WINDOWS_FUNCTIONS_ALLOWED" if="desktop" />
 	<define name="GDI_ENABLED" if="windows" />
-	<define name="AWAY3D_ALLOWED" if="desktop || mobile" />
 
 	<define name="MULTITHREADED_LOADING" if="cpp" /> <!-- UNCOMMENTING THIS LINE WILL ENABLE MULTITHREADED LOADING, WHICH IMPROVES LOADING TIMES, BUT WITH A LOW CHANCE FOR THE GAME FREEZE ON SONG LOAD -->
 	<define name="SHOW_LOADING_SCREEN" />
@@ -93,7 +92,6 @@
 		<!-- WARNING: The base game mod is packaged by CI as Mod-Base-Game.zip.
 		     Keep it out of engine builds so release archives stay separated. -->
 		<assets path='example_mods' rename='mods' embed='false' />
-		<assets path='example_sm' rename='sm' embed='false' />
 		<assets path='list.txt' rename='modsList.txt' />
 	</section>
 
@@ -114,7 +112,6 @@
 	<haxelib name="moonchart" unless="mac | ios"/>
 	<haxelib name="grig.audio"/>
 	<haxelib name="funkin.vis"/>
-	<haxelib name="away3d" if="AWAY3D_ALLOWED"/>
 
 	<!--Psych stuff needed-->
 	<haxelib name="linc_luajit" if="LUA_ALLOWED"/>
@@ -134,7 +131,6 @@
 	<!-- Force C99 standard for macOS/iOS to fix zlib compilation with Xcode 16.4 -->
 	<haxedef name="HXCPP_CFLAGS" value="-std=c99 -Wno-error=deprecated-non-prototype -Wno-deprecated-declarations -Wno-unused-command-line-argument -Wno-macro-redefined" if="macos || ios" />
 	<haxeflag name="-D" value="no-deprecation-warnings"/>
-	<haxeflag name="--macro" value="include('backend.milkshape')"/>
 	<haxedef name="HXCPP_CFLAGS" value="-Wnull-arithmetic -Wtautological-pointer-compare -Wtrigraphs"/>
 
 
@@ -225,7 +221,7 @@
 
 	<!-- ____________________________ Modcharts? _______________________________ -->
 
-    <section if="MODCHARTS_NOTITG_ALLOWED">
+    <section if="MODCHART_ALLOWED">
 		<assets path="assets/modchart/arrowShape.csv" rename="modchart/arrowShape.csv" embed="true" />
 		<assets path="assets/modchart/eyeShape.csv" rename="modchart/eyeShape.csv" embed="true" />
 		<haxedef name="FM_ENGINE" value="PSYCH"/>

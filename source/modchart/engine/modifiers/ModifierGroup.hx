@@ -106,7 +106,7 @@ final class ModifierGroup {
 
 	/**
 	 * Computes the transformed position and visual properties of an arrow based on active modifiers.
-	 * Now uses global cache system inspired by StepMania for better performance.
+	 * Now uses a global cache system for better performance.
 	 *
 	 * @param pos The initial `Vector3` position of the arrow.
 	 * @param data The `ArrowData` containing arrow properties such as lane, player, and timing.
@@ -116,7 +116,7 @@ final class ModifierGroup {
 	 * @return A `ModifierOutput` structure containing the modified position and visuals.
 	 *
 	 * **Processing Steps:**
-	 * - Checks global cache first (StepMania technique)
+	 * - Checks global cache first
 	 * - If cache miss, calculates modifiers and stores result
 	 * - Retrieves the current song position and beat.
 	 * - Iterates through all active modifiers, applying transformations if conditions are met.

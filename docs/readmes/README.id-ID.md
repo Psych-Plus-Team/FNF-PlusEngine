@@ -1,8 +1,8 @@
-![Logo Off](docs/img/PlusEngineLogo.png)
+![Logo Off](img/PlusEngineLogo.png)
 
 <div align="center">
 
-**[EN-US](README.md) | ES-LA | ID-ID**
+**[EN-US](../../README.md) | [ES-LA](README.es-LA.md) | ID-ID**
 
 
 ![Made with](https://forthebadge.com/api/badges/generate?panels=2&primaryLabel=Dibuat+dengan&secondaryLabel=Haxe&primaryBGColor=%23689bb1&primaryTextColor=%23ffffff&secondaryBGColor=%23fea948&secondaryTextColor=%23ffffff&primaryFontSize=12&primaryFontWeight=700&primaryLetterSpacing=2&primaryFontFamily=Arial&primaryTextTransform=capitalize&secondaryFontSize=12&secondaryFontWeight=700&secondaryLetterSpacing=2&secondaryFontFamily=Arial&tertiaryBGColor=%23c14dff&tertiaryTextColor=%23FFFFFF&tertiaryFontSize=12&tertiaryFontWeight=700&tertiaryLetterSpacing=2&tertiaryFontFamily=Arial&tertiaryTextTransform=capitalize&tertiaryIconColor=%23FFFFFF&tertiaryIconSize=16&tertiaryIconPosition=left&secondaryIcon=haxe&secondaryIconColor=%23ffffff&secondaryIconSize=16&secondaryIconPosition=left&scale=0.7&borderRadius=10)
@@ -123,11 +123,11 @@ Anda memerlukan:
 - Variabel untuk pengelolaan jendela dan sistem di Lua: Banyak variabel ditambahkan, baik untuk menyembunyikan taskbar atau batas jendela, dll.
 - Key Viewer
 - Dukungan dan pengaturan Modchart.
-![Modchart](docs/img/modchart.gif)
+![Modchart](img/modchart.gif)
 - Perubahan Gameplay Baru (Mode Lawan, Tidak Ada Denda, Hanya Sempurna).
 - Anda dapat memilih sistem akurasi default Anda. ITG, Psych, DJMax, Wife3, osu!, Simpel
 * Dukungan untuk level NotITG (tanpa modifikasi) dan Stepmania, termasuk antarmuka pengguna (UI)
-![Stepmania](docs/img/Stepmania.png)
+![Stepmania](img/Stepmania.png)
 - Dukungan Android
 - Ditambahkan sprite "miss" dan "kombo rusak"
 - Ditambahkan opsi "buruk" dan "jancok" untuk memecah kombo
@@ -139,31 +139,31 @@ Anda memerlukan:
 - Kompatibel dengan video hxcodec dari mod Psych 0.6.3 dan 0.7.3.
 - Bar Kesehatan yang Halus
 * +5 Bahasa tersedia
-![Languages](docs/img/Languages.png)
+![Languages](img/Languages.png)
 - Transisi baru yang keren
 - Jika Anda berada dalam Mode Charting, langkah, beat, dan bagian akan ditampilkan dalam permainan.
 - Perbaikan penghitung FPS
 - Pelacakan dalam game
 - Perbaikan OutdatedSubstate.hx
 * Perbaikan FreeplayState.hx
-![Freeplay](docs/img/Freeplay.png)
-![Freeplay Diff](docs/img/FreeplayDiff.png)
+![Freeplay](img/Freeplay.png)
+![Freeplay Diff](img/FreeplayDiff.png)
 - Lebih banyak hal akan terus ditambahkan di masa depan...
 
 # Fitur Utama
 
 ## Kotak dialog animasi yang menarik:
 
-<img src="docs/img/dialogue.gif" width="622" height="348"/>
+<img src="img/dialogue.gif" width="622" height="348"/>
 
 ## Menu Utama Baru
 * Menu baru yang membuat pengalaman Anda semakin baik!
-![Main Menu](docs/img/MainMenu.png)
+![Main Menu](img/MainMenu.png)
 
 ## Dukungan Mod
 * Mungkin salah satu fitur utama dari mesin ini, Anda dapat membuat kode dalam berkas .lua di luar kode sumber, sehingga Anda dapat membuat modifikasi sendiri tanpa perlu mengubah kode sumber!
 * Dilengkapi dengan menu pengaturan dan penonaktifan mod.
-![Mod Support](docs/img/ModsMenu.png)
+![Mod Support](img/ModsMenu.png)
 
 
 ## Setidaknya satu perubahan setiap minggu:
@@ -189,7 +189,7 @@ Anda memerlukan:
   * Juga ada gadis-gadis latar belakang yang menakutkan selama bagian "Hey!" dari instrumental.
 
 ## Perubahan baru yang keren pada Editor Chart dan perbaikan bug yang tak terhitung jumlahnya
-![Chart Editor](docs/img/chart.png)
+![Chart Editor](img/chart.png)
 * Anda kini dapat membuat note "Event", yang berfungsi sebagai bookmark untuk memicu tindakan spesifik yang sebelumnya diprogram secara statis pada versi dasar permainan.
 * BPM lagu Anda kini dapat memiliki nilai desimal
 * Anda dapat secara manual menyesuaikan waktu strum sebuah note jika Anda menginginkan presisi milidetik
@@ -201,16 +201,16 @@ Anda memerlukan:
   * No Animation: Karakter hanya memukul note, tanpa animasi yang diputar.
 
 ## Beberapa editor untuk membantu Anda membuat mod Anda sendiri
-![Master Editor Menu](docs/img/editors.png)
+![Master Editor Menu](img/editors.png)
 * Berfungsi baik untuk modifikasi kode sumber maupun build yang diunduh!
 
 ## Perombakan menu mode cerita:
-![Story Mode Menu](docs/img/storymode.png)
+![Story Mode Menu](img/storymode.png)
 * Ditambahkan latar belakang (BG) yang berbeda untuk setiap lagu (kurang Tutorial)
 * Semua karakter menu sekarang berada dalam lembar sprite terpisah, sehingga memudahkan proses modifikasi.
 
 ## Menu Kredit
-![Credits Menu](docs/img/credits.png)
+![Credits Menu](img/credits.png)
 * Anda dapat menambahkan ikon kepala, nama, deskripsi, dan tautan pengalihan saat pemain menekan tombol Enter saat item tersebut sedang dipilih.
 
 ## Penghargaan/Prestasi
@@ -220,7 +220,7 @@ Anda memerlukan:
 ## Menu Opsi:
 * Anda dapat mengubah warna Note, Penundaan, dan Pergeseran Kombo, Pengaturan Kontrol, dan Preferensi di sana.
  * Di Preferensi, Anda dapat mengaktifkan atau menonaktifkan Gulir Bawah, Gulir Tengah, Anti-Aliasing, Kecepatan Frame, Kualitas Rendah, Note Splashes, Lampu Berkedip, dan lain-lain.
-![Options](docs/img/Options.png)
+![Options](img/Options.png)
 
 ## Fitur gameplay lainnya:
 * Saat musuh memukul note, note yang mereka petik juga akan berkilau.

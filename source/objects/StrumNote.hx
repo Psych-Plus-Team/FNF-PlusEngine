@@ -34,7 +34,6 @@ class StrumNote extends FlxSprite
 	}
 
 	public var useRGBShader:Bool = true;
-	public var animateOnBeat:Bool = false; // NotITG-style receptor beat sync.
 
 	private var lastCenteredAnim:String = null;
 
@@ -54,8 +53,6 @@ class StrumNote extends FlxSprite
 		else
 			skin = Note.getDefaultNoteSkinPath(PlayState.isPixelStage);
 		skin = Note.resolveNoteSkinPath(skin, PlayState.isPixelStage);
-
-		animateOnBeat = skin.toLowerCase().contains('notitg');
 
 		rgbShader = new RGBShaderReference(this, Note.initializeGlobalRGBShader(leData));
 		rgbShader.enabled = false;
@@ -78,21 +75,6 @@ class StrumNote extends FlxSprite
 
 		scrollFactor.set();
 		playAnim('static');
-	}
-
-	public function checkNotITGSkin():Void
-	{
-		animateOnBeat = texture != null && texture.toLowerCase().contains('notitg');
-		useRGBShader = Note.usesRGBShader();
-		if (Note.usesClassicColors())
-		{
-			if (colorSwap == null)
-				colorSwap = new ColorSwap();
-			shader = colorSwap.shader;
-		}
-
-		if (rgbShader != null)
-			rgbShader.forceDisabled = false;
 	}
 
 	public function reloadNote()
@@ -172,7 +154,13 @@ class StrumNote extends FlxSprite
 		if (lastAnim != null)
 			playAnim(lastAnim, true);
 
-		checkNotITGSkin();
+		useRGBShader = Note.usesRGBShader();
+		if (Note.usesClassicColors())
+		{
+			if (colorSwap == null)
+				colorSwap = new ColorSwap();
+			shader = colorSwap.shader;
+		}
 	}
 
 	public function playerPosition(?overridePlayer:Null<Int> = null)

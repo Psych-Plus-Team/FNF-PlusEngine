@@ -273,8 +273,6 @@ class BaseOptionsMenu extends MusicBeatSubstate
 						FlxG.sound.play(Paths.sound('scrollMenu'));
 						curOption.setValue((curOption.getValue() == true) ? false : true);
 						curOption.change();
-						if (curOption.variable == 'judgementCounter')
-							ClientPrefs.judgementCounter = ClientPrefs.data.judgementCounter;
 						reloadCheckboxes();
 					}
 

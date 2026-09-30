@@ -106,8 +106,8 @@ class ReflectionFunctions
 
 					default: //Is Group
 						var member:Dynamic = realObject.members[index];
-						#if (MODCHARTS_NOTITG_ALLOWED && LUA_ALLOWED)
-						// When NotITG modchart manager is active, expose rendered strum x/y so Lua scripts
+						#if (MODCHART_ALLOWED && LUA_ALLOWED)
+						// When the modchart manager is active, expose rendered strum x/y so Lua scripts
 						// using getPropertyFromGroup('playerStrums'...) can track the real visual position.
 						if (member != null && Std.isOfType(member, StrumNote) && Std.isOfType(variable, String))
 						{

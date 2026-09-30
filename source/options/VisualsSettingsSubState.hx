@@ -217,9 +217,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			}
 		};
 
-		var option:Option = new Option('Judgement Counter', 'Show the judgement counter during gameplay.', 'judgementCounter', BOOL);
-		addOption(option);
-
 		var option:Option = new Option('Show End Countdown', 'If checked, shows a countdown in the last seconds of the song.', 'endCountdown', BOOL);
 		addOption(option);
 
@@ -337,9 +334,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 
 		note.texture = skin; // Load texture and anims (setter calls reloadNote automatically)
 		note.playAnim('static');
-
-		// Verificar si el skin es NotITG
-		note.checkNotITGSkin();
 	}
 
 	function getNoteSkinsList():Array<String>

@@ -2,9 +2,7 @@ package modchart;
 
 import flixel.FlxBasic;
 import flixel.tweens.FlxEase.EaseFunction;
-import flixel.util.FlxSort;
 import haxe.ds.StringMap;
-import haxe.ds.Vector;
 import modchart.backend.core.Node.NodeFunction;
 import modchart.engine.events.types.CallbackEvent;
 import psychlua.backend.LuaUtils;
@@ -586,7 +584,10 @@ final class Manager extends FlxBasic
 	 */
 	override function update(elapsed:Float):Void
 	{
-		if (!__primary)
+		if (!__primary || Adapter.instance == null)
+			return;
+
+		if (!__hasRuntimeWork())
 			return;
 
 		super.update(elapsed);
@@ -596,7 +597,7 @@ final class Manager extends FlxBasic
 		final beat = Adapter.instance.getCurrentBeat();
 
 		iteratePlayfields(pf -> pf.beginFrame(__frameToken, songPos, beat));
-		__updateScheduledPlayfieldOps(Adapter.instance.getCurrentBeat());
+		__updateScheduledPlayfieldOps(beat);
 
 		iteratePlayfields(pf -> pf.update(elapsed));
 	}
@@ -606,7 +607,7 @@ final class Manager extends FlxBasic
 	 */
 	override function draw():Void
 	{
-		final shouldRender = __primary && shouldRenderModchart();
+		final shouldRender = __primary && Adapter.instance != null && renderer != null && shouldRenderModchart();
 
 		if (!shouldRender)
 		{
@@ -617,7 +618,7 @@ final class Manager extends FlxBasic
 		}
 
 		__wasRendering = true;
-		var playerItems = Adapter.instance.getArrowItems();
+		final playerItems = Adapter.instance.getArrowItems();
 
 		if (playerItems == null)
 			return;
@@ -630,7 +631,37 @@ final class Manager extends FlxBasic
 		if (state != null && (!state.modchartManagerEnabled || !state.modchartControlsStrumRender))
 			return false;
 
-		return Config.RENDER_ARROW_PATHS || activePlayfieldCount > 1 || totalEventCount > 0 || (__renderRequested && __hasRenderableModchartContent);
+		return Config.RENDER_ARROW_PATHS || __hasExtraPlayfields() || (__renderRequested && __hasRenderableModchartContent) || __hasEvents();
+	}
+
+	private inline function __hasRuntimeWork():Bool
+	{
+		return Config.RENDER_ARROW_PATHS || __renderRequested || __scheduledPlayfieldOps.length > 0 || __hasExtraPlayfields() || __hasEvents();
+	}
+
+	private function __hasExtraPlayfields():Bool
+	{
+		var count = 0;
+		for (playfield in playfields)
+		{
+			if (playfield == null)
+				continue;
+
+			count++;
+			if (count > 1)
+				return true;
+		}
+		return false;
+	}
+
+	private function __hasEvents():Bool
+	{
+		for (playfield in playfields)
+		{
+			if (playfield != null && playfield.events.totalEvents > 0)
+				return true;
+		}
+		return false;
 	}
 
 	/**

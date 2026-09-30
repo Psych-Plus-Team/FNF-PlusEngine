@@ -20,7 +20,7 @@ class OptionsState extends MusicBeatState
 		'Gameplay',
 		'Legacy',
 		#if MODS_ALLOWED 'Mod Security', #end
-		#if MODCHARTS_NOTITG_ALLOWED 'Modchart' #end
+		#if MODCHART_ALLOWED 'Modchart' #end
 		#if TRANSLATIONS_ALLOWED, 'Language' #end,
 		#if mobile 'Mobile' #end
 	];

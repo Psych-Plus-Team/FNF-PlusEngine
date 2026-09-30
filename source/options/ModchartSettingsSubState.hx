@@ -13,7 +13,7 @@ class ModchartSettingsSubState extends BaseOptionsMenu
 		rpcTitle = 'Modchart Options Menu'; // for Discord Rich Presence
 
 		var option:Option = new Option('Modchart Debug Overlay',
-			'Shows NotITG-style modchart renderer stats.\nDisabled by default because it has a performance cost.', 'modchartDebug', BOOL);
+			'Shows modchart renderer stats.\nDisabled by default because it has a performance cost.', 'modchartDebug', BOOL);
 		addOption(option);
 
 		// 3D Camera option

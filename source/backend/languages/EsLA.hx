@@ -151,7 +151,6 @@ class EsLA
 		"language_menu" => "Ajustes de idioma",
 		"mobile_controls_tip" => "Presiona {1} para ir al Menú de Controles Móviles",
 		// Note Colors Menu
-		"note_colors_notitg" => "Shaders RGB Desactivados - La skin NotITG preserva los colores originales",
 		"note_colors_tip" => "Presione RESET para restablecer la parte de nota seleccionada.",
 		"note_colors_hold_tip" => "Manten presionado {1} y luego presione la tecla RESET para restablecer completamente la nota seleccionada.",
 		"note_colors_shift" => "Shift",
@@ -332,9 +331,6 @@ class EsLA
 		"description_show_end_countdown" => "Si está marcado, muestra una cuenta regresiva al final de la canción.",
 		"setting_end_countdown_seconds" => "Seg. de cuenta regresiva:",
 		"description_end_countdown_seconds" => "Cuántos segundos debe durar la cuenta regresiva al final de la canción.\n(10 - 30)",
-		"setting_accuracy_system" => "Sistema de precisión:",
-		"description_accuracy_system" =>
-		"¿Qué sistema de cálculo de precisión prefieres?\nWife3 - Precisión en ms de StepMania\nPsych - Basado en Rating Mod\nSimple - Aciertos básicos/total\nosu!mania - Sistema de juicio ponderado\nDJMAX - Sistema de bonificación de combo\nITG - Sistema de puntos de baile\n\n",
 		"setting_system_score_multiplier" => "Multiplicador de puntuación del sistema",
 		"description_system_score_multiplier" => "Ajusta el multiplicador de puntuación al tocar notas.",
 		// Modchart Options

@@ -539,7 +539,6 @@ class EsES
 		"touchpad_actionmode_missing" => "This touchpad mode is missing its action buttons configuration.",
 		"touchpad_dpadmode_missing" => "This touchpad mode is missing its d-pad configuration.",
 		"modchart_converter" => "Modchart Converter",
-		"note_colors_notitg" => "RGB SHADERS DISABLED - NotITG skin preserves original colors",
 	];
 }
 

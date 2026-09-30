@@ -525,7 +525,6 @@ class EnUS
 		"touchpad_dpadmode_missing" => "This touchpad mode is missing its d-pad configuration.",
 		// Misc UI / Translator Notes
 		"modchart_converter" => "Modchart Converter",
-		"note_colors_notitg" => "RGB SHADERS DISABLED - NotITG skin preserves original colors",
 		// Translator reference:
 		// The following families are generated dynamically by the engine and
 		// resolve to concrete keys already declared above:

@@ -2066,8 +2066,7 @@ class FunkinLua
 		ActorFrameFunctions.implement(this);
 		DeprecatedFunctions.implement(this);
 		LegacyFunctions.implement(this);
-		#if AWAY3D_ALLOWED Mesh3DFunctions.implement(this); #end
-		#if MODCHARTS_NOTITG_ALLOWED ModchartFunctions.implement(this); #end
+		#if MODCHART_ALLOWED ModchartFunctions.implement(this); #end
 		#if WINDOWS_FUNCTIONS_ALLOWED WindowsFunctions.implement(this); #end
 		#if (WINDOWS_FUNCTIONS_ALLOWED && GDI_ENABLED) WindowsGDIFunctions.implement(this); #end
 		MobileFunctions.implement(this);
@@ -2313,10 +2312,6 @@ class FunkinLua
 		closed = true;
 
 		scriptsByState.remove(this);
-		#if AWAY3D_ALLOWED
-		Mesh3DRenderer.removeByOwner(scriptName);
-		#end
-
 		if (lua == null)
 		{
 			return;

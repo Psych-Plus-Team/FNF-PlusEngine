@@ -1,8 +1,8 @@
-![Logo Off](docs/img/PlusEngineLogo.png)
+![Logo Off](img/PlusEngineLogo.png)
 
 <div align="center">
 
-**[EN-US](README.md) | ES-LA | ID-ID**
+**[EN-US](../../README.md) | ES-LA | [ID-ID](README.id-ID.md)**
 
 
 ![Made with](https://forthebadge.com/api/badges/generate?panels=2&primaryLabel=Elaborado+con&secondaryLabel=Haxe&primaryBGColor=%23689bb1&primaryTextColor=%23ffffff&secondaryBGColor=%23fea948&secondaryTextColor=%23ffffff&primaryFontSize=12&primaryFontWeight=700&primaryLetterSpacing=2&primaryFontFamily=Arial&primaryTextTransform=capitalize&secondaryFontSize=12&secondaryFontWeight=700&secondaryLetterSpacing=2&secondaryFontFamily=Arial&tertiaryBGColor=%23c14dff&tertiaryTextColor=%23FFFFFF&tertiaryFontSize=12&tertiaryFontWeight=700&tertiaryLetterSpacing=2&tertiaryFontFamily=Arial&tertiaryTextTransform=capitalize&tertiaryIconColor=%23FFFFFF&tertiaryIconSize=16&tertiaryIconPosition=left&secondaryIcon=haxe&secondaryIconColor=%23ffffff&secondaryIconSize=16&secondaryIconPosition=left&scale=0.7&borderRadius=10)
@@ -123,11 +123,11 @@ Necesitas tener:
 - Variables para la gestión de ventanas y sistema en Lua: Se agregaron muchas variables, ya sea para ocultar la barra de tareas o los bordes de la ventana, etc.
 - Visor de Teclas
 - Soporte y configuración de Modcharts.
-![Modchart](docs/img/modchart.gif)
+![Modchart](img/modchart.gif)
 - Nuevos Modificadores de Gameplay (Modo Oponente, Sin Penalización por Drop, Solo Perfecto).
 - Puedes elegir tu sistema de precisión predeterminado. ITG, Psych, DJMax, Wife3, osu!, Simple
 * Soporte para niveles de NotITG (sin modificadores) y Stepmania, incluye UI
-![Stepmania](docs/img/Stepmania.png)
+![Stepmania](img/Stepmania.png)
 - Soporte para Android
 - Se agregaron los sprites de "miss" y "combo broken"
 - Se agregó la opción para que "bad" y "shit" rompan el combo
@@ -139,31 +139,31 @@ Necesitas tener:
 - Compatible con videos hxcodec de mods de Psych 0.6.3 y 0.7.3.
 - Barra de Salud Suave
 * +5 Idiomas disponibles
-![Languages](docs/img/Languages.png)
+![Languages](img/Languages.png)
 - Nueva transición genial
 - Si estás en Modo Charting, el step, beat y section se mostrarán en el gameplay.
 - Rediseño del Contador de FPS
 - Trace en el Juego
 - Rediseño del OutdatedSubstate.hx
 * Rediseño del FreeplayState.hx
-![Freeplay](docs/img/Freeplay.png)
-![Freeplay Diff](docs/img/FreeplayDiff.png)
+![Freeplay](img/Freeplay.png)
+![Freeplay Diff](img/FreeplayDiff.png)
 - Se seguirán agregando más cosas en el futuro...
 
 # Características Principales
 
 ## Cajas de diálogo animadas atractivas:
 
-<img src="docs/img/dialogue.gif" width="622" height="348"/>
+<img src="img/dialogue.gif" width="622" height="348"/>
 
 ## Nuevo Menú Principal
 * ¡Un menú completamente nuevo que hace tu experiencia aún mejor!
-![Main Menu](docs/img/MainMenu.png)
+![Main Menu](img/MainMenu.png)
 
 ## Soporte de Mods
 * Probablemente uno de los puntos principales de este motor, ¡puedes codificar en archivos .lua fuera del código fuente, creando tus propias semanas sin siquiera tocar el código fuente!
 * Viene con un Menú de Organización/Deshabilitación de Mods.
-![Mod Support](docs/img/ModsMenu.png)
+![Mod Support](img/ModsMenu.png)
 
 
 ## Al menos un cambio en cada semana:
@@ -189,7 +189,7 @@ Necesitas tener:
   * También están las chicas de fondo siendo espeluznantes durante las partes de "Hey!" del Instrumental
 
 ## Cambios geniales en el Editor de Charts y correcciones de innumerables errores
-![Chart Editor](docs/img/chart.png)
+![Chart Editor](img/chart.png)
 * Ahora puedes crear notas de "Evento", que son marcadores que activan acciones específicas que generalmente estaban hardcodeadas en la versión vanilla del juego.
 * El BPM de tu canción ahora puede tener valores decimales
 * Puedes ajustar manualmente el tiempo de strum de una Nota si realmente buscas precisión de milisegundos
@@ -201,26 +201,26 @@ Necesitas tener:
   * No Animation: El personaje solo golpea la nota, no se reproduce ninguna animación.
 
 ## Múltiples editores para ayudarte a hacer tu propio Mod
-![Master Editor Menu](docs/img/editors.png)
+![Master Editor Menu](img/editors.png)
 * ¡Funciona tanto para modding del código fuente como para builds descargadas!
 
 ## Rediseño del menú de modo historia:
-![Story Mode Menu](docs/img/storymode.png)
+![Story Mode Menu](img/storymode.png)
 * Se agregó un BG diferente para cada canción (excepto Tutorial)
 * Todos los personajes del menú ahora están en spritesheets individuales, hace que el modding sea más fácil.
 
 ## Menú de créditos
-![Credits Menu](docs/img/credits.png)
+![Credits Menu](img/credits.png)
 * Puedes agregar un ícono de cabeza, nombre, descripción y un enlace de Redirección para cuando el jugador presione Enter mientras el elemento está seleccionado actualmente.
 
 ## Premios/Logros
 * El motor viene con 16 logros de ejemplo con los que puedes experimentar y aprender cómo funciona (Revisa Achievements.hx y busca "checkForAchievement" en PlayState.hx)
-![Achievements](docs/img/Achievements.png)
+![Achievements](img/Achievements.png)
 
 ## Menú de opciones:
 * Puedes cambiar los colores de las Notas, Delay y Offset de Combo, Controles y Preferencias allí.
  * En Preferencias puedes alternar Downscroll, Middlescroll, Anti-Aliasing, Framerate, Baja Calidad, Note Splashes, Luces Intermitentes, etc.
-![Options](docs/img/Options.png)
+![Options](img/Options.png)
 
 ## Otras características de gameplay:
 * Cuando el enemigo golpea una nota, su nota de strum también brilla.

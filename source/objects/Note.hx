@@ -558,9 +558,6 @@ class Note extends FlxSprite
 
 		if (animName != null)
 			animation.play(animName, true);
-
-		if (rgbShader != null)
-			rgbShader.forceDisabled = false;
 	}
 
 	public static function getNoteSkinPostfix()

@@ -167,7 +167,7 @@ class Language
 		return results;
 	}
 
-	// ← NEW FUNCTION FOR SPECIFIC CACHE (used by JudCounter)
+	// Gets a phrase from a specific language cache.
 	public static function cacheSpecificPhrases(keys:Array<String>, defaults:Array<String>):Array<String>
 	{
 		var cached:Array<String> = [];

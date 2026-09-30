@@ -43,7 +43,7 @@ import objects.*;
 import states.stages.*;
 import states.stages.objects.*;
 
-#if MODCHARTS_NOTITG_ALLOWED
+#if MODCHART_ALLOWED
 import modchart.Manager;
 #end
 
@@ -155,7 +155,6 @@ class PlayState extends MusicBeatState
 	public static var storyPlaylist:Array<String> = [];
 	public static var storyDifficulty:Int = 1;
 	public static var returnToScriptedState:String = null;
-	public static var customAudioPath:String = null;
 
 	public var spawnTime:Float = 2000;
 
@@ -193,7 +192,7 @@ class PlayState extends MusicBeatState
 	public var keyViewer:objects.KeyViewer;
 	public var modchartManagerEnabled:Bool = true;
 	public var modchartControlsStrumRender:Bool = true;
-	#if MODCHARTS_NOTITG_ALLOWED
+	#if MODCHART_ALLOWED
 	var mcDbgTxt:FlxText = null;
 	var mcDbgOn:Bool = false;
 	var mcDbgTime:Float = 0;
@@ -749,7 +748,7 @@ class PlayState extends MusicBeatState
 		callOnScripts('onCreatePost');
 
 		initModchart();
-		#if MODCHARTS_NOTITG_ALLOWED
+		#if MODCHART_ALLOWED
 		if (Manager.instance != null && ClientPrefs.data.modchartDebug)
 			mcDebug(0);
 		#end
@@ -784,7 +783,7 @@ class PlayState extends MusicBeatState
 
 	function initModchart():Void
 	{
-		#if MODCHARTS_NOTITG_ALLOWED
+		#if MODCHART_ALLOWED
 		if (mcInitDone)
 			return;
 		mcInitDone = true;
@@ -822,7 +821,7 @@ class PlayState extends MusicBeatState
 		#end
 	}
 
-	#if MODCHARTS_NOTITG_ALLOWED
+	#if MODCHART_ALLOWED
 	function ensureModchartManager():Void
 	{
 		if (!modchartManagerEnabled)
@@ -1786,34 +1785,7 @@ class PlayState extends MusicBeatState
 		inst = new FlxSound();
 		try
 		{
-			if(customAudioPath != null)
-			{
-				#if sys
-				var oggFile:String = null;
-				if(sys.FileSystem.exists(customAudioPath))
-				{
-					for(file in sys.FileSystem.readDirectory(customAudioPath))
-					{
-						if(file.toLowerCase().endsWith('.ogg'))
-						{
-							oggFile = file;
-							break;
-						}
-					}
-				}
-
-				if(oggFile != null)
-					inst.loadEmbedded(openfl.media.Sound.fromFile(customAudioPath + oggFile));
-				else
-				{
-					trace('No .ogg file found in: $customAudioPath');
-					inst.loadEmbedded(Paths.inst(songData.song));
-				}
-				#else
-				inst.loadEmbedded(Paths.inst(songData.song));
-				#end
-			}
-			else inst.loadEmbedded(Paths.inst(songData.song));
+			inst.loadEmbedded(Paths.inst(songData.song));
 		}
 		catch (e:Dynamic) {}
 		FlxG.sound.list.add(inst);
@@ -2199,7 +2171,7 @@ class PlayState extends MusicBeatState
 
 		super.update(elapsed);
 
-		#if MODCHARTS_NOTITG_ALLOWED
+		#if MODCHART_ALLOWED
 		mcDebug(elapsed);
 		#end
 
@@ -2300,7 +2272,7 @@ class PlayState extends MusicBeatState
 		if (unspawnNotes[0] != null)
 		{
 			var time:Float = spawnTime * playbackRate;
-			#if MODCHARTS_NOTITG_ALLOWED
+			#if MODCHART_ALLOWED
 			if (Manager.instance != null)
 				time = Manager.instance.getNoteSpawnTime(unspawnNotes[0].mustPress ? 1 : 0, time);
 			#end
@@ -4212,7 +4184,7 @@ class PlayState extends MusicBeatState
 	}
 
 	override function destroy() {
-		#if MODCHARTS_NOTITG_ALLOWED
+		#if MODCHART_ALLOWED
 		if (mcInitCb != null)
 		{
 			FlxG.signals.postUpdate.remove(mcInitCb);
@@ -4283,7 +4255,7 @@ class PlayState extends MusicBeatState
 		super.destroy();
 	}
 
-	#if MODCHARTS_NOTITG_ALLOWED
+	#if MODCHART_ALLOWED
 	function destroyModchartManager():Void
 	{
 		var manager:Manager = Manager.instance;

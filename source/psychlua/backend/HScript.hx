@@ -478,7 +478,7 @@ class HScript extends Iris
 		set('GameplaySettingsSubState', options.GameplaySettingsSubState);
 		set('LegacySettingsSubState', options.LegacySettingsSubState);
 		set('NoteOffsetState', options.NoteOffsetState);
-		#if MODCHARTS_NOTITG_ALLOWED
+		#if MODCHART_ALLOWED
 		set('ModchartSettingsSubState', options.ModchartSettingsSubState);
 		set('Manager', modchart.Manager);
 		set('ModchartManager', modchart.Manager);

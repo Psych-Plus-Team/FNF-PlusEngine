@@ -170,7 +170,6 @@ class IdID
 		"mobile_menu" => "Pengaturan Ponsel",
 		"mobile_controls_tip" => "Tekan {1} untuk pergi ke Menu Kontrol Ponsel",
 		// Note Colors Menu
-		"note_colors_notitg" => "Shader RGB Dinonaktifkan - Skin NotITG mempertahankan warna asli",
 		"note_colors_tip" => "Tekan RESET untuk mereset Bagian Note dipilih.",
 		"note_colors_hold_tip" => "Tahan {1} + Tekan RESET key untuk mereset Note dipilih sepenuhnya.",
 		"note_colors_lb" => "Tombol Bahu Kiri",
@@ -370,10 +369,6 @@ class IdID
 		"description_show_end_countdown" => "Jika dicentang, akan menampilkan sebuah countdown di akhir lagu.",
 		"setting_end_countdown_seconds" => "Akhir Countdown Detik:",
 		"description_end_countdown_seconds" => "Berapa detik durasi countdown di akhir lagu.\n(10 - 30)",
-		"setting_accuracy_system" => "Sistem Akurasi",
-		"setting_accuracy_system-simple" => "Simpel",
-		"description_accuracy_system" =>
-		"Sistem perhitungan akurasi mana yang Anda sukai?\nWife3 - Akurasi ms StepMania\nPsych - Berbasis Rating Mod\nSimpel - Hit dasar/total\nosu!mania - Sistem penilaian berbobot\nDJMAX - Sistem bonus kombo\nITG - Sistem poin tari\n\n",
 		"setting_system_score_multiplier" => "Sistem Pengganda Skor",
 		"description_system_score_multiplier" => "Pilih sistem pengganda skor untuk note hits",
 		"setting_heavy_charts_mode" => "Mode Charts Berat",

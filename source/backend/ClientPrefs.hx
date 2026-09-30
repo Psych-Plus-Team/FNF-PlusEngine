@@ -105,7 +105,6 @@ import states.TitleState;
 	public var hideSustainSplash:Bool = true;
 	public var showKeyViewer:Bool = false;
 	public var iconBounceType:String = 'Default';
-	public var judgementCounter:Bool = false;
 	public var showRating:Bool = true;
 	public var showCombo:Bool = false;
 	public var showComboNum:Bool = true;
@@ -133,7 +132,7 @@ import states.TitleState;
 	public var holdCache:Bool = true; // Hold graphics cache for performance
 	public var holdAlphaSteps:Int = 20; // Pre-calculated alpha variants (10-30)
 	public var colMods:Bool = true; // Enables per-lane modifier calculations
-	public var modchartDebug:Bool = false; // Shows the NotITG-style modchart debug overlay
+	public var modchartDebug:Bool = false; // Shows modchart renderer stats.
 
 	// Note colors / offsets
 	public var noteOffset:Int = 0;
@@ -191,7 +190,6 @@ class ClientPrefs
 	public static var data:SaveVariables = {};
 	public static var defaultData:SaveVariables = {};
 	public static var globalAntialiasing(get, set):Bool;
-	public static var judgementCounter:Bool = false;
 	public static inline var FRAMERATE_MAX:Int = 240;
 	public static inline var FRAMERATE_UNCAPPED:Int = 1000;
 	public static inline var MAX_INSTANCE_SLOTS_MIN:Int = 1;
@@ -396,10 +394,6 @@ class ClientPrefs
 		StorageUtil.saveStorageTypePreference(data.storageType);
 		#end
 
-		// Wow counter =p
-		Reflect.setField(FlxG.save.data, "judgementCounter", judgementCounter);
-		data.judgementCounter = judgementCounter;
-
 		// Placing this in a separate save so that it can be manually deleted without removing your Score and stuff
 		var save = getControlsSave();
 		save.data.keyboard = keyBinds;
@@ -454,10 +448,6 @@ class ClientPrefs
 			data.framerate = Std.int(FlxMath.bound(refreshRate, #if mobile 30 #else 60 #end, 240));
 		}
 		#end
-
-		if (Reflect.hasField(FlxG.save.data, "judgementCounter"))
-			judgementCounter = !!Reflect.field(FlxG.save.data, "judgementCounter");
-		judgementCounter = data.judgementCounter;
 
 		applyFramePacing();
 

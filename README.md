@@ -1,8 +1,8 @@
-![Logo Off](docs/img/PlusEngineLogo.png)
+![Logo Off](docs/readmes/img/PlusEngineLogo.png)
 
 <div align="center">
 
-**EN-US | [ES-LA](README.es-LA.md) | [ID-ID](README.id-ID.md)**
+**EN-US | [ES-LA](docs/readmes/README.es-LA.md) | [ID-ID](docs/readmes/README.id-ID.md)**
 
 
 ![Made with](https://forthebadge.com/api/badges/generate?panels=2&primaryLabel=Made+with&secondaryLabel=Haxe&primaryBGColor=%23689bb1&primaryTextColor=%23ffffff&secondaryBGColor=%23fea948&secondaryTextColor=%23ffffff&primaryFontSize=12&primaryFontWeight=700&primaryLetterSpacing=2&primaryFontFamily=Arial&primaryTextTransform=capitalize&secondaryFontSize=12&secondaryFontWeight=700&secondaryLetterSpacing=2&secondaryFontFamily=Arial&tertiaryBGColor=%23c14dff&tertiaryTextColor=%23FFFFFF&tertiaryFontSize=12&tertiaryFontWeight=700&tertiaryLetterSpacing=2&tertiaryFontFamily=Arial&tertiaryTextTransform=capitalize&tertiaryIconColor=%23FFFFFF&tertiaryIconSize=16&tertiaryIconPosition=left&secondaryIcon=haxe&secondaryIconColor=%23ffffff&secondaryIconSize=16&secondaryIconPosition=left&scale=0.7&borderRadius=10)
@@ -125,11 +125,10 @@ You need to have:
 - Variables for window and system management in Lua: Many variables were added, whether to hide the taskbar or window borders, etc.
 - Key Viewer
 - Modchart support and settings.
-![Modchart](docs/img/modchart.gif)
 - New Gameplay Changers (Opponent Mode, No Drop Penalty, Perfect Only).
 - You can choose your default accuracy system. ITG, Psych, DJMax, Wife3, osu!, Simple
 * Support for NotITG levels (without modifiers) and Stepmania, includes UI
-![Stepmania](docs/img/Stepmania.png)
+![Stepmania](docs/readmes/img/Stepmania.png)
 - Android support
 - Added the "miss" and "combo broken" sprites
 - Added the option for "bad" and "shit" to break the combo
@@ -141,31 +140,31 @@ You need to have:
 - Compatible wth hxcodec videos from Psych mods 0.6.3 and 0.7.3.
 - Smooth Health Bar
 * +5 Languages availables
-![Languages](docs/img/Languages.png)
+![Languages](docs/readmes/img/Languages.png)
 - New cool transicioning
 - If you are in Charting Mode the step, beat, and section will be displayed in gameplay.
 - FPS Counter rework
 - Trace in Game
 - Rework the OutdatedSubstate.hx
 * Rework the FreeplayState.hx
-![Freeplay](docs/img/Freeplay.png)
-![Freeplay Diff](docs/img/FreeplayDiff.png)
+![Freeplay](docs/readmes/img/Freeplay.png)
+![Freeplay Diff](docs/readmes/img/FreeplayDiff.png)
 - More things will continue to be added in the future...
 
 # Main Features
 
 ## Attractive animated dialogue boxes:
 
-<img src="docs/img/dialogue.gif" width="622" height="348"/>
+<img src="docs/readmes/img/dialogue.gif" width="622" height="348"/>
 
 ## New Main Menu
 * A brand new menu that makes your experience even better!
-![Main Menu](docs/img/MainMenu.png)
+![Main Menu](docs/readmes/img/MainMenu.png)
 
 ## Mod Support
 * Probably one of the main points of this engine, you can code in .lua files outside of the source code, making your own weeks without even messing with the source!
 * Comes with a Mod Organizing/Disabling Menu.
-![Mod Support](docs/img/ModsMenu.png)
+![Mod Support](docs/readmes/img/ModsMenu.png)
 
 
 ## Atleast one change to every week:
@@ -191,7 +190,7 @@ You need to have:
   * Also there's the Background girls being spooky during the "Hey!" parts of the Instrumental
 
 ## Cool new Chart Editor changes and countless bug fixes
-![Chart Editor](docs/img/chart.png)
+![Chart Editor](docs/readmes/img/chart.png)
 * You can now chart "Event" notes, which are bookmarks that trigger specific actions that usually were hardcoded on the vanilla version of the game.
 * Your song's BPM can now have decimal values
 * You can manually adjust a Note's strum time if you're really going for milisecond precision
@@ -203,26 +202,26 @@ You need to have:
   * No Animation: Character just hits the note, no animation plays.
 
 ## Multiple editors to assist you in making your own Mod
-![Master Editor Menu](docs/img/editors.png)
+![Master Editor Menu](docs/readmes/img/editors.png)
 * Working both for Source code modding and Downloaded builds!
 
 ## Story mode menu rework:
-![Story Mode Menu](docs/img/storymode.png)
+![Story Mode Menu](docs/readmes/img/storymode.png)
 * Added a different BG to every song (less Tutorial)
 * All menu characters are now in individual spritesheets, makes modding it easier.
 
 ## Credits menu
-![Credits Menu](docs/img/credits.png)
+![Credits Menu](docs/readmes/img/credits.png)
 * You can add a head icon, name, description and a Redirect link for when the player presses Enter while the item is currently selected.
 
 ## Awards/Achievements
 * The engine comes with 16 example achievements that you can mess with and learn how it works (Check Achievements.hx and search for "checkForAchievement" on PlayState.hx)
-![Achievements](docs/img/Achievements.png)
+![Achievements](docs/readmes/img/Achievements.png)
 
 ## Options menu:
 * You can change Note colors, Delay and Combo Offset, Controls and Preferences there.
  * On Preferences you can toggle Downscroll, Middlescroll, Anti-Aliasing, Framerate, Low Quality, Note Splashes, Flashing Lights, etc.
-![Options](docs/img/Options.png)
+![Options](docs/readmes/img/Options.png)
 
 ## Other gameplay features:
 * When the enemy hits a note, their strum note also glows.
