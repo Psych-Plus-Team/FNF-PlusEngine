@@ -5,6 +5,7 @@ import openfl.utils.AssetType;
 import openfl.utils.Assets as OpenFlAssets;
 import flash.media.Sound;
 import lime.utils.Assets;
+import shaders.ShaderCompatibility;
 #if MODS_ALLOWED
 import sys.FileSystem;
 import sys.io.File;
@@ -46,25 +47,50 @@ class AssetLoader
 		if (path == null || path.length == 0)
 			return null;
 
+		var text:String = null;
 		#if MODS_ALLOWED
 		try
 		{
 			if (FileSystem.exists(path))
-				return File.getContent(path);
+				text = File.getContent(path);
 		}
 		catch (_:Dynamic)
 		{
 		}
 		#end
+		if (text != null)
+			return maybeAdaptShaderText(path, text);
+
 		try
 		{
 			if (OpenFlAssets.exists(path, TEXT))
-				return Assets.getText(path);
+				text = Assets.getText(path);
 		}
 		catch (_:Dynamic)
 		{
 		}
-		return null;
+		return maybeAdaptShaderText(path, text);
+	}
+
+	static function maybeAdaptShaderText(path:String, text:String):String
+	{
+		if (text == null)
+			return null;
+
+		var normalized:String = path.replace("\\", "/");
+		if (normalized.indexOf("/shaders/") == -1)
+			return text;
+
+		var stage:String = StringTools.endsWith(normalized.toLowerCase(), ".vert") ? "vertex" : "fragment";
+		var shaderName:String = normalized;
+		var slash:Int = shaderName.lastIndexOf("/");
+		if (slash != -1)
+			shaderName = shaderName.substr(slash + 1);
+		var dot:Int = shaderName.lastIndexOf(".");
+		if (dot != -1)
+			shaderName = shaderName.substr(0, dot);
+
+		return ShaderCompatibility.adaptRuntimeShaderCode(text, shaderName, stage);
 	}
 
 	public static function loadBitmap(path:String):BitmapData

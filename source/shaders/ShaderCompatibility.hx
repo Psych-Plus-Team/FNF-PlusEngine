@@ -10,13 +10,12 @@ class ShaderCompatibility
 		var code:String = source.replace("\r\n", "\n").replace("\r", "\n");
 		var dialect:String = getShaderDialect(code, shaderName);
 
-		if (dialect == null)
-			return code;
-
-		code = stripDialectPragmas(code);
+		if (dialect != null)
+			code = stripDialectPragmas(code);
 		code = stripUniformInitializers(code);
+		code = localizeOpenFLGlobalInitializers(code);
 
-		if (stage == "fragment")
+		if (stage == "fragment" && dialect != null)
 		{
 			switch (dialect)
 			{
@@ -97,6 +96,77 @@ class ShaderCompatibility
 				lines[i] = uniformInit.matched(1) + ";";
 		}
 		return lines.join("\n");
+	}
+
+	static function localizeOpenFLGlobalInitializers(source:String):String
+	{
+		var lines:Array<String> = source.split("\n");
+		var declarations:Array<String> = [];
+		var globalInit:EReg = ~/^\s*((?:(?:lowp|mediump|highp)\s+)?(?:float|int|bool|vec[234]|mat[234])\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*[^;]*openfl_[^;]*;)\s*$/;
+		var depth:Int = 0;
+
+		for (i in 0...lines.length)
+		{
+			var line:String = lines[i];
+			if (depth == 0 && globalInit.match(line))
+			{
+				declarations.push("\t" + StringTools.trim(globalInit.matched(1)));
+				lines[i] = "";
+			}
+
+			depth += countChar(line, "{");
+			depth -= countChar(line, "}");
+			if (depth < 0)
+				depth = 0;
+		}
+
+		if (declarations.length == 0)
+			return lines.join("\n");
+
+		var output:Array<String> = [];
+		var waitingMainBrace:Bool = false;
+		var inserted:Bool = false;
+		var mainDecl:EReg = ~/^\s*void\s+(?:main|mainImage)\s*\(/;
+
+		for (line in lines)
+		{
+			output.push(line);
+
+			if (!inserted && mainDecl.match(line))
+			{
+				if (line.indexOf("{") != -1)
+				{
+					for (declaration in declarations)
+						output.push(declaration);
+					inserted = true;
+				}
+				else
+					waitingMainBrace = true;
+				continue;
+			}
+
+			if (!inserted && waitingMainBrace && line.indexOf("{") != -1)
+			{
+				for (declaration in declarations)
+					output.push(declaration);
+				inserted = true;
+				waitingMainBrace = false;
+			}
+		}
+
+		if (!inserted)
+			output = declarations.concat(output);
+
+		return output.join("\n");
+	}
+
+	static function countChar(source:String, char:String):Int
+	{
+		var count:Int = 0;
+		for (i in 0...source.length)
+			if (source.charAt(i) == char)
+				count++;
+		return count;
 	}
 
 	static function adaptNotITGFragment(source:String):String
