@@ -276,7 +276,7 @@ class Main extends Sprite
 		try
 		{
 			if (Application.current != null && Application.current.window != null && Reflect.hasField(Application.current.window, 'vsync'))
-				Reflect.setProperty(Application.current.window, 'vsync', ClientPrefs.data.vsync);
+				Reflect.setProperty(Application.current.window, 'vsync', ClientPrefs.getEffectiveVSync());
 		}
 		catch (_:Dynamic) {}
 

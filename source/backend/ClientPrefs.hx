@@ -455,7 +455,7 @@ class ClientPrefs
 		try
 		{
 			if (FlxG.stage != null && FlxG.stage.application != null && FlxG.stage.application.window != null)
-				Reflect.setProperty(FlxG.stage.application.window, 'vsync', data.vsync);
+				Reflect.setProperty(FlxG.stage.application.window, 'vsync', getEffectiveVSync());
 		}
 		catch (e:Dynamic)
 		{
@@ -529,10 +529,13 @@ class ClientPrefs
 
 		if (data.uncapFramerate)
 		{
-			FlxG.fixedTimestep = true;
-			FlxG.updateFramerate = FRAMERATE_MAX;
+			// Uncap should unlock rendering without slowing gameplay when the OS/compositor
+			// cannot actually deliver the requested draw rate. Fixed timestep + draw > update
+			// makes Flixel clamp accumulated time and the whole game can run in slow motion.
+			FlxG.fixedTimestep = false;
+			FlxG.updateFramerate = FRAMERATE_UNCAPPED;
 			FlxG.drawFramerate = FRAMERATE_UNCAPPED;
-			FlxG.maxElapsed = 1 / FRAMERATE_MAX;
+			FlxG.maxElapsed = 0.1;
 		}
 		else switch (data.framerateMode)
 		{
@@ -565,7 +568,11 @@ class ClientPrefs
 			{
 				FlxG.stage.frameRate = drawFramerate;
 				if (FlxG.stage.window != null)
+				{
 					FlxG.stage.window.frameRate = drawFramerate;
+					if (Reflect.hasField(FlxG.stage.window, 'vsync'))
+						Reflect.setProperty(FlxG.stage.window, 'vsync', getEffectiveVSync());
+				}
 			}
 		}
 		catch (e:Dynamic)
@@ -625,6 +632,9 @@ class ClientPrefs
 				safeFramerate;
 		};
 	}
+
+	public static inline function getEffectiveVSync():Bool
+		return data.vsync && !data.uncapFramerate;
 
 	static function normalizeFramerateMode(mode:String):String
 	{

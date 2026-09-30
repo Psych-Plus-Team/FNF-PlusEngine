@@ -34,7 +34,6 @@
 
 	<define name="MULTITHREADED_LOADING" if="cpp" /> <!-- UNCOMMENTING THIS LINE WILL ENABLE MULTITHREADED LOADING, WHICH IMPROVES LOADING TIMES, BUT WITH A LOW CHANCE FOR THE GAME FREEZE ON SONG LOAD -->
 	<define name="SHOW_LOADING_SCREEN" />
-	<define name="HAXECOMPOSE_PREVIEW" />
 	<define name="PSYCH_WATERMARKS"/> <!-- DELETE THIS TO REMOVE THE PSYCH LOGO FROM LOADING SCREEN -->
 	<define name="VIDEOS_ALLOWED" if="desktop || mobile" unless="32bits"/> <!-- Videos are now always enabled for desktop/mobile builds -->
 	<define name="FEATURE_TOUCH_CONTROLS" if="mobile" />

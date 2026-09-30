@@ -10,7 +10,7 @@ import slushithings.windows.WindowsAPI;
 /**
  * Screenshot utility for capturing game screenshots
  * Uses native Windows C++ code for reliable screen capture
- * Press F5 to take a screenshot
+ * Press F10 to take a screenshot
  */
 class Screenshot
 {

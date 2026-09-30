@@ -198,9 +198,9 @@ class MusicBeatState extends BaseMusicBeatState
 			_hasSavedFullscreen = true;
 		}
 
-		// Screenshot support with F5
+		// Screenshot support with F10 (F5 is used by Freeplay reload)
 		#if desktop
-		if (FlxG.keys.justPressed.F5)
+		if (FlxG.keys.justPressed.F10)
 		{
 			backend.Screenshot.capture();
 		}

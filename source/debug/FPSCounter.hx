@@ -133,6 +133,7 @@ class FPSCounter extends Sprite
 	@:noCompletion private var frameTimesCount:Int = 0;
 	@:noCompletion private var frameTimesTotal:Float = 0;
 	@:noCompletion private var deltaTimeout:Float = 0.0;
+	@:noCompletion private static inline final TEXT_UPDATE_MS:Float = 125.0;
 
 	public var os:String = '';
 
@@ -179,7 +180,7 @@ class FPSCounter extends Sprite
 			FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
 		}
 
-		// Get latest commit info
+		// Get build/commit info without touching the network in normal builds.
 		getLastCommit();
 
 		// Initialize runtime tracking
@@ -332,7 +333,7 @@ class FPSCounter extends Sprite
 
 		currentFPS = timesCount < FlxG.drawFramerate ? timesCount : FlxG.drawFramerate;
 
-		if (deltaTimeout >= 50)
+		if (deltaTimeout >= TEXT_UPDATE_MS)
 		{
 			updateText();
 			deltaTimeout = 0;
@@ -439,7 +440,7 @@ class FPSCounter extends Sprite
 			return;
 		}
 
-		#if sys
+		#if (sys && debug)
 		NetworkCheckToast.requestShow('Checking commit');
 		#if (target.threaded && sys)
 		ThreadUtil.execAsync(loadLastCommitBlocking);
