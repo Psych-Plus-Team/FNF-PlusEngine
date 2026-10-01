@@ -154,6 +154,30 @@ class Psych implements IAdapter {
 		return 2;
 	}
 
+	private function ensurePlayerItems(items:Array<Array<Array<FlxSprite>>>, player:Int):Array<Array<FlxSprite>> {
+		if (player < 0)
+			player = 0;
+
+		while (items.length <= player)
+			items.push([[], [], [], []]);
+
+		var playerItems = items[player];
+		if (playerItems == null)
+		{
+			playerItems = [[], [], [], []];
+			items[player] = playerItems;
+		}
+
+		while (playerItems.length < 4)
+			playerItems.push([]);
+
+		for (i in 0...4)
+			if (playerItems[i] == null)
+				playerItems[i] = [];
+
+		return playerItems;
+	}
+
 	public function getTimeFromArrow(arrow:FlxSprite) {
 		if (arrow is Note)
 			return cast(arrow, Note).strumTime;
@@ -314,26 +338,17 @@ class Psych implements IAdapter {
 		@:privateAccess
 		PlayState.instance.strumLineNotes.forEachAlive(strumNote -> {
 			final player = resolveStrumPlayer(strumNote);
-			if (pspr[player] == null)
-				pspr[player] = [];
-
-			pspr[player][0].push(strumNote);
+			ensurePlayerItems(pspr, player)[0].push(strumNote);
 		});
 		PlayState.instance.notes.forEachAlive(strumNote -> {
 			final player = Adapter.instance.getPlayerFromArrow(strumNote);
-			if (pspr[player] == null)
-				pspr[player] = [];
-
-			pspr[player][strumNote.isSustainNote ? 2 : 1].push(strumNote);
+			ensurePlayerItems(pspr, player)[strumNote.isSustainNote ? 2 : 1].push(strumNote);
 		});
 		PlayState.instance.grpNoteSplashes.forEachAlive(splash -> {
 			@:privateAccess
 			if (splash.babyArrow != null && splash.active) {
 				final player = resolveSplashPlayer(splash);
-				if (pspr[player] == null)
-					pspr[player] = [];
-
-				pspr[player][3].push(splash);
+				ensurePlayerItems(pspr, player)[3].push(splash);
 			}
 		});
 

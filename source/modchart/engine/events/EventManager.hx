@@ -62,6 +62,17 @@ class EventManager {
 		}
 	}
 
+	public function hasRenderableEvents():Bool {
+		for (i in 0...eventCount) {
+			final event = eventList[i];
+			if (event == null)
+				continue;
+			if (event.name == null || event.name.toLowerCase() != 'spawntime')
+				return true;
+		}
+		return false;
+	}
+
 	public function update(curBeat:Float) {
 		if (curBeat < lastBeat)
 			resetTimelineState();

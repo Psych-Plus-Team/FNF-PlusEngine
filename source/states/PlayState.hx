@@ -1454,9 +1454,8 @@ class PlayState extends MusicBeatState
 	{
 		if (FlxG.sound.music != null && !startingSong && canResync)
 			resyncVocals();
-		#if LUA_ALLOWED
-		psychlua.VideoFunctions.resumeAll();
-		#end
+		refreshModchartAfterPause();
+		resumeGameplayVideos();
 		paused = false;
 		resumingWithCountdown = false;
 		callOnScripts('onResume');
@@ -2057,6 +2056,7 @@ class PlayState extends MusicBeatState
 				vocals.pause();
 				opponentVocals.pause();
 			}
+			pauseGameplayVideos();
 			FlxTimer.globalManager.forEach(function(tmr:FlxTimer) if(!tmr.finished) tmr.active = false);
 			FlxTween.globalManager.forEach(function(twn:FlxTween) if(!twn.finished) twn.active = false);
 		}
@@ -2146,6 +2146,32 @@ class PlayState extends MusicBeatState
 			}
 			else voc.pause();
 		}
+	}
+
+	function pauseGameplayVideos():Void
+	{
+		if (videoCutscene != null)
+			videoCutscene.pause();
+		#if LUA_ALLOWED
+		psychlua.VideoFunctions.pauseAll();
+		#end
+	}
+
+	function resumeGameplayVideos():Void
+	{
+		if (videoCutscene != null)
+			videoCutscene.resume();
+		#if LUA_ALLOWED
+		psychlua.VideoFunctions.resumeAll();
+		#end
+	}
+
+	function refreshModchartAfterPause():Void
+	{
+		#if MODCHART_ALLOWED
+		if (Manager.instance != null)
+			Manager.instance.refreshFrameState();
+		#end
 	}
 
 	public var paused:Bool = false;
@@ -4366,6 +4392,9 @@ class PlayState extends MusicBeatState
 			videoCutscene.destroy();
 			videoCutscene = null;
 		}
+		#end
+		#if LUA_ALLOWED
+		psychlua.VideoFunctions.clearAll();
 		#end
 
 		if (breakTimerHud != null)

@@ -34,7 +34,7 @@ class Confusion extends Modifier {
 
 	// axisIdx: 0='' 1='x' 2='y' 3='z'; realAxisIdx: 0=z 1=x 2=y
 	private inline function applyConfusion(vis:VisualParameters, params:ModifierParameters, axisIdx:Int, realAxisIdx:Int) {
-		final lane = params.lane;
+		final lane = getLaneSlot(params.lane, confusionLaneIDs[axisIdx].length);
 		final player = params.player;
 
 		var confVal = getUnsafe(confusionIDs[axisIdx], player);

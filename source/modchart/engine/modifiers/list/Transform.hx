@@ -34,9 +34,10 @@ class Transform extends Modifier {
 	}
 
 	function getAliasValue(ids:Array<Int>, laneIDs:Array<Array<Int>>, lane:Int, player:Int):Float {
+		final laneSlot = getLaneSlot(lane, laneIDs[0].length);
 		for (i in 0...laneIDs.length)
-			if (hasUnsafeForPlayer(laneIDs[i][lane], player))
-				return getUnsafe(ids[i], player) + getUnsafe(laneIDs[i][lane], player);
+			if (hasUnsafeForPlayer(laneIDs[i][laneSlot], player))
+				return getUnsafe(ids[i], player) + getUnsafe(laneIDs[i][laneSlot], player);
 
 		for (id in ids)
 			if (hasUnsafeForPlayer(id, player))

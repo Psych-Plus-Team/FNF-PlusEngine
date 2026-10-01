@@ -54,7 +54,7 @@ class Bumpy extends Modifier {
 
 	// axisIdx: 0='' 1='x' 2='y' 3='z'; realAxisIdx: 0=z 1=x 2=y
 	private inline function applyBumpy(curPos:Vector3, params:ModifierParameters, axisIdx:Int, realAxisIdx:Int) {
-		final lane = params.lane;
+		final lane = getLaneSlot(params.lane, _bumpyAmtLaneIDs[axisIdx].length);
 		final player = params.player;
 		var distance = params.distance;
 
@@ -84,7 +84,7 @@ class Bumpy extends Modifier {
 
 	// axisIdx: 0='' 1='x' 2='y' 3='z'; realAxisIdx: 0=z 1=x 2=y
 	private inline function applyAngle(vis:VisualParameters, params:ModifierParameters, axisIdx:Int, realAxisIdx:Int) {
-		final lane = params.lane;
+		final lane = getLaneSlot(params.lane, _angAmtLaneIDs[axisIdx].length);
 		final player = params.player;
 		var distance = params.distance;
 

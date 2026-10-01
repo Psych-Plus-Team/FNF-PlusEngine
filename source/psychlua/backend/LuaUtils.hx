@@ -62,6 +62,14 @@ class LuaUtils
 
 	public static function setVarInArray(instance:Dynamic, variable:String, value:Dynamic, allowMaps:Bool = false):Any
 	{
+		if(instance == null)
+		{
+			#if LUA_ALLOWED
+			FunkinLua.luaTrace('setProperty: Cannot set "$variable" because its parent object is null', false, false, FlxColor.RED);
+			#end
+			return null;
+		}
+
 		var legacyBar:Dynamic = getLegacyBarSprite(instance, variable);
 		if(legacyBar != null)
 		{
@@ -83,6 +91,8 @@ class LuaUtils
 
 			for (i in 1...splitProps.length)
 			{
+				if(target == null)
+					return null;
 				var j:Dynamic = splitProps[i].substr(0, splitProps[i].length - 1);
 				if(i >= splitProps.length-1) //Last array
 					target[j] = value;
@@ -112,6 +122,9 @@ class LuaUtils
 	}
 	public static function getVarInArray(instance:Dynamic, variable:String, allowMaps:Bool = false):Any
 	{
+		if(instance == null)
+			return null;
+
 		var legacyBar:Dynamic = getLegacyBarSprite(instance, variable);
 		if(legacyBar != null)
 			return legacyBar;
@@ -131,6 +144,8 @@ class LuaUtils
 
 			for (i in 1...splitProps.length)
 			{
+				if(target == null)
+					return null;
 				var j:Dynamic = splitProps[i].substr(0, splitProps[i].length - 1);
 				target = target[j];
 			}
@@ -324,7 +339,12 @@ class LuaUtils
 		var end = split.length;
 		if(getProperty) end = split.length-1;
 
-		for (i in 1...end) obj = getVarInArray(obj, split[i], allowMaps);
+		for (i in 1...end)
+		{
+			if(obj == null)
+				return null;
+			obj = getVarInArray(obj, split[i], allowMaps);
+		}
 		return obj;
 	}
 

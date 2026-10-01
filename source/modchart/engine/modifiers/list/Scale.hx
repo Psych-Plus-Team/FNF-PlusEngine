@@ -43,7 +43,7 @@ class Scale extends Modifier {
 
 	// axisIdx: 0='' 1='x' 2='y'; realAxisIdx: 0=both 1=x 2=y
 	private inline function applyScale(vis:VisualParameters, params:ModifierParameters, axisIdx:Int, realAxisIdx:Int) {
-		final lane = params.lane;
+		final lane = getLaneSlot(params.lane, scaleLaneIDs[axisIdx].length);
 		final player = params.player;
 
 		var scaleV = getUnsafe(scaleIDs[axisIdx], player);
@@ -72,7 +72,7 @@ class Scale extends Modifier {
 		// stretch sub-mod: compress X and elongate Y
 		var stretchV = getUnsafe(stretchID, params.player);
 		if (Config.COLUMN_SPECIFIC_MODIFIERS)
-			stretchV = getUnsafeLaneAdd(stretchID, stretchLaneIDs[params.lane], params.player);
+			stretchV = getUnsafeLaneAdd(stretchID, stretchLaneIDs[getLaneSlot(params.lane, stretchLaneIDs.length)], params.player);
 		if (stretchV != 0) {
 			data.scaleX *= 1.0 - 0.5 * stretchV;
 			data.scaleY *= 1.0 + stretchV;
@@ -81,7 +81,7 @@ class Scale extends Modifier {
 		// squish sub-mod: widen X and compress Y, matching NMV's ScaleModifier.
 		var squishV = getUnsafe(squishID, params.player);
 		if (Config.COLUMN_SPECIFIC_MODIFIERS)
-			squishV = getUnsafeLaneAdd(squishID, squishLaneIDs[params.lane], params.player);
+			squishV = getUnsafeLaneAdd(squishID, squishLaneIDs[getLaneSlot(params.lane, squishLaneIDs.length)], params.player);
 		if (squishV != 0) {
 			final squishScale = 1.0 + squishV;
 			if (squishScale != 0) {

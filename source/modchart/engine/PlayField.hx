@@ -236,14 +236,13 @@ final class PlayField extends FlxSprite
 	// input, the eases may overlap, causing visuals issues.
 	public function updateNodes()
 	{
+		if (nodes.length <= 0)
+			return;
+
 		for (player in 0...Adapter.instance.getPlayerCount())
 		{
-			final it = nodes.iterator();
-			final n = it.next;
-			final h = it.hasNext;
-			do
+			for (node in nodes)
 			{
-				final node = n();
 				if (node == null)
 					continue;
 
@@ -257,18 +256,17 @@ final class PlayField extends FlxSprite
 				outPercs = node.func(entryPercs, player);
 
 				final nbl = node.output.length;
-				if (outPercs == null || outPercs.length < 0)
+				if (outPercs == null)
 					outPercs = [];
 
 				for (i in 0...nbl)
 				{
-					final prc = outPercs[i];
+					final prc = i < outPercs.length ? outPercs[i] : 0;
 
 					if (!Math.isNaN(prc) && prc != 0)
 						setPercent(node.output[i], prc, player);
 				}
 			}
-			while (h());
 		}
 	}
 

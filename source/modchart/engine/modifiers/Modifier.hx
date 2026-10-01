@@ -83,6 +83,14 @@ class Modifier {
 		return Adapter.instance.getPlayerCount();
 	}
 
+	private inline function getLaneSlot(lane:Int, max:Int):Int {
+		if (max <= 1 || lane <= 0)
+			return 0;
+		if (lane >= max)
+			return lane % max;
+		return lane;
+	}
+
 	// Helpers Functions
 	private inline function getScrollSpeed():Float
 		return Adapter.instance.getCurrentScrollSpeed();
