@@ -91,7 +91,7 @@ import states.TitleState;
 	public var antialiasing:Bool = true;
 	public var lowQuality:Bool = false;
 	public var shaders:Bool = true;
-	public var cacheOnGPU:Bool = #if !switch false #else true #end; // GPU Caching made by Raltyro
+	public var cacheOnGPU:Bool = true; // Hardware acceleration / GPU texture caching
 	public var camZooms:Bool = true;
 	public var hideHud:Bool = false;
 	public var healthBarAlpha:Float = 1;
@@ -411,6 +411,14 @@ class ClientPrefs
 		for (key in Reflect.fields(data))
 			if (key != 'gameplaySettings' && Reflect.hasField(FlxG.save.data, key))
 				Reflect.setField(data, key, Reflect.field(FlxG.save.data, key));
+
+		if (!Reflect.hasField(FlxG.save.data, 'hardwareAccelerationDefaulted'))
+		{
+			data.cacheOnGPU = true;
+			Reflect.setField(FlxG.save.data, 'cacheOnGPU', true);
+			Reflect.setField(FlxG.save.data, 'hardwareAccelerationDefaulted', true);
+			FlxG.save.flush();
+		}
 
 		if (!Reflect.hasField(FlxG.save.data, 'fpsCounterMode'))
 		{

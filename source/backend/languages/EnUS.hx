@@ -228,9 +228,9 @@ class EnUS
 		"description_anti-aliasing" => "If unchecked, disables anti-aliasing, increases performance\nat the cost of sharper visuals.",
 		"setting_shaders" => "Shaders",
 		"description_shaders" => "If unchecked, disables shaders.\nIt's used for some visual effects, and also CPU intensive for weaker PCs.",
-		"setting_gpu_caching" => "GPU Caching",
+		"setting_gpu_caching" => "Hardware Acceleration",
 		"description_gpu_caching" =>
-		"If checked, allows the GPU to be used for caching textures, decreasing RAM usage.\nDon't turn this on if you have a shitty Graphics Card.",
+		"If enabled, compatible images are stored directly on the GPU to reduce RAM usage and improve rendering stability.\nRecommended for most devices, especially Android.",
 		"setting_framerate" => "Framerate",
 		"description_framerate" => "Pretty self explanatory, isn't it?",
 		"setting_framerate_mode" => "Framerate Mode",

@@ -13,6 +13,7 @@ import flixel.FlxSubState;
 import flixel.util.FlxSort;
 import flixel.util.FlxStringUtil;
 import flixel.util.FlxSave;
+import flixel.graphics.FlxGraphic;
 import flixel.input.keyboard.FlxKey;
 import flixel.animation.FlxAnimationController;
 import lime.utils.Assets;
@@ -3321,6 +3322,9 @@ class PlayState extends MusicBeatState
 
 	// Stores Ratings and Combo Sprites in a group
 	public var comboGroup:FlxSpriteGroup;
+	#if android
+	var androidComboSpritePool:Array<FlxSprite> = [];
+	#end
 	var breakTimerHud:BreakTimerHud = null;
 	// Stores HUD Objects in a Group
 	public var uiGroup:FlxSpriteGroup;
@@ -3337,7 +3341,112 @@ class PlayState extends MusicBeatState
 		Paths.image(uiAsset('miss'));
 		Paths.image(uiAsset('early'));
 		Paths.image(uiAsset('late'));
+
+		#if android
+		for (i in 0...18)
+			createAndroidComboSprite();
+		#end
 	}
+
+	#if android
+	function createAndroidComboSprite():FlxSprite
+	{
+		var spr:FlxSprite = new FlxSprite();
+		spr.exists = false;
+		spr.active = false;
+		spr.visible = false;
+		androidComboSpritePool.push(spr);
+		if (comboGroup != null)
+			comboGroup.add(spr);
+		return spr;
+	}
+
+	function getAndroidComboSprite():FlxSprite
+	{
+		for (spr in androidComboSpritePool)
+			if (spr != null && !spr.exists)
+				return spr;
+		return createAndroidComboSprite();
+	}
+
+	function releaseAndroidComboSprite(spr:FlxSprite):Void
+	{
+		if (spr == null)
+			return;
+
+		spr.exists = false;
+		spr.active = false;
+		spr.visible = false;
+		spr.alpha = 1;
+		spr.velocity.set();
+		spr.acceleration.set();
+	}
+
+	function setupAndroidComboSprite(spr:FlxSprite, graphic:FlxGraphic, x:Float, y:Float, scale:Float, antialias:Bool, visible:Bool):Void
+	{
+		if (spr == null || graphic == null)
+			return;
+
+		FlxTween.cancelTweensOf(spr);
+		FlxTween.cancelTweensOf(spr.scale);
+		spr.loadGraphic(graphic);
+		spr.setGraphicSize(Std.int(spr.width * scale));
+		spr.updateHitbox();
+		spr.x = x;
+		spr.y = y;
+		spr.alpha = 1;
+		spr.visible = visible;
+		spr.active = true;
+		spr.exists = visible;
+		spr.antialiasing = antialias;
+		spr.velocity.set(0, -125 * playbackRate);
+		spr.acceleration.set(0, 360 * playbackRate * playbackRate);
+
+		if (visible)
+		{
+			FlxTween.tween(spr, {alpha: 0}, 0.16 / playbackRate, {
+				startDelay: 0.12 / playbackRate,
+				onComplete: function(_:FlxTween)
+				{
+					releaseAndroidComboSprite(spr);
+				}
+			});
+		}
+	}
+
+	function popUpScoreAndroid(daRating:Rating):Void
+	{
+		if (!ClientPrefs.data.popUpRating || ClientPrefs.data.hideHud || comboGroup == null)
+			return;
+
+		var antialias:Bool = ClientPrefs.data.antialiasing;
+		if (stageUI != "normal")
+			antialias = !isPixelStage;
+
+		var placement:Float = FlxG.width * 0.35;
+		var ratingScale:Float = PlayState.isPixelStage ? daPixelZoom * 0.85 : 0.7;
+		var numScale:Float = PlayState.isPixelStage ? daPixelZoom : 0.5;
+		var rating:FlxSprite = getAndroidComboSprite();
+		setupAndroidComboSprite(rating, Paths.image(uiAsset(daRating.image)), placement - 40 + ClientPrefs.data.comboOffset[0],
+			(FlxG.height * 0.5) - 60 - ClientPrefs.data.comboOffset[1], ratingScale, antialias, showRating);
+
+		if (!showComboNum)
+			return;
+
+		var comboStr:String = ClientPrefs.data.dynamicCombo ? Std.string(combo) : Std.string(combo).lpad('0', 3);
+		for (i in 0...comboStr.length)
+		{
+			var digit:Null<Int> = Std.parseInt(comboStr.charAt(i));
+			if (digit == null || digit < 0 || digit > 9)
+				continue;
+
+			var numScore:FlxSprite = getAndroidComboSprite();
+			setupAndroidComboSprite(numScore, Paths.image(uiAsset('num' + digit)), placement + (43 * i) - 90 + ClientPrefs.data.comboOffset[2],
+				(FlxG.height * 0.5) + 80 - ClientPrefs.data.comboOffset[3], numScale, antialias, true);
+			numScore.velocity.x = FlxG.random.float(-3, 3) * playbackRate;
+		}
+	}
+	#end
 
 	inline function uiAsset(name:String):String
 		return Paths.getUIPath(name);
@@ -3516,8 +3625,13 @@ class PlayState extends MusicBeatState
 		var hitDiff:Float = (note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset) / playbackRate;
 		var noteDiff:Float = Math.abs(hitDiff);
 		vocals.volume = 1;
+		#if android
+		var lightHitVisuals:Bool = true;
+		#else
+		var lightHitVisuals:Bool = false;
+		#end
 
-		if ((!ClientPrefs.data.comboStacking || ClientPrefs.data.nfRatingStyle) && comboGroup.members.length > 0)
+		if (!lightHitVisuals && (!ClientPrefs.data.comboStacking || ClientPrefs.data.nfRatingStyle) && comboGroup.members.length > 0)
 		{
 			for (spr in comboGroup)
 			{
@@ -3547,7 +3661,7 @@ class PlayState extends MusicBeatState
 		note.rating = daRating.name;
 		score = daRating.score;
 
-		if(daRating.noteSplash && !note.noteSplashData.disabled)
+		if(!lightHitVisuals && daRating.noteSplash && !note.noteSplashData.disabled)
 			spawnNoteSplashOnNote(note);
 
 		if(!cpuControlled || isBotplayCPU()) {
@@ -3564,6 +3678,14 @@ class PlayState extends MusicBeatState
 				combo = 0;
 				showMissPopup();
 			}
+		}
+
+		if (lightHitVisuals)
+		{
+			#if android
+			popUpScoreAndroid(daRating);
+			#end
+			return;
 		}
 
 		var antialias:Bool = ClientPrefs.data.antialiasing;
@@ -4065,6 +4187,11 @@ class PlayState extends MusicBeatState
 	{
 		if(note.wasGoodHit) return;
 		if(cpuControlled && note.ignoreNote) return;
+		#if android
+		var lightHitVisuals:Bool = true;
+		#else
+		var lightHitVisuals:Bool = false;
+		#end
 
 		var isSus:Bool = note.isSustainNote; //GET OUT OF MY HEAD, GET OUT OF MY HEAD, GET OUT OF MY HEAD
 		var leData:Int = Math.round(Math.abs(note.noteData));
@@ -4131,7 +4258,7 @@ class PlayState extends MusicBeatState
 				if(combo > maxCombo) maxCombo = combo;
 				popUpScore(note);
 
-				if(!ClientPrefs.data.hideSustainSplash && !ClientPrefs.data.lowQuality && !note.noteSplashData.disabled && note.tail.length > 1)
+				if(!lightHitVisuals && !ClientPrefs.data.hideSustainSplash && !ClientPrefs.data.lowQuality && !note.noteSplashData.disabled && note.tail.length > 1)
 				{
 					var strum = playerStrums.members[note.noteData];
 					if(strum != null)
@@ -4164,7 +4291,7 @@ class PlayState extends MusicBeatState
 			}
 
 			noteMiss(note);
-			if(!note.noteSplashData.disabled && !note.isSustainNote) spawnNoteSplashOnNote(note);
+			if(!lightHitVisuals && !note.noteSplashData.disabled && !note.isSustainNote) spawnNoteSplashOnNote(note);
 		}
 
 		stagesFunc(function(stage:BaseStage) stage.goodNoteHit(note));
@@ -4619,13 +4746,23 @@ class PlayState extends MusicBeatState
 	public var ratingName:String = '?';
 	public var ratingPercent:Float;
 	public var ratingFC:String;
+	var lastScoreRefreshTime:Float = -9999;
 	public function RecalculateRating(badHit:Bool = false, scoreBop:Bool = true) {
-		setOnScripts('score', songScore);
-		setOnScripts('misses', songMisses);
-		setOnScripts('hits', songHits);
-		setOnScripts('combo', combo);
+		#if android
+		var refreshScore:Bool = badHit || (Conductor.songPosition - lastScoreRefreshTime) >= 50;
+		#else
+		var refreshScore:Bool = true;
+		#end
 
-		var ret:Dynamic = callOnScripts('onRecalculateRating', null, true);
+		if (refreshScore)
+		{
+			setOnScripts('score', songScore);
+			setOnScripts('misses', songMisses);
+			setOnScripts('hits', songHits);
+			setOnScripts('combo', combo);
+		}
+
+		var ret:Dynamic = refreshScore ? callOnScripts('onRecalculateRating', null, true) : null;
 		if(ret != LuaUtils.Function_Stop)
 		{
 			ratingName = '?';
@@ -4647,12 +4784,16 @@ class PlayState extends MusicBeatState
 			}
 			fullComboFunction();
 		}
-		setOnScripts('rating', ratingPercent);
-		setOnScripts('ratingName', ratingName);
-		setOnScripts('ratingFC', ratingFC);
-		setOnScripts('totalPlayed', totalPlayed);
-		setOnScripts('totalNotesHit', totalNotesHit);
-		updateScore(badHit, scoreBop); // score will only update after rating is calculated, if it's a badHit, it shouldn't bounce
+		if (refreshScore)
+		{
+			lastScoreRefreshTime = Conductor.songPosition;
+			setOnScripts('rating', ratingPercent);
+			setOnScripts('ratingName', ratingName);
+			setOnScripts('ratingFC', ratingFC);
+			setOnScripts('totalPlayed', totalPlayed);
+			setOnScripts('totalNotesHit', totalNotesHit);
+			updateScore(badHit, scoreBop); // score will only update after rating is calculated, if it's a badHit, it shouldn't bounce
+		}
 	}
 
 	#if ACHIEVEMENTS_ALLOWED

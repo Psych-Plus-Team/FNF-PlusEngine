@@ -193,9 +193,9 @@ class EsES
 		"setting_shaders" => "Shaders",
 		"description_shaders" =>
 		"Si no está marcado, desactiva los shaders.\nSe utiliza para algunos efectos visuales y también requiere un uso intensivo de CPU en ordenadores más débiles.",
-		"setting_gpu_caching" => "Caché de GPU",
+		"setting_gpu_caching" => "Aceleración por hardware",
 		"description_gpu_caching" =>
-		"Si está marcado, permite que la GPU se use para almacenar texturas en caché, reduce el uso de RAM.\nNo actives esto si tienes una tarjeta gráfica de mierda.",
+		"Si está activado, guarda imágenes compatibles directamente en la GPU para reducir uso de RAM y mejorar la estabilidad del render.\nRecomendado para la mayoría de dispositivos, especialmente Android.",
 		"setting_framerate" => "Fotogramas por segundo",
 		"description_framerate" => "Bastante explicativo, ¿no?",
 		"setting_framerate_mode" => "Modo de Framerate",
