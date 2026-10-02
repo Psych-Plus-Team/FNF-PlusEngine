@@ -29,9 +29,9 @@ class MainMenuState extends MusicBeatState
 
 	static function get_isOpt():String
 	#if OPT_VER
-		return "Optimized"
+		return "Optimized";
 	#else
-	    return ""
+	    return "";
 	#end
 
 	static function get_psychEngineVersion():String
