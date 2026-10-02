@@ -2201,6 +2201,10 @@ class PlayState extends MusicBeatState
 
 		super.update(elapsed);
 
+		#if android
+		updateAndroidComboSprites(elapsed);
+		#end
+
 		#if MODCHART_ALLOWED
 		mcDebug(elapsed);
 		#end
@@ -3350,6 +3354,10 @@ class PlayState extends MusicBeatState
 	public var comboGroup:FlxSpriteGroup;
 	#if android
 	var androidComboSpritePool:Array<FlxSprite> = [];
+	var androidComboSpriteLife:Array<Float> = [];
+	var androidComboSpriteFadeStart:Array<Float> = [];
+	var androidRatingGraphics:Map<String, FlxGraphic> = new Map<String, FlxGraphic>();
+	var androidNumGraphics:Array<FlxGraphic> = [];
 	#end
 	var breakTimerHud:BreakTimerHud = null;
 	// Stores HUD Objects in a Group
@@ -3369,6 +3377,12 @@ class PlayState extends MusicBeatState
 		Paths.image(uiAsset('late'));
 
 		#if android
+		androidRatingGraphics.clear();
+		androidNumGraphics.resize(0);
+		for (rating in ratingsData)
+			androidRatingGraphics.set(rating.image, Paths.image(uiAsset(rating.image)));
+		for (i in 0...10)
+			androidNumGraphics[i] = Paths.image(uiAsset('num' + i));
 		for (i in 0...18)
 			createAndroidComboSprite();
 		#end
@@ -3378,10 +3392,13 @@ class PlayState extends MusicBeatState
 	function createAndroidComboSprite():FlxSprite
 	{
 		var spr:FlxSprite = new FlxSprite();
+		spr.ID = androidComboSpritePool.length;
 		spr.exists = false;
 		spr.active = false;
 		spr.visible = false;
 		androidComboSpritePool.push(spr);
+		androidComboSpriteLife.push(0);
+		androidComboSpriteFadeStart.push(0);
 		if (comboGroup != null)
 			comboGroup.add(spr);
 		return spr;
@@ -3406,6 +3423,11 @@ class PlayState extends MusicBeatState
 		spr.alpha = 1;
 		spr.velocity.set();
 		spr.acceleration.set();
+		if (spr.ID >= 0 && spr.ID < androidComboSpriteLife.length)
+		{
+			androidComboSpriteLife[spr.ID] = 0;
+			androidComboSpriteFadeStart[spr.ID] = 0;
+		}
 	}
 
 	function setupAndroidComboSprite(spr:FlxSprite, graphic:FlxGraphic, x:Float, y:Float, scale:Float, antialias:Bool, visible:Bool):Void
@@ -3413,8 +3435,6 @@ class PlayState extends MusicBeatState
 		if (spr == null || graphic == null)
 			return;
 
-		FlxTween.cancelTweensOf(spr);
-		FlxTween.cancelTweensOf(spr.scale);
 		spr.loadGraphic(graphic);
 		spr.setGraphicSize(Std.int(spr.width * scale));
 		spr.updateHitbox();
@@ -3430,13 +3450,31 @@ class PlayState extends MusicBeatState
 
 		if (visible)
 		{
-			FlxTween.tween(spr, {alpha: 0}, 0.16 / playbackRate, {
-				startDelay: 0.12 / playbackRate,
-				onComplete: function(_:FlxTween)
-				{
-					releaseAndroidComboSprite(spr);
-				}
-			});
+			var safeRate:Float = playbackRate <= 0 ? 1 : playbackRate;
+			androidComboSpriteLife[spr.ID] = 0.28 / safeRate;
+			androidComboSpriteFadeStart[spr.ID] = 0.16 / safeRate;
+		}
+	}
+
+	function updateAndroidComboSprites(elapsed:Float):Void
+	{
+		for (spr in androidComboSpritePool)
+		{
+			if (spr == null || !spr.exists)
+				continue;
+
+			var id:Int = spr.ID;
+			var life:Float = androidComboSpriteLife[id] - elapsed;
+			androidComboSpriteLife[id] = life;
+			if (life <= 0)
+			{
+				releaseAndroidComboSprite(spr);
+				continue;
+			}
+
+			var fadeStart:Float = androidComboSpriteFadeStart[id];
+			if (life < fadeStart && fadeStart > 0)
+				spr.alpha = life / fadeStart;
 		}
 	}
 
@@ -3453,7 +3491,7 @@ class PlayState extends MusicBeatState
 		var ratingScale:Float = PlayState.isPixelStage ? daPixelZoom * 0.85 : 0.7;
 		var numScale:Float = PlayState.isPixelStage ? daPixelZoom : 0.5;
 		var rating:FlxSprite = getAndroidComboSprite();
-		setupAndroidComboSprite(rating, Paths.image(uiAsset(daRating.image)), placement - 40 + ClientPrefs.data.comboOffset[0],
+		setupAndroidComboSprite(rating, androidRatingGraphics.get(daRating.image), placement - 40 + ClientPrefs.data.comboOffset[0],
 			(FlxG.height * 0.5) - 60 - ClientPrefs.data.comboOffset[1], ratingScale, antialias, showRating);
 
 		if (!showComboNum)
@@ -3467,7 +3505,7 @@ class PlayState extends MusicBeatState
 				continue;
 
 			var numScore:FlxSprite = getAndroidComboSprite();
-			setupAndroidComboSprite(numScore, Paths.image(uiAsset('num' + digit)), placement + (43 * i) - 90 + ClientPrefs.data.comboOffset[2],
+			setupAndroidComboSprite(numScore, androidNumGraphics[digit], placement + (43 * i) - 90 + ClientPrefs.data.comboOffset[2],
 				(FlxG.height * 0.5) + 80 - ClientPrefs.data.comboOffset[3], numScale, antialias, true);
 			numScore.velocity.x = FlxG.random.float(-3, 3) * playbackRate;
 		}
