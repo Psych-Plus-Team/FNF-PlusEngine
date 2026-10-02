@@ -49,7 +49,6 @@ env:
   DEV_BUILD_TAG: dev-build
 
 jobs:
-  # WARNING: Keep platform switches centralized here so manual runs stay predictable.
   check_platforms:
     name: Check Platforms
     runs-on: ubuntu-24.04
@@ -133,16 +132,32 @@ jobs:
       - name: Build
         run: haxelib run lime build Project.xml linux --app-version="${APP_VERSION}" -D officialBuild -release
 
+      - name: Build optimized
+        run: haxelib run lime build Project.xml linux --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER
+
       - name: Package artifact
         run: |
           mkdir -p dist
           tar -C export/release/linux/bin -czf dist/FNF-PlusEngine-linux-x64.tar.gz .
+
+      - name: Package optimized artifact
+        run: |
+          mkdir -p dist
+          tar -C export/opt_release/linux/bin -czf dist/FNF-PlusEngine-linux-x64-opt.tar.gz .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: linux-x64-artifact
           path: dist/FNF-PlusEngine-linux-x64.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Upload optimized artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-x64-artifact
+          path: dist/FNF-PlusEngine-linux-x64-opt.tar.gz
           if-no-files-found: error
           compression-level: 0
 
@@ -237,6 +252,9 @@ jobs:
       - name: Build
         run: haxelib run lime build Project.xml android --app-version="${APP_VERSION}" -D officialBuild -release -DHXCPP_IGNORE_WARNINGS
 
+      - name: Build optimized
+        run: haxelib run lime build Project.xml android --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER -DHXCPP_IGNORE_WARNINGS
+
       - name: Package artifact
         run: |
           mkdir -p dist
@@ -244,11 +262,26 @@ jobs:
           test -n "$apk_path"
           cp "$apk_path" dist/FNF-PlusEngine-android.apk
 
+      - name: Package optimized artifact
+        run: |
+          mkdir -p dist
+          apk_path="$(find export/opt_release/android/bin -type f -name '*.apk' | head -n 1)"
+          test -n "$apk_path"
+          cp "$apk_path" dist/FNF-PlusEngine-android-opt.apk
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: android-artifact
           path: dist/FNF-PlusEngine-android.apk
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Upload optimized artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-artifact
+          path: dist/FNF-PlusEngine-android-opt.apk
           if-no-files-found: error
           compression-level: 0
 
@@ -293,16 +326,32 @@ jobs:
       - name: Build
         run: haxelib run lime build Project.xml windows --app-version="${env:APP_VERSION}" -D officialBuild -release
 
+      - name: Build optimized
+        run: haxelib run lime build Project.xml windows --app-version="${env:APP_VERSION}" -D officialBuild -D OPT_VER
+
       - name: Package artifact
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Compress-Archive -Path export/release/windows/bin/* -DestinationPath dist/FNF-PlusEngine-windows-x64.zip -Force
+
+      - name: Package optimized artifact
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path export/opt_release/windows/bin/* -DestinationPath dist/FNF-PlusEngine-windows-x64-opt.zip -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: windows-x64-artifact
           path: dist/FNF-PlusEngine-windows-x64.zip
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Upload optimized artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-x64-artifact
+          path: dist/FNF-PlusEngine-windows-x64-opt.zip
           if-no-files-found: error
           compression-level: 0
 
@@ -347,16 +396,32 @@ jobs:
       - name: Build
         run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -release
 
+      - name: Build optimized
+        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER
+
       - name: Package artifact
         run: |
           mkdir -p dist
           ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-arm64.zip
+
+      - name: Package optimized artifact
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent export/opt_release/macos/bin dist/FNF-PlusEngine-macos-arm64-opt.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: macos-arm64-artifact
           path: dist/FNF-PlusEngine-macos-arm64.zip
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Upload optimized artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-arm64-artifact
+          path: dist/FNF-PlusEngine-macos-arm64-opt.zip
           if-no-files-found: error
           compression-level: 0
 
@@ -401,16 +466,32 @@ jobs:
       - name: Build
         run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -release
 
+      - name: Build optimized
+        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER
+
       - name: Package artifact
         run: |
           mkdir -p dist
           ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-intel.zip
+
+      - name: Package optimized artifact
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent export/opt_release/macos/bin dist/FNF-PlusEngine-macos-intel-opt.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: macos-intel-artifact
           path: dist/FNF-PlusEngine-macos-intel.zip
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Upload optimized artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-intel-artifact
+          path: dist/FNF-PlusEngine-macos-intel-opt.zip
           if-no-files-found: error
           compression-level: 0
 
@@ -455,16 +536,32 @@ jobs:
       - name: Build
         run: haxelib run lime build Project.xml ios -nosign --app-version="${APP_VERSION}" -D officialBuild -release
 
+      - name: Build optimized
+        run: haxelib run lime build Project.xml ios -nosign --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER
+
       - name: Package artifact
         run: |
           mkdir -p dist
           ditto -c -k --sequesterRsrc --keepParent export/release/ios/build/Release-iphoneos dist/FNF-PlusEngine-ios.zip
+
+      - name: Package optimized artifact
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent export/opt_release/ios/build/Release-iphoneos dist/FNF-PlusEngine-ios-opt.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: ios-artifact
           path: dist/FNF-PlusEngine-ios.zip
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Upload optimized artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-artifact
+          path: dist/FNF-PlusEngine-ios-opt.zip
           if-no-files-found: error
           compression-level: 0
 
@@ -541,8 +638,6 @@ jobs:
       contents: write
 
     steps:
-      # WARNING: One pattern download keeps this job lighter than many separate
-      # download steps.
       - name: Download release artifacts
         uses: actions/download-artifact@v8
         with:
