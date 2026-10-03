@@ -3,6 +3,7 @@ package;
 import debug.FPSCounter;
 import debug.TraceDisplay;
 import debug.TraceButton;
+import debug.ModsButton;
 import backend.ClientPrefs;
 import backend.Screenshot;
 import objects.MaterialVolumeTray;
@@ -48,6 +49,7 @@ class Main extends Sprite
 	public static var fpsVar:FPSCounter;
 	public static var traceDisplay:TraceDisplay;
 	public static var traceButton:TraceButton;
+	public static var modsButton:ModsButton;
 	public static var materialVolumeTray:MaterialVolumeTray;
 
 	public static final platform:String = #if mobile "Phones" #else "PCs" #end;
@@ -233,6 +235,8 @@ class Main extends Sprite
 		#if mobile
 		traceButton = new TraceButton();
 		addChild(traceButton);
+		modsButton = new ModsButton();
+		addChild(modsButton);
 		#end
 
 		Lib.current.stage.align = "tl";
@@ -308,6 +312,10 @@ class Main extends Sprite
 			if (traceButton != null)
 			{
 				traceButton.updatePosition();
+			}
+			if (modsButton != null)
+			{
+				modsButton.updatePosition();
 			}
 			#end
 

@@ -5925,34 +5925,31 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		var chartData:String = PsychJsonPrinter.print(PlayState.SONG, ['sectionNotes', 'events']);
 		if (canQuickSave && Song.chartPath != null)
 		{
-			#if mobile
-			var chartName:String = Paths.formatToSongPath(PlayState.SONG.song) + '.json';
-			StorageUtil.saveContent(chartName, chartData);
-			saveSongMetaForEditor();
-			#else
-			File.saveContent(Song.chartPath, chartData);
-			saveSongMetaForEditor();
-			showOutput('Chart saved successfully to: ${Song.chartPath}');
-			#end
+			try
+			{
+				File.saveContent(Song.chartPath, chartData);
+				saveSongMetaForEditor();
+				showOutput('Chart saved successfully to: ${Song.chartPath}');
+			}
+			catch (e:Dynamic)
+			{
+				showOutput('Error on saving chart to ${Song.chartPath}: ${Std.string(e)}', true);
+			}
 		}
 		else
 		{
 			var chartName:String = Paths.formatToSongPath(PlayState.SONG.song) + '.json';
 			if (Song.chartPath != null)
 				chartName = Song.chartPath.substr(Song.chartPath.lastIndexOf('/')).trim();
-			#if mobile
-			StorageUtil.saveContent(chartName, chartData);
-			saveSongMetaForEditor();
-			#else
 			fileDialog.save(chartName, chartData, function()
 			{
 				var newPath:String = fileDialog.path;
-				Song.chartPath = newPath.replace('\\', '/');
+				if (newPath != null && !newPath.startsWith('/document/'))
+					Song.chartPath = newPath.replace('\\', '/');
 				saveSongMetaForEditor();
 				reloadNotesDropdowns();
 				showOutput('Chart saved successfully to: $newPath');
 			}, null, function() showOutput('Error on saving chart!', true));
-			#end
 		}
 	}
 

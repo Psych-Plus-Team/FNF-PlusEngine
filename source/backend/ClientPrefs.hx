@@ -4,6 +4,9 @@ import flixel.util.FlxSave;
 import flixel.input.keyboard.FlxKey;
 import flixel.input.gamepad.FlxGamepadInputID;
 import states.TitleState;
+#if android
+import mobile.backend.PsychJNI;
+#end
 
 // Add a variable here and it will get automatically saved
 @:structInit class SaveVariables
@@ -23,6 +26,8 @@ import states.TitleState;
 	public var infinityDisplay:Bool = false; // Extend viewport vertically for modern screens while keeping game at 16:9
 	#if android
 	public var storageType:String = "EXTERNAL_DATA";
+	public var showAndroidLauncher:Bool = true;
+	public var androidLauncherAutoStart:Bool = false;
 	#end
 	public var popUpRating:Bool = true;
 	public var showVersionText:Bool = false;
@@ -392,6 +397,7 @@ class ClientPrefs
 		FlxG.save.flush();
 		#if android
 		StorageUtil.saveStorageTypePreference(data.storageType);
+		PsychJNI.setLauncherPrefs(data.showAndroidLauncher, data.androidLauncherAutoStart);
 		#end
 
 		// Placing this in a separate save so that it can be manually deleted without removing your Score and stuff

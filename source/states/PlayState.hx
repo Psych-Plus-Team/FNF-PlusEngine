@@ -4046,11 +4046,25 @@ class PlayState extends MusicBeatState
 		var holdArray:Array<Bool> = [];
 		var pressArray:Array<Bool> = [];
 		var releaseArray:Array<Bool> = [];
-		for (key in keysArray)
+		for (i in 0...keysArray.length)
 		{
+			var key:String = keysArray[i];
 			holdArray.push(controls.pressed(key));
 			pressArray.push(controls.justPressed(key));
 			releaseArray.push(controls.justReleased(key));
+
+			#if mobile
+			if (mobileControls != null && mobileControls.instance != null && i < 4)
+			{
+				var mobileButtonID:MobileInputID = cast i;
+				if (mobileControls.instance.buttonPressed(mobileButtonID))
+					holdArray[i] = true;
+				if (mobileControls.instance.buttonJustPressed(mobileButtonID))
+					pressArray[i] = true;
+				if (mobileControls.instance.buttonJustReleased(mobileButtonID))
+					releaseArray[i] = true;
+			}
+			#end
 		}
 
 		// TO DO: Find a better way to handle controller inputs, this should work for now

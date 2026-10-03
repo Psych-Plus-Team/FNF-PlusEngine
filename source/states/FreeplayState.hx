@@ -977,6 +977,14 @@ class FreeplayState extends MusicBeatState
 			freeplayTouchInputBlockTime -= elapsed;
 
 		var searchFocused:Bool = searchField != null && searchField.focused;
+		var touchUp:Bool = touchPad != null && touchPad.buttonUp != null && touchPad.buttonUp.justPressed;
+		var touchDown:Bool = touchPad != null && touchPad.buttonDown != null && touchPad.buttonDown.justPressed;
+		var touchA:Bool = touchPad != null && touchPad.buttonA != null && touchPad.buttonA.justPressed;
+		var touchB:Bool = touchPad != null && touchPad.buttonB != null && touchPad.buttonB.justPressed;
+		var touchC:Bool = touchPad != null && touchPad.buttonC != null && touchPad.buttonC.justPressed;
+		var touchX:Bool = touchPad != null && touchPad.buttonX != null && touchPad.buttonX.justPressed;
+		var touchY:Bool = touchPad != null && touchPad.buttonY != null && touchPad.buttonY.justPressed;
+		var touchZ:Bool = touchPad != null && touchPad.buttonZ != null && touchPad.buttonZ.justPressed;
 
 		if (searchFocused && FlxG.keys.justPressed.ESCAPE)
 		{
@@ -1204,7 +1212,7 @@ class FreeplayState extends MusicBeatState
 			ratingDisplay = '-' + ratingDisplay;
 
 		var shiftMult:Int = 1;
-		if ((FlxG.keys.pressed.SHIFT || touchPad.buttonZ.justPressed) && !player.playingMusic)
+		if ((FlxG.keys.pressed.SHIFT || touchZ) && !player.playingMusic)
 			shiftMult = 3;
 
 		if (!searchFocused && !player.playingMusic)
@@ -1227,12 +1235,12 @@ class FreeplayState extends MusicBeatState
 						changeSelection();
 						holdTime = 0;
 					}
-					if (controls.UI_UP_P || touchPad.buttonUp.justPressed)
+					if (controls.UI_UP_P || touchUp)
 					{
 						changeSelection(-shiftMult);
 						holdTime = 0;
 					}
-					if (controls.UI_DOWN_P || touchPad.buttonDown.justPressed)
+					if (controls.UI_DOWN_P || touchDown)
 					{
 						changeSelection(shiftMult);
 						holdTime = 0;
@@ -1240,7 +1248,7 @@ class FreeplayState extends MusicBeatState
 
 					if (controls.UI_DOWN
 						|| controls.UI_UP
-						|| (touchPad.buttonDown.justPressed || touchPad.buttonUp.justPressed))
+						|| (touchDown || touchUp))
 					{
 						var checkLastHold:Int = Math.floor((holdTime - 0.5) * 10);
 						holdTime += elapsed;
@@ -1248,7 +1256,7 @@ class FreeplayState extends MusicBeatState
 
 						if (holdTime > 0.5 && checkNewHold - checkLastHold > 0)
 						{
-							var isUp:Bool = controls.UI_UP || touchPad.buttonUp.justPressed;
+							var isUp:Bool = controls.UI_UP || touchUp;
 							changeSelection((checkNewHold - checkLastHold) * (isUp ? -shiftMult : shiftMult));
 						}
 					}
@@ -1261,11 +1269,11 @@ class FreeplayState extends MusicBeatState
 			}
 			else
 			{
-				if (controls.UI_UP_P || touchPad.buttonUp.justPressed)
+				if (controls.UI_UP_P || touchUp)
 				{
 					changeDifficultySelection(-1);
 				}
-				if (controls.UI_DOWN_P || touchPad.buttonDown.justPressed)
+				if (controls.UI_DOWN_P || touchDown)
 				{
 					changeDifficultySelection(1);
 				}
@@ -1304,7 +1312,7 @@ class FreeplayState extends MusicBeatState
 			searchField.focus();
 		}
 
-		if (!searchFocused && (controls.BACK || touchPad.buttonB.justPressed #if android || FlxG.android.justReleased.BACK #end))
+		if (!searchFocused && (controls.BACK || touchB #if android || FlxG.android.justReleased.BACK #end))
 		{
 			if (player.playingMusic)
 			{
@@ -1344,14 +1352,14 @@ class FreeplayState extends MusicBeatState
 		}
 
 		if (!searchFocused
-			&& (FlxG.keys.justPressed.CONTROL || touchPad.buttonC.justPressed)
+			&& (FlxG.keys.justPressed.CONTROL || touchC)
 			&& !player.playingMusic)
 		{
 			persistentUpdate = false;
 			removeTouchPad();
 			openSubState(backend.ScriptableSubstate.tryCreate('options.GameplayChangersSubstate', new GameplayChangersSubstate()));
 		}
-		if (!searchFocused && (FlxG.keys.justPressed.SPACE || touchPad.buttonX.justPressed))
+		if (!searchFocused && (FlxG.keys.justPressed.SPACE || touchX))
 		{
 			if (instPlaying != curSelected && !player.playingMusic)
 			{
@@ -1443,7 +1451,7 @@ class FreeplayState extends MusicBeatState
 			}
 		}
 		else if (!searchFocused
-			&& (controls.ACCEPT || touchPad.buttonA.justPressed)
+			&& (controls.ACCEPT || touchA)
 			&& !player.playingMusic)
 		{
 			if (!inDifficultySelect)
@@ -1498,7 +1506,7 @@ class FreeplayState extends MusicBeatState
 				#end
 			}
 		}
-		else if (!searchFocused && (controls.RESET || touchPad.buttonY.justPressed) && !player.playingMusic)
+		else if (!searchFocused && (controls.RESET || touchY) && !player.playingMusic)
 		{
 			persistentUpdate = false;
 			removeTouchPad();
