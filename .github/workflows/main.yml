@@ -39,6 +39,10 @@ on:
         description: "Show GitHub commit build info in-game"
         type: boolean
         default: true
+      optimized_build:
+        description: "Build optimized package using OPT_VER assets"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -61,8 +65,11 @@ jobs:
       build_ios: ${{ steps.set_outputs.outputs.build_ios }}
       publish_all: ${{ steps.set_outputs.outputs.publish_all }}
       dev_build: ${{ steps.set_outputs.outputs.dev_build }}
+      optimized_build: ${{ steps.set_outputs.outputs.optimized_build }}
     steps:
       - id: set_outputs
+        env:
+          TRIGGER_TEXT: ${{ github.event.head_commit.message || github.event.pull_request.title || '' }}
         run: |
           if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "build_linux=true" >> $GITHUB_OUTPUT
@@ -77,6 +84,11 @@ jobs:
             else
               echo "dev_build=false" >> $GITHUB_OUTPUT
             fi
+            if [[ "$TRIGGER_TEXT" == *"[opt]"* ]] || [[ "$TRIGGER_TEXT" == *"[optimized]"* ]]; then
+              echo "optimized_build=true" >> $GITHUB_OUTPUT
+            else
+              echo "optimized_build=false" >> $GITHUB_OUTPUT
+            fi
           else
             echo "build_linux=${{ github.event.inputs.build_linux }}" >> $GITHUB_OUTPUT
             echo "build_android=${{ github.event.inputs.build_android }}" >> $GITHUB_OUTPUT
@@ -86,6 +98,7 @@ jobs:
             echo "build_ios=${{ github.event.inputs.build_ios }}" >> $GITHUB_OUTPUT
             echo "publish_all=${{ github.event.inputs.publish_all }}" >> $GITHUB_OUTPUT
             echo "dev_build=${{ github.event.inputs.dev_build }}" >> $GITHUB_OUTPUT
+            echo "optimized_build=${{ github.event.inputs.optimized_build }}" >> $GITHUB_OUTPUT
           fi
 
   build_linux_x64:
@@ -96,7 +109,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -130,34 +143,40 @@ jobs:
           EOF
 
       - name: Build
-        run: haxelib run lime build Project.xml linux --app-version="${APP_VERSION}" -D officialBuild -release
-
-      - name: Build optimized
-        run: haxelib run lime build Project.xml linux --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER
+        run: |
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            haxelib run lime build Project.xml linux --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER -release
+          else
+            haxelib run lime build Project.xml linux --app-version="${APP_VERSION}" -D officialBuild -release
+          fi
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          tar -C export/release/linux/bin -czf dist/FNF-PlusEngine-linux-x64.tar.gz .
-
-      - name: Package optimized artifact
-        run: |
-          mkdir -p dist
-          tar -C export/opt_release/linux/bin -czf dist/FNF-PlusEngine-linux-x64-opt.tar.gz .
+          build_root="export/release"
+          suffix=""
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            build_root="export/opt_release"
+            suffix="-opt"
+          fi
+          if [ ! -d "$build_root" ]; then
+            echo "::error::$build_root does not exist after Linux build"
+            find export -maxdepth 4 -type d 2>/dev/null | sort || true
+            exit 1
+          fi
+          out_dir="$(find "$build_root" -type d -path '*/linux/bin' | head -n 1)"
+          if [ -z "$out_dir" ]; then
+            echo "::error::Linux output folder was not found under $build_root"
+            find export -maxdepth 4 -type d | sort
+            exit 1
+          fi
+          tar -C "$out_dir" -czf "dist/FNF-PlusEngine-linux-x64${suffix}.tar.gz" .
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: linux-x64-artifact
-          path: dist/FNF-PlusEngine-linux-x64.tar.gz
-          if-no-files-found: error
-          compression-level: 0
-
-      - name: Upload optimized artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: linux-x64-artifact
-          path: dist/FNF-PlusEngine-linux-x64-opt.tar.gz
+          path: dist/FNF-PlusEngine-linux-x64*.tar.gz
           if-no-files-found: error
           compression-level: 0
 
@@ -169,7 +188,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -184,7 +203,7 @@ jobs:
           haxe --version
 
       - name: Setup Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: "21"
@@ -250,38 +269,40 @@ jobs:
           rm -rf export build ~/.gradle
 
       - name: Build
-        run: haxelib run lime build Project.xml android --app-version="${APP_VERSION}" -D officialBuild -release -DHXCPP_IGNORE_WARNINGS
-
-      - name: Build optimized
-        run: haxelib run lime build Project.xml android --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER -DHXCPP_IGNORE_WARNINGS
+        run: |
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            haxelib run lime build Project.xml android --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER -release -DHXCPP_IGNORE_WARNINGS
+          else
+            haxelib run lime build Project.xml android --app-version="${APP_VERSION}" -D officialBuild -release -DHXCPP_IGNORE_WARNINGS
+          fi
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          apk_path="$(find export/release/android/bin -type f -name '*.apk' | head -n 1)"
-          test -n "$apk_path"
-          cp "$apk_path" dist/FNF-PlusEngine-android.apk
-
-      - name: Package optimized artifact
-        run: |
-          mkdir -p dist
-          apk_path="$(find export/opt_release/android/bin -type f -name '*.apk' | head -n 1)"
-          test -n "$apk_path"
-          cp "$apk_path" dist/FNF-PlusEngine-android-opt.apk
+          build_root="export/release"
+          suffix=""
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            build_root="export/opt_release"
+            suffix="-opt"
+          fi
+          if [ ! -d "$build_root" ]; then
+            echo "::error::$build_root does not exist after Android build"
+            find export -maxdepth 6 -type d 2>/dev/null | sort || true
+            exit 1
+          fi
+          apk_path="$(find "$build_root" -type f -name '*.apk' | sort | head -n 1)"
+          if [ -z "$apk_path" ]; then
+            echo "::error::Android APK was not found under $build_root"
+            find export -maxdepth 6 -type f | sort | tail -n 200
+            exit 1
+          fi
+          cp "$apk_path" "dist/FNF-PlusEngine-android${suffix}.apk"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: android-artifact
-          path: dist/FNF-PlusEngine-android.apk
-          if-no-files-found: error
-          compression-level: 0
-
-      - name: Upload optimized artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: android-artifact
-          path: dist/FNF-PlusEngine-android-opt.apk
+          path: dist/FNF-PlusEngine-android*.apk
           if-no-files-found: error
           compression-level: 0
 
@@ -293,7 +314,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -324,34 +345,33 @@ jobs:
           '@ | Set-Content -Path source/backend/BuildInfoGenerated.hx
 
       - name: Build
-        run: haxelib run lime build Project.xml windows --app-version="${env:APP_VERSION}" -D officialBuild -release
-
-      - name: Build optimized
-        run: haxelib run lime build Project.xml windows --app-version="${env:APP_VERSION}" -D officialBuild -D OPT_VER
+        run: |
+          if ("${{ needs.check_platforms.outputs.optimized_build }}" -eq "true") {
+            haxelib run lime build Project.xml windows --app-version="${env:APP_VERSION}" -D officialBuild -D OPT_VER -release
+          } else {
+            haxelib run lime build Project.xml windows --app-version="${env:APP_VERSION}" -D officialBuild -release
+          }
 
       - name: Package artifact
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Compress-Archive -Path export/release/windows/bin/* -DestinationPath dist/FNF-PlusEngine-windows-x64.zip -Force
-
-      - name: Package optimized artifact
-        run: |
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Compress-Archive -Path export/opt_release/windows/bin/* -DestinationPath dist/FNF-PlusEngine-windows-x64-opt.zip -Force
+          $buildRoot = if ("${{ needs.check_platforms.outputs.optimized_build }}" -eq "true") { "export/opt_release" } else { "export/release" }
+          $suffix = if ("${{ needs.check_platforms.outputs.optimized_build }}" -eq "true") { "-opt" } else { "" }
+          $outDir = Get-ChildItem -Path $buildRoot -Directory -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -replace '\\','/' -match '/windows/bin$' } |
+            Select-Object -First 1
+          if ($null -eq $outDir) {
+            Write-Error "Windows output folder was not found under $buildRoot"
+            Get-ChildItem -Path export -Directory -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
+            exit 1
+          }
+          Compress-Archive -Path (Join-Path $outDir.FullName '*') -DestinationPath "dist/FNF-PlusEngine-windows-x64${suffix}.zip" -Force
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: windows-x64-artifact
-          path: dist/FNF-PlusEngine-windows-x64.zip
-          if-no-files-found: error
-          compression-level: 0
-
-      - name: Upload optimized artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: windows-x64-artifact
-          path: dist/FNF-PlusEngine-windows-x64-opt.zip
+          path: dist/FNF-PlusEngine-windows-x64*.zip
           if-no-files-found: error
           compression-level: 0
 
@@ -363,7 +383,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -394,34 +414,35 @@ jobs:
           EOF
 
       - name: Build
-        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -release
-
-      - name: Build optimized
-        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER
+        run: |
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER -release
+          else
+            haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -release
+          fi
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-arm64.zip
-
-      - name: Package optimized artifact
-        run: |
-          mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent export/opt_release/macos/bin dist/FNF-PlusEngine-macos-arm64-opt.zip
+          build_root="export/release"
+          suffix=""
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            build_root="export/opt_release"
+            suffix="-opt"
+          fi
+          out_dir="$(find "$build_root" -type d -path '*/macos/bin' | head -n 1)"
+          if [ -z "$out_dir" ]; then
+            echo "::error::macOS ARM64 output folder was not found under $build_root"
+            find export -maxdepth 5 -type d 2>/dev/null | sort || true
+            exit 1
+          fi
+          ditto -c -k --sequesterRsrc --keepParent "$out_dir" "dist/FNF-PlusEngine-macos-arm64${suffix}.zip"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: macos-arm64-artifact
-          path: dist/FNF-PlusEngine-macos-arm64.zip
-          if-no-files-found: error
-          compression-level: 0
-
-      - name: Upload optimized artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: macos-arm64-artifact
-          path: dist/FNF-PlusEngine-macos-arm64-opt.zip
+          path: dist/FNF-PlusEngine-macos-arm64*.zip
           if-no-files-found: error
           compression-level: 0
 
@@ -433,7 +454,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -464,34 +485,35 @@ jobs:
           EOF
 
       - name: Build
-        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -release
-
-      - name: Build optimized
-        run: haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER
+        run: |
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER -release
+          else
+            haxelib run lime build Project.xml mac --app-version="${APP_VERSION}" -D officialBuild -release
+          fi
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent export/release/macos/bin dist/FNF-PlusEngine-macos-intel.zip
-
-      - name: Package optimized artifact
-        run: |
-          mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent export/opt_release/macos/bin dist/FNF-PlusEngine-macos-intel-opt.zip
+          build_root="export/release"
+          suffix=""
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            build_root="export/opt_release"
+            suffix="-opt"
+          fi
+          out_dir="$(find "$build_root" -type d -path '*/macos/bin' | head -n 1)"
+          if [ -z "$out_dir" ]; then
+            echo "::error::macOS Intel output folder was not found under $build_root"
+            find export -maxdepth 5 -type d 2>/dev/null | sort || true
+            exit 1
+          fi
+          ditto -c -k --sequesterRsrc --keepParent "$out_dir" "dist/FNF-PlusEngine-macos-intel${suffix}.zip"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: macos-intel-artifact
-          path: dist/FNF-PlusEngine-macos-intel.zip
-          if-no-files-found: error
-          compression-level: 0
-
-      - name: Upload optimized artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: macos-intel-artifact
-          path: dist/FNF-PlusEngine-macos-intel-opt.zip
+          path: dist/FNF-PlusEngine-macos-intel*.zip
           if-no-files-found: error
           compression-level: 0
 
@@ -503,7 +525,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -534,34 +556,35 @@ jobs:
           EOF
 
       - name: Build
-        run: haxelib run lime build Project.xml ios -nosign --app-version="${APP_VERSION}" -D officialBuild -release
-
-      - name: Build optimized
-        run: haxelib run lime build Project.xml ios -nosign --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER
+        run: |
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            haxelib run lime build Project.xml ios -nosign --app-version="${APP_VERSION}" -D officialBuild -D OPT_VER -release
+          else
+            haxelib run lime build Project.xml ios -nosign --app-version="${APP_VERSION}" -D officialBuild -release
+          fi
 
       - name: Package artifact
         run: |
           mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent export/release/ios/build/Release-iphoneos dist/FNF-PlusEngine-ios.zip
-
-      - name: Package optimized artifact
-        run: |
-          mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent export/opt_release/ios/build/Release-iphoneos dist/FNF-PlusEngine-ios-opt.zip
+          build_root="export/release"
+          suffix=""
+          if [[ "${{ needs.check_platforms.outputs.optimized_build }}" == "true" ]]; then
+            build_root="export/opt_release"
+            suffix="-opt"
+          fi
+          out_dir="$(find "$build_root" -type d -path '*/ios/build/Release-iphoneos' | head -n 1)"
+          if [ -z "$out_dir" ]; then
+            echo "::error::iOS output folder was not found under $build_root"
+            find export -maxdepth 6 -type d 2>/dev/null | sort || true
+            exit 1
+          fi
+          ditto -c -k --sequesterRsrc --keepParent "$out_dir" "dist/FNF-PlusEngine-ios${suffix}.zip"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ios-artifact
-          path: dist/FNF-PlusEngine-ios.zip
-          if-no-files-found: error
-          compression-level: 0
-
-      - name: Upload optimized artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ios-artifact
-          path: dist/FNF-PlusEngine-ios-opt.zip
+          path: dist/FNF-PlusEngine-ios*.zip
           if-no-files-found: error
           compression-level: 0
 
@@ -632,6 +655,7 @@ jobs:
       github.event_name != 'pull_request' &&
       github.ref == 'refs/heads/dev' &&
       needs.check_platforms.outputs.publish_all == 'true' &&
+      needs.check_platforms.outputs.optimized_build != 'true' &&
       needs.summary.result == 'success'
 
     permissions:
@@ -639,14 +663,14 @@ jobs:
 
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           pattern: "*"
           path: release-assets
           merge-multiple: true
 
       - name: Publish prerelease
-        uses: actions/github-script@v9
+        uses: actions/github-script@v7
         env:
           RELEASE_TAG: ${{ env.DEV_BUILD_TAG }}
         with:
