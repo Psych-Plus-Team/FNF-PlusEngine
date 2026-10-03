@@ -544,24 +544,6 @@ class Paths
 		return cacheBitmap(key, parentFolder, bitmap, allowGPU);
 	}
 
-	static public function uiImage(assetName:String, useSuffix:Bool = true, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxGraphic
-	{
-		var path:String = getUIPath(assetName, useSuffix);
-		return image(path, parentFolder, allowGPU);
-	}
-
-	static public function uiImageExists(assetName:String, useSuffix:Bool = true, ?parentFolder:String = null):Bool
-	{
-		var path:String = getUIPath(assetName, useSuffix);
-		return fileExists(path, IMAGE, false, parentFolder);
-	}
-
-	static public function getUIAtlas(assetName:String, useSuffix:Bool = true, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxAtlasFrames
-	{
-		var path:String = getUIPath(assetName, useSuffix);
-		return getAtlas(path, parentFolder, allowGPU);
-	}
-
 	public static function cacheBitmap(key:String, ?parentFolder:String = null, ?bitmap:BitmapData, ?allowGPU:Bool = true):FlxGraphic
 	{
 		var resolvedFile:String = null;

@@ -243,6 +243,8 @@ class PlayState extends MusicBeatState
 
 	public var iconP1:HealthIcon;
 	public var iconP2:HealthIcon;
+	public var iconGF:HealthIcon;
+	
 	public var camHUD:FlxCamera;
 	public var camGame:FlxCamera;
 	public var camOther:FlxCamera;
@@ -266,6 +268,8 @@ class PlayState extends MusicBeatState
 	var lyricTween:FlxTween;
 	var versionText:FlxText;
 	var verTween:FlxTween;
+	var gfIconSide:String = '';
+	var gfIconSwapOnSing:Bool = false;
 
 	public static var campaignScore:Int = 0;
 	public static var campaignMisses:Int = 0;
@@ -639,6 +643,15 @@ class PlayState extends MusicBeatState
 		iconP2.visible = !ClientPrefs.data.hideHud;
 		iconP2.alpha = ClientPrefs.data.healthBarAlpha;
 		uiGroup.add(iconP2);
+
+		if(eventsPushed('Add Secondary Icon'))
+		{
+			iconGF = new HealthIcon(gf != null ? gf.healthIcon : 'gf', true, false);
+			iconGF.y = healthBar.y - 75;
+			iconGF.visible = false;
+			iconGF.alpha = ClientPrefs.data.healthBarAlpha;
+			uiGroup.add(iconGF);
+		}
 
 		scoreTxt = new FlxText(0, healthBar.y + 40, FlxG.width, "", 20);
 		scoreTxt.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -2427,6 +2440,8 @@ class PlayState extends MusicBeatState
 			{
 				iconP1.setGraphicSize(Std.int(FlxMath.lerp(150, iconP1.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
 				iconP2.setGraphicSize(Std.int(FlxMath.lerp(150, iconP2.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
+				if (iconGF != null)
+					iconGF.setGraphicSize(Std.int(FlxMath.lerp(150, iconGF.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
 			}
 
 			case 'NF':
@@ -2436,6 +2451,12 @@ class PlayState extends MusicBeatState
 
 				var p2:Float = FlxMath.lerp(1, iconP2.scale.x, FlxMath.bound((1 - (elapsed * 9 * playbackRate)) / 1.1, 0, 1));
 				iconP2.scale.set(p2, p2);
+
+				if (iconGF != null && iconGF.visible)
+				{
+					var pg:Float = FlxMath.lerp(1, iconGF.scale.x, FlxMath.bound((1 - (elapsed * 9 * playbackRate)) / 1.1, 0, 1));
+					iconGF.scale.set(pg, pg);
+				}
 			}
 
 			default:
@@ -2445,18 +2466,45 @@ class PlayState extends MusicBeatState
 
 				var p2:Float = FlxMath.lerp(1, iconP2.scale.x, Math.exp(-elapsed * 9 * playbackRate));
 				iconP2.scale.set(p2, p2);
+
+				if (iconGF != null && iconGF.visible)
+				{
+					var pg:Float = FlxMath.lerp(1, iconGF.scale.x, Math.exp(-elapsed * 9 * playbackRate));
+					iconGF.scale.set(pg, pg);
+				}
 			}
 		}
 
 		iconP1.updateHitbox();
 		iconP2.updateHitbox();
+		if (iconGF != null) iconGF.updateHitbox();
 	}
 
 	public dynamic function updateIconsPosition()
 	{
 		var iconOffset:Int = 26;
-		iconP1.x = healthBar.barCenter + (150 * iconP1.scale.x - 150) / 2 - iconOffset;
-		iconP2.x = healthBar.barCenter - (150 * iconP2.scale.x) / 2 - iconOffset * 2;
+		var isGFSinging:Bool = (SONG.notes[curSection] != null && SONG.notes[curSection].gfSection);
+
+		if (iconP1 != null)
+			iconP1.x = healthBar.barCenter + (150 * iconP1.scale.x - 150) / 2 - iconOffset;
+		if (iconP2 != null)
+			iconP2.x = healthBar.barCenter - (150 * iconP2.scale.x) / 2 - iconOffset * 2;
+
+		if (iconGF == null || !iconGF.visible)
+			return;
+
+		var swapped:Bool = gfIconSwapOnSing && isGFSinging;
+
+		if (gfIconSide == 'bf')
+		{
+			iconGF.x = healthBar.barCenter + (150 * iconGF.scale.x - 150) / 2 - iconOffset + (swapped ? 0 : 75);
+			if (swapped) iconP1.x += 75;
+		}
+		else if (gfIconSide == 'dad')
+		{
+			iconGF.x = healthBar.barCenter - (150 * iconGF.scale.x) / 2 - iconOffset * 2 - (swapped ? 0 : 75);
+			if (swapped) iconP2.x -= 75;
+		}
 	}
 
 	var iconsAnimations:Bool = true;
@@ -2798,6 +2846,7 @@ class PlayState extends MusicBeatState
 							boyfriend = boyfriendMap.get(value2);
 							boyfriend.alpha = lastAlpha;
 							iconP1.changeIcon(boyfriend.healthIcon);
+							health = health
 						}
 						setOnScripts('boyfriendName', boyfriend.curCharacter);
 
@@ -2820,6 +2869,7 @@ class PlayState extends MusicBeatState
 							}
 							dad.alpha = lastAlpha;
 							iconP2.changeIcon(dad.healthIcon);
+							health = health
 						}
 						setOnScripts('dadName', dad.curCharacter);
 
@@ -2836,6 +2886,8 @@ class PlayState extends MusicBeatState
 								gf.alpha = 0.00001;
 								gf = gfMap.get(value2);
 								gf.alpha = lastAlpha;
+								iconGF.changeIcon(gf.healthIcon)
+								health = health
 							}
 							setOnScripts('gfName', gf.curCharacter);
 						}
@@ -2890,6 +2942,17 @@ class PlayState extends MusicBeatState
 				if(flValue2 == null) flValue2 = 1;
 				FlxG.sound.play(Paths.sound(value1), flValue2);
 
+			case 'Change BPM':
+				if (flValue1 != null && flValue1 > 0)
+				{
+					Conductor.bpm = flValue1;
+					Conductor.crochet = (60 / flValue1) * 1000;
+					Conductor.stepCrochet = Conductor.crochet / 4;
+					setOnScripts('curBpm', Conductor.bpm);
+					setOnScripts('crochet', Conductor.crochet);
+					setOnScripts('stepCrochet', Conductor.stepCrochet);
+				}
+
 			case 'Lyric Event':
 				if(lyricText != null)
 				{
@@ -2935,6 +2998,17 @@ class PlayState extends MusicBeatState
 							}
 						});
 					}
+				}
+
+			case 'Add Secondary Icon':
+				gfIconSide = value1.toLowerCase().trim();
+				gfIconSwapOnSing = (value2.toLowerCase().trim() == 'true');
+
+				if (iconGF != null)
+				{
+					var valid:Bool = (gfIconSide == 'dad' || gfIconSide == 'bf');
+					iconGF.visible = !ClientPrefs.data.hideHud && valid;
+					iconGF.flipX = (gfIconSide == 'bf');
 				}
 		}
 
@@ -4521,14 +4595,18 @@ class PlayState extends MusicBeatState
 			case 'NF':
 				iconP1.scale.set(1.3, 1.3);
 				iconP2.scale.set(1.3, 1.3);
+				if (iconGF != null) iconGF.scale.set(1.3, 1.3);
 				iconP1.updateHitbox();
 				iconP2.updateHitbox();
+				if (iconGF != null) iconGF.updateHitbox();
 
 			case 'Old':
 				iconP1.setGraphicSize(Std.int(iconP1.width + 30));
 				iconP2.setGraphicSize(Std.int(iconP2.width + 30));
+				if (iconGF != null) iconGF.setGraphicSize(Std.int(iconGF.width + 30));
 				iconP1.updateHitbox();
 				iconP2.updateHitbox();
+				if (iconGF != null) iconGF.updateHitbox();
 
 			case 'D&B':
 				bumpIconsDnb();
@@ -4536,8 +4614,10 @@ class PlayState extends MusicBeatState
 			default:
 				iconP1.scale.set(1.2, 1.2);
 				iconP2.scale.set(1.2, 1.2);
+				if (iconGF != null) iconGF.scale.set(1.2, 1.2);
 				iconP1.updateHitbox();
 				iconP2.updateHitbox();
+				if (iconGF != null) iconGF.updateHitbox();
 		}
 
 		characterBopper(curBeat);
@@ -4561,9 +4641,9 @@ class PlayState extends MusicBeatState
 	function bumpIconsDnb():Void
 	{
 		iconTurn = -iconTurn;
-		for (icon in [iconP1, iconP2])
+		for (icon in [iconP1, iconP2, iconGF])
 		{
-			if (icon == null)
+			if (icon == null || !icon.visible)
 				continue;
 
 			FlxTween.cancelTweensOf(icon);
