@@ -647,22 +647,26 @@ class PlayState extends MusicBeatState
 		reloadHealthBarColors();
 		uiGroup.add(healthBar);
 
+		var animatedIcon:Bool = (SONG.isAnimated == true);
 		iconP1 = new HealthIcon(playerChar().healthIcon, true);
-		iconP1.y = healthBar.y - 75;
+		if (animatedIcon || playerChar().animatedIcon) iconP1.changeIcon(iconP1.getCharacter(), true, true);
+		iconP1.y = ClientPrefs.data.iconBounceType == 'Old' ? healthBar.y - (iconP1.height / 2) : healthBar.y - 75;
 		iconP1.visible = !ClientPrefs.data.hideHud;
 		iconP1.alpha = ClientPrefs.data.healthBarAlpha;
 		uiGroup.add(iconP1);
 
 		iconP2 = new HealthIcon(opponentChar().healthIcon, false);
-		iconP2.y = healthBar.y - 75;
+		if (animatedIcon || opponentChar().animatedIcon) iconP2.changeIcon(iconP2.getCharacter(), true, true);
+		iconP2.y = ClientPrefs.data.iconBounceType == 'Old' ? healthBar.y - (iconP2.height / 2) : healthBar.y - 75;
 		iconP2.visible = !ClientPrefs.data.hideHud;
 		iconP2.alpha = ClientPrefs.data.healthBarAlpha;
 		uiGroup.add(iconP2);
 
-		if(eventsPushed('Add Secondary Icon'))
+		if(eventsPushed.contains('Add Secondary Icon'))
 		{
 			iconGF = new HealthIcon(gf != null ? gf.healthIcon : 'gf', true, false);
-			iconGF.y = healthBar.y - 75;
+			if (animatedIcon || (gf != null && gf.animatedIcon)) iconGF.changeIcon(iconGF.getCharacter(), false, true);
+			iconGF.y = ClientPrefs.data.iconBounceType == 'Old' ? healthBar.y - (iconGF.height / 2) : healthBar.y - 75;
 			iconGF.visible = false;
 			iconGF.alpha = ClientPrefs.data.healthBarAlpha;
 			uiGroup.add(iconGF);
@@ -2542,7 +2546,35 @@ class PlayState extends MusicBeatState
 		}
 	}
 
-	var iconsAnimations:Bool = true;
+	inline function getStaticIconFrame(health:Float, icon:HealthIcon):Int
+	{
+		var count:Int = (icon != null && icon.frames != null && icon.frames.frames != null) ? icon.frames.frames.length : 0;
+		if (health < 0.2) return count > 1 ? 1 : 0;
+		if (health > 0.8 && count > 2) return 2;
+		return 0;
+	}
+
+    var iconsAnimations:Bool = true;
+	function updateIconAnimations():Void
+	{
+		if (!iconsAnimations || healthBar == null || !healthBar.enabled) return;
+
+		var pct:Float = FlxMath.bound(healthBar.percent / 100, 0, 1);
+		var bfHealth:Float = playOpponent ? 1 - pct : pct;
+		var dadHealth:Float = playOpponent ? pct : 1 - pct;
+
+		for (pair in [[iconP1, bfHealth], [iconP2, dadHealth], [iconGF, gfIconSide == 'bf' ? bfHealth : dadHealth]])
+		{
+			var icon:HealthIcon = pair[0];
+			if (icon == null || (icon == iconGF && !icon.visible)) continue;
+
+			if (icon.isAnimated)
+				icon.updateIconState(pair[1]);
+			else if (icon.animation.curAnim != null)
+				icon.animation.curAnim.curFrame = getStaticIconFrame(pair[1], icon);
+		}
+	}
+
 	function set_health(value:Float):Float // You can alter how icon animations work here
 	{
 		value = FlxMath.roundDecimal(value, 5); //Fix Float imprecision
@@ -2557,8 +2589,7 @@ class PlayState extends MusicBeatState
 		var newPercent:Null<Float> = FlxMath.remapToRange(FlxMath.bound(healthBar.valueFunction(), healthBar.bounds.min, healthBar.bounds.max), healthBar.bounds.min, healthBar.bounds.max, 0, 100);
 		healthBar.percent = (newPercent != null ? newPercent : 0);
 
-		iconP1.animation.curAnim.curFrame = (healthBar.percent < 20) ? 1 : 0; //If health is under 20%, change player icon to frame 1 (losing icon), otherwise, frame 0 (normal)
-		iconP2.animation.curAnim.curFrame = (healthBar.percent > 80) ? 1 : 0; //If health is over 80%, change opponent icon to frame 1 (losing icon), otherwise, frame 0 (normal)
+		updateIconAnimations();
 		return health;
 	}
 
@@ -2881,7 +2912,7 @@ class PlayState extends MusicBeatState
 							boyfriend = boyfriendMap.get(value2);
 							boyfriend.alpha = lastAlpha;
 							iconP1.changeIcon(boyfriend.healthIcon);
-							health = health
+							updateIconAnimations();
 						}
 						setOnScripts('boyfriendName', boyfriend.curCharacter);
 
@@ -2904,7 +2935,7 @@ class PlayState extends MusicBeatState
 							}
 							dad.alpha = lastAlpha;
 							iconP2.changeIcon(dad.healthIcon);
-							health = health
+							updateIconAnimations();
 						}
 						setOnScripts('dadName', dad.curCharacter);
 
@@ -2922,7 +2953,7 @@ class PlayState extends MusicBeatState
 								gf = gfMap.get(value2);
 								gf.alpha = lastAlpha;
 								iconGF.changeIcon(gf.healthIcon)
-								health = health
+								updateIconAnimations();
 							}
 							setOnScripts('gfName', gf.curCharacter);
 						}
