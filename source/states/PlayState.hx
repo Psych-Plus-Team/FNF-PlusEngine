@@ -2998,7 +2998,8 @@ class PlayState extends MusicBeatState
 								gf.alpha = 0.00001;
 								gf = gfMap.get(value2);
 								gf.alpha = lastAlpha;
-								iconGF.changeIcon(gf.healthIcon)
+								if(iconGF != null)
+									iconGF.changeIcon(gf.healthIcon);
 								updateIconAnimations();
 							}
 							setOnScripts('gfName', gf.curCharacter);
