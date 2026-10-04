@@ -2749,7 +2749,7 @@ class PlayState extends MusicBeatState
 						opponentVocals.stop();
 						FlxG.sound.music.stop();
 						#if HSCRIPT_ALLOWED
-						openSubState(backend.ScriptableSubstate.tryCreate('GameOverSubstate', new GameOverSubstate(playerChar()));
+						openSubState(backend.ScriptableSubstate.tryCreate('GameOverSubstate', new GameOverSubstate(playerChar())));
 						#else
 						openSubState(new GameOverSubstate(playerChar()));
 						#end
