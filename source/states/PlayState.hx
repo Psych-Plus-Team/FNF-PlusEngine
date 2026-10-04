@@ -2609,7 +2609,13 @@ class PlayState extends MusicBeatState
 		var bfHealth:Float = playOpponent ? 1 - pct : pct;
 		var dadHealth:Float = playOpponent ? pct : 1 - pct;
 
-		for (pair in [[iconP1, bfHealth], [iconP2, dadHealth], [iconGF, gfIconSide == 'bf' ? bfHealth : dadHealth]])
+		var pairs:Array<Dynamic> = [
+			[iconP1, bfHealth],
+			[iconP2, dadHealth],
+			[iconGF, gfIconSide == 'bf' ? bfHealth : dadHealth]
+		];
+
+		for (pair in pairs)
 		{
 			var icon:HealthIcon = pair[0];
 			if (icon == null || (icon == iconGF && !icon.visible)) continue;
