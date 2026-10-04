@@ -19,9 +19,11 @@ class LegacySettingsSubState extends BaseOptionsMenu
 			STRING, ['Plus', 'Psych']);
 		addOption(option);
 
+        #if (cpp && windows)
 		var option:Option = new Option('Instant Window Close', 'If checked, closing the game exits instantly instead of fading the window out.',
 			'instantWindowClose', BOOL);
 		addOption(option);
+		#end
 
 		var option:Option = new Option('Use Psych Freeplay', 'If checked, uses the classic Psych Engine Freeplay state instead of the PlusEngine Freeplay.',
 			'usePsychFreeplay', BOOL);

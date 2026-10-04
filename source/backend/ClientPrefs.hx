@@ -164,7 +164,9 @@ import mobile.backend.PsychJNI;
 	public var showWatermark:Bool = false;
 	public var titleIntroVideo:Bool = true;
 	public var autoPause:Bool = true;
+	#if (cpp && windows)
 	public var instantWindowClose:Bool = true;
+	#end
 	public var menuAccentColor:String = 'Purple';
 	public var menuAccentColorCustom:Int = 0xFF6F52D8;
 	public var menuDarkTheme:Bool = false;
