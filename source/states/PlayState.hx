@@ -36,6 +36,14 @@ import substates.GameOverSubstate;
 import openfl.filters.ShaderFilter;
 #end
 
+#if mobile
+import mobile.backend.MobileScaleMode;
+#end
+
+#if windows
+import slushithings.windows.WindowsAPI;
+#end
+
 import shaders.ErrorHandledShader;
 
 import objects.VideoSprite;
@@ -85,17 +93,45 @@ class PlayState extends MusicBeatState
 	public static var STRUM_X_MIDDLESCROLL = -278;
 
 	public static var ratingStuff:Array<Dynamic> = [
-		['You Suck!', 0.2], //From 0% to 19%
-		['Shit', 0.4], //From 20% to 39%
-		['Bad', 0.5], //From 40% to 49%
-		['Bruh', 0.6], //From 50% to 59%
-		['Meh', 0.69], //From 60% to 68%
-		['Nice', 0.7], //69%
-		['Good', 0.8], //From 70% to 79%
-		['Great', 0.9], //From 80% to 89%
-		['Sick!', 1], //From 90% to 99%
-		['Perfect!!', 1] //The value on this one isn't used actually, since Perfect is always "1"
+		['You Suck!', 0.2],
+		['Shit', 0.4],
+		['Bad', 0.5],
+		['Bruh', 0.6],
+		['Meh', 0.69],
+		['Nice', 0.7],
+		['Good', 0.8],
+		['Great', 0.9],
+		['Sick!', 1],
+		['Perfect!!', 1]
 	];
+
+	public static function getRatingStuff():Array<Dynamic>
+	{
+		var stuff:Array<Dynamic> = [
+			[Language.getPhrase('rating_terrible', 'Terrible'), 0],
+			[Language.getPhrase('rating_you_suck', 'You Suck!'), 0.2],
+			[Language.getPhrase('rating_shit', 'Shit'), 0.4],
+			[Language.getPhrase('rating_bad', 'Bad'), 0.5],
+			[Language.getPhrase('rating_bruh', 'Bruh'), 0.6],
+			[Language.getPhrase('rating_meh', 'Meh'), 0.69],
+			[Language.getPhrase('rating_nice', 'Nice'), 0.7],
+			[Language.getPhrase('rating_good', 'Good'), 0.8],
+			[Language.getPhrase('rating_great', 'Great'), 0.9],
+			[
+				Language.getPhrase('rating_sick', 'Sick!'),
+				ClientPrefs.data.useFlawlessRating ? 0.95 : 1
+			]
+		];
+
+		if (ClientPrefs.data.useFlawlessRating)
+			stuff.push([Language.getPhrase('rating_flawless', 'Flawless!!'), 1]);
+
+		stuff.push([Language.getPhrase('rating_perfect', 'Perfect!!!'), 1.05]);
+		stuff.push([Language.getPhrase('rating_marvelous', 'MARVELOUS!!!!'), 1.10]);
+		stuff.push([Language.getPhrase('rating_legendary', '★ LEGENDARY ★'), 1.15]);
+
+		return stuff;
+	}
 
 	//event variables
 	private var isCameraOnForcedPos:Bool = false;
@@ -184,6 +220,11 @@ class PlayState extends MusicBeatState
 	public var modchartTweens:Map<String, FlxTween> = new Map<String, FlxTween>();
 	public var modchartSprites:Map<String, FlxSprite> = new Map<String, FlxSprite>();
 	public var modchartTexts:Map<String, FlxText> = new Map<String, FlxText>();
+	#end
+
+	#if windows
+	var windowBorderColorTween:flixel.tweens.misc.NumTween;
+	var defaultBorderColor:Array<Int> = [128, 41, 182];
 	#end
 
 	public var camZooming:Bool = false;
@@ -583,12 +624,12 @@ class PlayState extends MusicBeatState
 		timeTxt.alpha = 0;
 		timeTxt.borderSize = 2;
 		timeTxt.visible = updateTime = showTime;
-		if(ClientPrefs.data.downScroll) timeTxt.y = FlxG.height - 44;
+		if(ClientPrefs.data.downScroll) timeTxt.y = getGameplaySafeY() + getGameplaySafeHeight() - 44;
 		if(ClientPrefs.data.timeBarType == 'Song Name') timeTxt.text = SONG.song;
 
 		timeBar = new Bar(0, timeTxt.y + (timeTxt.height / 4), 'timeBar', function() return songPercent, 0, 1);
 		timeBar.scrollFactor.set();
-		timeBar.screenCenter(X);
+		timeBar.x = getGameplaySafeX() + (getGameplaySafeWidth() - timeBar.width) / 2;
 		timeBar.alpha = 0;
 		timeBar.visible = showTime;
 		uiGroup.add(timeBar);
@@ -638,8 +679,8 @@ class PlayState extends MusicBeatState
 		FlxG.worldBounds.set(0, 0, FlxG.width, FlxG.height);
 		moveCameraSection();
 
-		healthBar = new Bar(0, FlxG.height * (!ClientPrefs.data.downScroll ? 0.89 : 0.11), 'healthBar', function() return health, 0, 2);
-		healthBar.screenCenter(X);
+		healthBar = new Bar(0, getGameplaySafeY() + getGameplaySafeHeight() * (!ClientPrefs.data.downScroll ? 0.89 : 0.11), 'healthBar', function() return health, 0, 2);
+		healthBar.x = getGameplaySafeX() + (getGameplaySafeWidth() - healthBar.width) / 2;
 		healthBar.leftToRight = false;
 		healthBar.scrollFactor.set();
 		healthBar.visible = !ClientPrefs.data.hideHud;
@@ -1940,7 +1981,11 @@ class PlayState extends MusicBeatState
 							oldNote.resizeByRatio(curStepCrochet / Conductor.stepCrochet);
 						}
 
-						if (sustainNote.mustPress) sustainNote.x += FlxG.width / 2; // general offset
+						if (sustainNote.mustPress)
+						{
+							sustainNote.x += getGameplaySafeX();
+							sustainNote.x += getGameplaySafeWidth() / 2;
+						}
 						else if(ClientPrefs.data.middleScroll)
 						{
 							sustainNote.x += 310;
@@ -1952,7 +1997,8 @@ class PlayState extends MusicBeatState
 
 				if (swagNote.mustPress)
 				{
-					swagNote.x += FlxG.width / 2; // general offset
+					swagNote.x += getGameplaySafeX();
+					swagNote.x += getGameplaySafeWidth() / 2;
 				}
 				else if(ClientPrefs.data.middleScroll)
 				{
@@ -2050,7 +2096,7 @@ class PlayState extends MusicBeatState
 	private function generateStaticArrows(player:Int):Void
 	{
 		var strumLineX:Float = ClientPrefs.data.middleScroll ? STRUM_X_MIDDLESCROLL : STRUM_X;
-		var strumLineY:Float = ClientPrefs.data.downScroll ? (FlxG.height - 150) : 50;
+		var strumLineY:Float = getGameplaySafeY() + (ClientPrefs.data.downScroll ? (getGameplaySafeHeight() - 150) : 50);
 		for (i in 0...4)
 		{
 			// FlxG.log.add(i);
@@ -3351,7 +3397,7 @@ class PlayState extends MusicBeatState
 						var weekRatingName:String = '';
 						var weekRatingFC:String = '';
 
-						var ratingStuff:Array<Dynamic> = PlayState.ratingStuff;
+						var ratingStuff:Array<Dynamic> = PlayState.getRatingStuff();
 						for (i in 0...ratingStuff.length)
 						{
 							if (weekAccuracy < ratingStuff[i][1])
@@ -3656,6 +3702,42 @@ class PlayState extends MusicBeatState
 	inline function uiAsset(name:String):String
 		return Paths.getUIPath(name);
 
+	inline function getGameplaySafeX():Float
+	{
+		#if mobile
+		return MobileScaleMode.getHorizontalOffset();
+		#else
+		return 0;
+		#end
+	}
+
+	inline function getGameplaySafeY():Float
+	{
+		#if mobile
+		return MobileScaleMode.getVerticalOffset();
+		#else
+		return 0;
+		#end
+	}
+
+	inline function getGameplaySafeWidth():Float
+	{
+		#if mobile
+		return MobileScaleMode.getSafeWidth();
+		#else
+		return FlxG.width;
+		#end
+	}
+
+	inline function getGameplaySafeHeight():Float
+	{
+		#if mobile
+		return MobileScaleMode.getSafeHeight();
+		#else
+		return FlxG.height;
+		#end
+	}
+
 	function initBreakTimerHud():Void
 	{
 		if (!ClientPrefs.data.breakTimer || breakTimerHud != null)
@@ -3855,7 +3937,7 @@ class PlayState extends MusicBeatState
 
 		var placement:Float = FlxG.width * 0.35;
 		var rating:FlxSprite = new FlxSprite();
-		var score:Int = 350;
+		var score:Int = if (ClientPrefs.data.systemScoreMultiplier == 'Codename') 300 else 350;
 
 		//tryna do MS based judgment due to popular demand
 		var daRating:Rating = Conductor.judgeNote(ratingsData, noteDiff);
@@ -4428,6 +4510,11 @@ class PlayState extends MusicBeatState
 
 		note.wasGoodHit = true;
 
+		#if windows
+		if (ClientPrefs.data.changeWindowBorderColorWithNoteHit && !cpuControlled)
+			flashWindowBorder(note);
+		#end
+
 		if(!note.hitCausesMiss) //Common notes
 		{
 			if(!note.noAnimation)
@@ -4523,6 +4610,49 @@ class PlayState extends MusicBeatState
 		if(result != LuaUtils.Function_Stop && result != LuaUtils.Function_StopHScript && result != LuaUtils.Function_StopAll) callOnHScript('goodNoteHit', [note]);
 		if(!note.isSustainNote) invalidateNote(note);
 	}
+
+	#if windows
+	function flashWindowBorder(note:Note):Void
+	{
+		var noteColor:FlxColor = FlxColor.WHITE;
+		var palette:Array<FlxColor> = Note.getNoteColorPalette(note.noteData % 4, isPixelStage);
+		if (palette != null && palette.length > 0)
+			noteColor = palette[0];
+
+		var targetRGB:Array<Int> = [noteColor.red, noteColor.green, noteColor.blue];
+
+		if (windowBorderColorTween != null)
+		{
+			windowBorderColorTween.cancel();
+			windowBorderColorTween = null;
+		}
+
+		windowBorderColorTween = FlxTween.num(0, 1, 0.1, {ease: FlxEase.cubeOut});
+		windowBorderColorTween.onUpdate = function(_)
+		{
+			var t:Float = windowBorderColorTween.value;
+			WindowsAPI.setWindowBorderColor(
+				Std.int(defaultBorderColor[0] + (targetRGB[0] - defaultBorderColor[0]) * t),
+				Std.int(defaultBorderColor[1] + (targetRGB[1] - defaultBorderColor[1]) * t),
+				Std.int(defaultBorderColor[2] + (targetRGB[2] - defaultBorderColor[2]) * t)
+			);
+		};
+		windowBorderColorTween.onComplete = function(_)
+		{
+			windowBorderColorTween = FlxTween.num(0, 1, 0.2, {ease: FlxEase.cubeInOut});
+			windowBorderColorTween.onUpdate = function(_)
+			{
+				var t:Float = windowBorderColorTween.value;
+				WindowsAPI.setWindowBorderColor(
+					Std.int(targetRGB[0] + (defaultBorderColor[0] - targetRGB[0]) * t),
+					Std.int(targetRGB[1] + (defaultBorderColor[1] - targetRGB[1]) * t),
+					Std.int(targetRGB[2] + (defaultBorderColor[2] - targetRGB[2]) * t)
+				);
+			};
+			windowBorderColorTween.onComplete = function(_) windowBorderColorTween = null;
+		};
+	}
+	#end
 
 	public function invalidateNote(note:Note):Void {
 		//if(!ClientPrefs.data.lowQuality || !cpuControlled) note.kill();
@@ -5011,13 +5141,14 @@ class PlayState extends MusicBeatState
 				//trace((totalNotesHit / totalPlayed) + ', Total: ' + totalPlayed + ', notes hit: ' + totalNotesHit);
 
 				// Rating Name
-				ratingName = ratingStuff[ratingStuff.length-1][0]; //Uses last string
-				if(ratingPercent < 1)
-					for (i in 0...ratingStuff.length-1)
-						if(ratingPercent < ratingStuff[i][1])
+				var stuff = getRatingStuff();
+				ratingName = stuff[stuff.length - 1][0];
+				if (ratingPercent < 1)
+					for (i in 0...stuff.length - 1)
+						if (ratingPercent < stuff[i][1]) 
 						{
-							ratingName = ratingStuff[i][0];
-							break;
+							ratingName = stuff[i][0]; 
+							break; 
 						}
 			}
 			fullComboFunction();
