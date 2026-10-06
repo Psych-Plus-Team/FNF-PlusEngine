@@ -294,6 +294,7 @@ class NoteSplash extends FlxSprite
 	public static function clearCache():Void
 	{
 		framesCache.clear();
+		configs.clear();
 	}
 
 	public function spawnSplashNote(?x:Float = 0, ?y:Float = 0, ?noteData:Int = 0, ?note:Note, ?randomize:Bool = true)

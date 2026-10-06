@@ -362,6 +362,7 @@ class PlayState extends MusicBeatState
 	{
 		//trace('Playback Rate: ' + playbackRate);
 		_lastLoadedModDirectory = Mods.currentModDirectory;
+		NoteSplash.clearCache();
 		Paths.clearStoredMemory();
 		if(nextReloadAll)
 		{
@@ -712,7 +713,7 @@ class PlayState extends MusicBeatState
 			var ver = SONG.song + ' (' + Difficulty.getString() + ') - Plus Engine v' + MainMenuState.plusEngineVersion;
 			if(BuildInfo.githubDevBuild && BuildInfo.commit.length > 0)
 				ver += ' #' + BuildInfo.shortCommit();
-			versionText = new FlxText(0, ClientPrefs.data.downScroll ? FlxG.height - 22 : -22, FlxG.width, ver, 14);
+			versionText = new FlxText(0, -22, FlxG.width, ver, 14);
 			versionText.setFormat(Paths.font("vcr.ttf"), 14, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			versionText.scrollFactor.set();
 			versionText.borderSize = 1;
@@ -1052,7 +1053,12 @@ class PlayState extends MusicBeatState
 		var bfColor:FlxColor = FlxColor.fromRGB(boyfriend.healthColorArray[0], boyfriend.healthColorArray[1], boyfriend.healthColorArray[2]);
 		healthBar.setColors(dadColor, bfColor);
 		if(timeBar != null)
-			timeBar.setColors(ClientPrefs.data.shadedTimeBar ? dadColor : FlxColor.WHITE, ClientPrefs.data.shadedTimeBar ? bfColor : FlxColor.BLACK);
+		{
+			if(ClientPrefs.data.shadedTimeBar)
+				timeBar.setGradientColors(bfColor, dadColor);
+			else
+				timeBar.setColors(FlxColor.WHITE, FlxColor.BLACK);
+		}
 	}
 
 	public function addCharacterToList(newCharacter:String, type:Int) {
@@ -1742,7 +1748,7 @@ class PlayState extends MusicBeatState
 		FlxTween.tween(timeTxt, {alpha: 1}, 0.5, {ease: FlxEase.circOut});
 		if (versionText != null)
 		{
-			FlxTween.tween(versionText, {y: ClientPrefs.data.downScroll ? FlxG.height - 22 : 5}, 0.5, {ease: FlxEase.circOut});
+			FlxTween.tween(versionText, {y: 5}, 0.5, {ease: FlxEase.circOut});
 			new FlxTimer().start(5, function(tmr:FlxTimer)
 			{
 				if (versionText != null)
@@ -1772,21 +1778,6 @@ class PlayState extends MusicBeatState
 		timeTween = FlxTween.tween(timeTxt.scale, {x: 1, y: 1}, 0.3 / playbackRate, {
 			ease: FlxEase.expoOut,
 			onComplete: function(twn:FlxTween) timeTween = null
-		});
-	}
-
-	public function doVerBump():Void
-	{
-		if (versionText == null)
-			return;
-
-		if (verTween != null)
-			verTween.cancel();
-
-		versionText.scale.set(1.5, 1.5);
-		verTween = FlxTween.tween(versionText.scale, {x: 1, y: 1}, 0.3 / playbackRate, {
-			ease: FlxEase.expoOut,
-			onComplete: function(twn:FlxTween) verTween = null
 		});
 	}
 
@@ -2331,10 +2322,7 @@ class PlayState extends MusicBeatState
 
 			if(ClientPrefs.data.timeBarType != 'Song Name')
 			{
-				var oldText:String = timeTxt.text;
 				timeTxt.text = FlxStringUtil.formatTime(secondsTotal, false);
-				if (oldText != timeTxt.text)
-					doTimeBump();
 			}
 
 			if (ClientPrefs.data.endCountdown || endCountdownText != null)
@@ -4532,7 +4520,7 @@ class PlayState extends MusicBeatState
 		Note.globalRgbShaders = [];
 		backend.NoteTypesConfig.clearNoteTypesData();
 
-		NoteSplash.configs.clear();
+		NoteSplash.clearCache();
 		instance = null;
 		shutdownThread = true;
 		FlxG.signals.preUpdate.remove(checkForResync);
@@ -4612,7 +4600,19 @@ class PlayState extends MusicBeatState
 		}
 
 		characterBopper(curBeat);
-		doVerBump();
+		doTimeBump();
+
+		if (versionText != null)
+		{
+			if (verTween != null)
+			verTween.cancel();
+
+			versionText.scale.set(1.5, 1.5);
+			verTween = FlxTween.tween(versionText.scale, {x: 1, y: 1}, 0.3 / playbackRate, {
+				ease: FlxEase.expoOut,
+				onComplete: function(twn:FlxTween) verTween = null
+			});
+		}
 
 		super.beatHit();
 		var bopEvery:Int = Math.round(cameraBopFrequency);

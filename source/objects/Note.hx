@@ -232,10 +232,11 @@ class Note extends FlxSprite
 					if (usesClassicColors())
 					{
 						reloadNote('HURTNOTE_assets');
-						noteSplashData.texture = 'HURTnoteSplashes';
 						if (colorSwap != null)
 							resetHSVColorSwap(colorSwap);
 					}
+					if (PlayState.isPixelStage || usesClassicColors())
+						noteSplashData.texture = 'HURTnoteSplashes';
 
 					// note colors
 					if (rgbShader != null)
@@ -248,7 +249,7 @@ class Note extends FlxSprite
 					// splash data and colors
 					noteSplashData.r = 0xFFFF0000;
 					noteSplashData.g = 0xFF101010;
-					if (!usesClassicColors())
+					if (!PlayState.isPixelStage && !usesClassicColors())
 						noteSplashData.texture = 'noteSplashes/noteSplashes-electric';
 
 					// gameplay data

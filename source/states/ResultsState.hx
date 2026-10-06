@@ -432,12 +432,33 @@ class ResultsState extends MusicBeatState
 	{
 		busy = true;
 		fadeOutResultsAudio();
-		var target = boolParam('isWeek') ? () -> new states.StoryMenuState() : () -> states.FreeplayStateSelector.create();
+		var target = boolParam('isWeek') ? () -> new states.StoryMenuState() : () ->
+		{
+			var freeplay = states.FreeplayStateSelector.create();
+			if (Std.isOfType(freeplay, states.FreeplayState_Psych))
+				startPsychFreeplayMusic();
+			return freeplay;
+		};
 		openSubState(new StickerSubState({
 			targetState: _ -> target(),
-			stickerPack: 'default',
+			stickerPack: StickerSubState.randomPack(),
 			playOutOnTarget: true
 		}));
+	}
+
+	function startPsychFreeplayMusic():Void
+	{
+		var menuMusic = Paths.music('freakyMenu');
+		var music = FlxG.sound.music;
+		if (music != null)
+			FlxTween.cancelTweensOf(music);
+		var alreadyPlaying:Bool = music != null && music.playing && @:privateAccess music._sound == menuMusic;
+		if (!alreadyPlaying)
+			FlxG.sound.playMusic(menuMusic);
+		else
+		{
+			music.volume = 1;
+		}
 	}
 
 	function fadeOutResultsAudio():Void
