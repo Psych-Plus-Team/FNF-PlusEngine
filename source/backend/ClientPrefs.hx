@@ -59,6 +59,7 @@ import mobile.backend.PsychJNI;
 	public var badShitBreakCombo:Bool = false; // When true, Bad and Shit will break the combo
 	public var systemScoreMultiplier:String = 'Psych'; // 'Psych', 'Codename'
 	public var useFlawlessRating:Bool = false;
+	public var overAccuracy:Bool = false;
 	public var flawlessWindow:Float = 20.0;
 	public var sickWindow:Float = 45.0;
 	public var goodWindow:Float = 90.0;

@@ -314,6 +314,8 @@ class EsLA
 		"Cambia qué tan tarde/temprano tienes que golpear para un \"¡Sick!\"\nLos valores más altos significan que tienes que golpear más tarde",
 		"setting_flawless_hit_window" => "Ventana de golpe \"Flawless!\"",
 		"description_flawless_hit_window" => "Cambia la cantidad de tiempo que tienes para golpear un \"Flawless!\" en milisegundos.",
+		"setting_over_accuracy" => "Sobrepasar 100% de precisiÃ³n",
+		"description_over_accuracy" => "Si estÃ¡ activado, jugar perfecto puede subir la precisiÃ³n sobre 100%, hasta 200% al terminar la canciÃ³n.",
 		"setting_sick_hit_window" => "Ventana de golpe \"Sick!\"",
 		"description_sick_hit_window" => "Cambia la cantidad de tiempo que tienes para golpear un \"Sick!\" en milisegundos.",
 		"setting_good_hit_window" => "Ventana de golpe \"Good\"",

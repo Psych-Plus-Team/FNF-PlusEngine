@@ -3,6 +3,7 @@ package states;
 import backend.WeekData;
 import backend.Highscore;
 import backend.Song;
+import backend.AccuracyTools;
 import objects.HealthIcon;
 import objects.MusicPlayerPsych;
 import options.GameplayChangersSubstate;
@@ -275,13 +276,6 @@ class FreeplayState_Psych extends MusicBeatState
 		if (Math.abs(lerpRating - intendedRating) <= 0.01)
 			lerpRating = intendedRating;
 
-		var ratingSplit:Array<String> = Std.string(CoolUtil.floorDecimal(lerpRating * 100, 2)).split('.');
-		if (ratingSplit.length < 2) // No decimals, add an empty space
-			ratingSplit.push('');
-
-		while (ratingSplit[1].length < 2) // Less than 2 decimals in it, add decimals then
-			ratingSplit[1] += '0';
-
 		var shiftMult:Int = 1;
 		if ((FlxG.keys.pressed.SHIFT || touchPad.buttonZ.justPressed) && !player.playingMusic)
 			shiftMult = 3;
@@ -296,8 +290,7 @@ class FreeplayState_Psych extends MusicBeatState
 			}
 			#end
 
-			var phraseString:String = Language.getPhrase('personal_best', 'PERSONAL BEST: {1} ({2}%)', [lerpScore, ratingSplit.join('.')]);
-			scoreText.text = (phraseString != null) ? phraseString : 'PERSONAL BEST: ${lerpScore} (${ratingSplit.join('.')}%)';
+			scoreText.text = 'PERSONAL BEST: ${lerpScore} (${AccuracyTools.format(lerpRating)})';
 			positionHighscore();
 
 			if (songs.length > 1)

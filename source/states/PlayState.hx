@@ -6,6 +6,7 @@ import backend.StageData;
 import backend.WeekData;
 import backend.Song;
 import backend.Rating;
+import backend.AccuracyTools;
 
 import flixel.FlxBasic;
 import flixel.FlxObject;
@@ -28,20 +29,20 @@ import states.FreeplayState;
 import states.editors.ChartingState;
 import states.editors.CharacterEditorState;
 import states.play.BreakTimerHud;
+import states.play.HealthIconHud;
+import states.play.HudSafeZone;
+import states.play.NoteSplashHelper;
+import states.play.PlayModes;
+import states.play.RatingNames;
+#if windows
+import states.play.WindowBorderPulse;
+#end
 
 import substates.PauseSubState;
 import substates.GameOverSubstate;
 
 #if !flash
 import openfl.filters.ShaderFilter;
-#end
-
-#if mobile
-import mobile.backend.MobileScaleMode;
-#end
-
-#if windows
-import slushithings.windows.WindowsAPI;
 #end
 
 import shaders.ErrorHandledShader;
@@ -106,32 +107,7 @@ class PlayState extends MusicBeatState
 	];
 
 	public static function getRatingStuff():Array<Dynamic>
-	{
-		var stuff:Array<Dynamic> = [
-			[Language.getPhrase('rating_terrible', 'Terrible'), 0],
-			[Language.getPhrase('rating_you_suck', 'You Suck!'), 0.2],
-			[Language.getPhrase('rating_shit', 'Shit'), 0.4],
-			[Language.getPhrase('rating_bad', 'Bad'), 0.5],
-			[Language.getPhrase('rating_bruh', 'Bruh'), 0.6],
-			[Language.getPhrase('rating_meh', 'Meh'), 0.69],
-			[Language.getPhrase('rating_nice', 'Nice'), 0.7],
-			[Language.getPhrase('rating_good', 'Good'), 0.8],
-			[Language.getPhrase('rating_great', 'Great'), 0.9],
-			[
-				Language.getPhrase('rating_sick', 'Sick!'),
-				ClientPrefs.data.useFlawlessRating ? 0.95 : 1
-			]
-		];
-
-		if (ClientPrefs.data.useFlawlessRating)
-			stuff.push([Language.getPhrase('rating_flawless', 'Flawless!!'), 1]);
-
-		stuff.push([Language.getPhrase('rating_perfect', 'Perfect!!!'), 1.05]);
-		stuff.push([Language.getPhrase('rating_marvelous', 'MARVELOUS!!!!'), 1.10]);
-		stuff.push([Language.getPhrase('rating_legendary', '★ LEGENDARY ★'), 1.15]);
-
-		return stuff;
-	}
+		return RatingNames.list();
 
 	//event variables
 	private var isCameraOnForcedPos:Bool = false;
@@ -222,11 +198,6 @@ class PlayState extends MusicBeatState
 	public var modchartTexts:Map<String, FlxText> = new Map<String, FlxText>();
 	#end
 
-	#if windows
-	var windowBorderColorTween:flixel.tweens.misc.NumTween;
-	var defaultBorderColor:Array<Int> = [128, 41, 182];
-	#end
-
 	public var camZooming:Bool = false;
 	public var camZoomingMult:Float = 1;
 	public var camZoomingDecay:Float = 1;
@@ -274,12 +245,12 @@ class PlayState extends MusicBeatState
 	public var instakillOnMiss:Bool = false;
 	public var cpuControlled:Bool = false;
 	public var practiceMode:Bool = false;
-	public var perfectMode:Bool = false;
-	public var playOpponent:Bool = false;
-	public var noDropPenalty:Bool = false;
-	public var opponentDrain:Bool = false;
-	public var OPPONENT_DRAIN_FLOOR:Float = 0.2;
+	public var perfectMode(get, never):Bool;
+	public var playOpponent(get, never):Bool;
+	public var noDropPenalty(get, never):Bool;
+	public var opponentDrain(get, never):Bool;
 	public var pressMissDamage:Float = 0.05;
+	var modes:PlayModes = new PlayModes();
 
 	public var botplaySine:Float = 0;
 	public var botplayTxt:FlxText;
@@ -290,7 +261,7 @@ class PlayState extends MusicBeatState
 	public var iconP1:HealthIcon;
 	public var iconP2:HealthIcon;
 	public var iconGF:HealthIcon;
-	
+
 	public var camHUD:FlxCamera;
 	public var camGame:FlxCamera;
 	public var camOther:FlxCamera;
@@ -302,6 +273,8 @@ class PlayState extends MusicBeatState
 	public var songMisses:Int = 0;
 	public var maxCombo:Int = 0;
 	public var totalNotes:Int = 0;
+	var bonusLimit:Float = AccuracyTools.BONUS_MAX;
+	var bonusLocked:Bool = false;
 	public var scoreTxt:FlxText;
 	var timeTxt:FlxText;
 	var timeTween:FlxTween;
@@ -422,10 +395,7 @@ class PlayState extends MusicBeatState
 		instakillOnMiss = ClientPrefs.getGameplaySetting('instakill');
 		practiceMode = ClientPrefs.getGameplaySetting('practice');
 		cpuControlled = ClientPrefs.getGameplaySetting('botplay');
-		perfectMode = ClientPrefs.getGameplaySetting('perfect');
-		playOpponent = ClientPrefs.getGameplaySetting('opponentplay');
-		noDropPenalty = ClientPrefs.getGameplaySetting('nodroppenalty');
-		opponentDrain = ClientPrefs.getGameplaySetting('opponentdrain');
+		modes.load();
 		guitarHeroSustains = ClientPrefs.data.guitarHeroSustains;
 		showRating = ClientPrefs.data.showRating;
 		showCombo = ClientPrefs.data.showCombo;
@@ -624,12 +594,12 @@ class PlayState extends MusicBeatState
 		timeTxt.alpha = 0;
 		timeTxt.borderSize = 2;
 		timeTxt.visible = updateTime = showTime;
-		if(ClientPrefs.data.downScroll) timeTxt.y = getGameplaySafeY() + getGameplaySafeHeight() - 44;
+		if(ClientPrefs.data.downScroll) timeTxt.y = HudSafeZone.y() + HudSafeZone.height() - 44;
 		if(ClientPrefs.data.timeBarType == 'Song Name') timeTxt.text = SONG.song;
 
 		timeBar = new Bar(0, timeTxt.y + (timeTxt.height / 4), 'timeBar', function() return songPercent, 0, 1);
 		timeBar.scrollFactor.set();
-		timeBar.x = getGameplaySafeX() + (getGameplaySafeWidth() - timeBar.width) / 2;
+		timeBar.x = HudSafeZone.x() + (HudSafeZone.width() - timeBar.width) / 2;
 		timeBar.alpha = 0;
 		timeBar.visible = showTime;
 		uiGroup.add(timeBar);
@@ -679,8 +649,8 @@ class PlayState extends MusicBeatState
 		FlxG.worldBounds.set(0, 0, FlxG.width, FlxG.height);
 		moveCameraSection();
 
-		healthBar = new Bar(0, getGameplaySafeY() + getGameplaySafeHeight() * (!ClientPrefs.data.downScroll ? 0.89 : 0.11), 'healthBar', function() return health, 0, 2);
-		healthBar.x = getGameplaySafeX() + (getGameplaySafeWidth() - healthBar.width) / 2;
+		healthBar = new Bar(0, HudSafeZone.y() + HudSafeZone.height() * (!ClientPrefs.data.downScroll ? 0.89 : 0.11), 'healthBar', function() return health, 0, 2);
+		healthBar.x = HudSafeZone.x() + (HudSafeZone.width() - healthBar.width) / 2;
 		healthBar.leftToRight = false;
 		healthBar.scrollFactor.set();
 		healthBar.visible = !ClientPrefs.data.hideHud;
@@ -830,18 +800,7 @@ class PlayState extends MusicBeatState
 			mcDebug(0);
 		#end
 
-		var splash:NoteSplash = new NoteSplash();
-		grpNoteSplashes.add(splash);
-		splash.alpha = 0.000001; //cant make it invisible or it won't allow precaching
-
-		if(!ClientPrefs.data.hideSustainSplash && !ClientPrefs.data.lowQuality)
-		{
-			SustainSplash.startCrochet = Conductor.stepCrochet;
-			SustainSplash.frameRate = Math.floor(24 / 100 * SONG.bpm);
-			var sus = new SustainSplash();
-			sus.alpha = 0.000001;
-			grpHoldSplashes.add(sus);
-		}
+		NoteSplashHelper.warmup(this);
 
 		#if !android
 		addTouchPad('NONE', 'P');
@@ -1609,8 +1568,7 @@ class PlayState extends MusicBeatState
 		var str:String = Language.getPhrase('rating_$ratingName', ratingName);
 		if(totalPlayed != 0)
 		{
-			var percent:Float = CoolUtil.floorDecimal(ratingPercent * 100, 2);
-			str += ' (${percent}%) - ' + Language.getPhrase(ratingFC);
+			str += ' (${AccuracyTools.format(ratingPercent)}) - ' + Language.getPhrase(ratingFC);
 		}
 
 		var tempScore:String;
@@ -1630,13 +1588,7 @@ class PlayState extends MusicBeatState
 	}
 
 	function botplayLabel():String
-	{
-		if (perfectMode) return Language.getPhrase("Perfect Mode").toUpperCase();
-		if (playOpponent) return Language.getPhrase("Opponent Mode").toUpperCase();
-		if (cpuControlled) return isBotplayCPU() ? 'BOTPLAY CPU' : 'BOTPLAY';
-		if (practiceMode) return Language.getPhrase("Practice Mode").toUpperCase();
-		return '';
-	}
+		return modes.label(cpuControlled, practiceMode, isBotplayCPU() ? 'BOTPLAY CPU' : 'BOTPLAY');
 
 	function botplayKind():String
 		return CoolUtil.botplayType(ClientPrefs.getGameplaySetting('botplayType', 'Normal'));
@@ -1644,11 +1596,23 @@ class PlayState extends MusicBeatState
 	inline function isBotplayCPU():Bool
 		return cpuControlled && botplayKind() == 'CPU';
 
+	inline function get_perfectMode():Bool
+		return modes.perfect;
+
+	inline function get_playOpponent():Bool
+		return modes.opponent;
+
+	inline function get_noDropPenalty():Bool
+		return modes.noDrop;
+
+	inline function get_opponentDrain():Bool
+		return modes.drain;
+
 	inline function playerChar():Character
-		return playOpponent ? dad : boyfriend;
+		return modes.player(boyfriend, dad);
 
 	inline function opponentChar():Character
-		return playOpponent ? boyfriend : dad;
+		return modes.rival(boyfriend, dad);
 
 	function getTPS():Int
 	{
@@ -1912,7 +1876,7 @@ class PlayState extends MusicBeatState
 					holdLength = 0.0;
 
 				var gottaHitNote:Bool = (songNotes[1] < totalColumns);
-				var mustPress:Bool = playOpponent ? !gottaHitNote : gottaHitNote;
+				var mustPress:Bool = modes.chartHit(gottaHitNote);
 
 				if (i != 0) {
 					// CLEAR ANY POSSIBLE GHOST NOTES
@@ -1937,7 +1901,7 @@ class PlayState extends MusicBeatState
 				var isAlt: Bool = section.altAnim && !gottaHitNote;
 				swagNote.gfNote = (section.gfSection && gottaHitNote == section.mustHitSection);
 				swagNote.animSuffix = isAlt ? "-alt" : "";
-				swagNote.mustPress = gottaHitNote;
+				swagNote.mustPress = mustPress;
 				swagNote.sustainLength = holdLength;
 				swagNote.noteType = noteType;
 
@@ -1983,8 +1947,8 @@ class PlayState extends MusicBeatState
 
 						if (sustainNote.mustPress)
 						{
-							sustainNote.x += getGameplaySafeX();
-							sustainNote.x += getGameplaySafeWidth() / 2;
+							sustainNote.x += HudSafeZone.x();
+							sustainNote.x += HudSafeZone.width() / 2;
 						}
 						else if(ClientPrefs.data.middleScroll)
 						{
@@ -1997,8 +1961,8 @@ class PlayState extends MusicBeatState
 
 				if (swagNote.mustPress)
 				{
-					swagNote.x += getGameplaySafeX();
-					swagNote.x += getGameplaySafeWidth() / 2;
+					swagNote.x += HudSafeZone.x();
+					swagNote.x += HudSafeZone.width() / 2;
 				}
 				else if(ClientPrefs.data.middleScroll)
 				{
@@ -2096,7 +2060,7 @@ class PlayState extends MusicBeatState
 	private function generateStaticArrows(player:Int):Void
 	{
 		var strumLineX:Float = ClientPrefs.data.middleScroll ? STRUM_X_MIDDLESCROLL : STRUM_X;
-		var strumLineY:Float = getGameplaySafeY() + (ClientPrefs.data.downScroll ? (getGameplaySafeHeight() - 150) : 50);
+		var strumLineY:Float = HudSafeZone.y() + (ClientPrefs.data.downScroll ? (HudSafeZone.height() - 150) : 50);
 		for (i in 0...4)
 		{
 			// FlxG.log.add(i);
@@ -2117,8 +2081,7 @@ class PlayState extends MusicBeatState
 			}
 			else babyArrow.alpha = targetAlpha;
 
-			var isPlayerStrum:Bool = playOpponent ? (player == 0) : (player == 1);
-			if (isPlayerStrum)
+			if (modes.playerStrum(player))
 				playerStrums.add(babyArrow);
 			else
 			{
@@ -2518,119 +2481,21 @@ class PlayState extends MusicBeatState
 
 	// Health icon updaters
 	public dynamic function updateIconsScale(elapsed:Float)
-	{
-		switch (ClientPrefs.data.iconBounceType)
-		{
-			case 'Old':
-			{
-				iconP1.setGraphicSize(Std.int(FlxMath.lerp(150, iconP1.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
-				iconP2.setGraphicSize(Std.int(FlxMath.lerp(150, iconP2.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
-				if (iconGF != null)
-					iconGF.setGraphicSize(Std.int(FlxMath.lerp(150, iconGF.width, CoolUtil.boundTo(1 - (elapsed * 30), 0, 1))));
-			}
-
-			case 'NF':
-			{
-				var p1:Float = FlxMath.lerp(1, iconP1.scale.x, FlxMath.bound((1 - (elapsed * 9 * playbackRate)) / 1.1, 0, 1));
-				iconP1.scale.set(p1, p1);
-
-				var p2:Float = FlxMath.lerp(1, iconP2.scale.x, FlxMath.bound((1 - (elapsed * 9 * playbackRate)) / 1.1, 0, 1));
-				iconP2.scale.set(p2, p2);
-
-				if (iconGF != null && iconGF.visible)
-				{
-					var pg:Float = FlxMath.lerp(1, iconGF.scale.x, FlxMath.bound((1 - (elapsed * 9 * playbackRate)) / 1.1, 0, 1));
-					iconGF.scale.set(pg, pg);
-				}
-			}
-
-			default:
-			{
-				var p1:Float = FlxMath.lerp(1, iconP1.scale.x, Math.exp(-elapsed * 9 * playbackRate));
-				iconP1.scale.set(p1, p1);
-
-				var p2:Float = FlxMath.lerp(1, iconP2.scale.x, Math.exp(-elapsed * 9 * playbackRate));
-				iconP2.scale.set(p2, p2);
-
-				if (iconGF != null && iconGF.visible)
-				{
-					var pg:Float = FlxMath.lerp(1, iconGF.scale.x, Math.exp(-elapsed * 9 * playbackRate));
-					iconGF.scale.set(pg, pg);
-				}
-			}
-		}
-
-		iconP1.updateHitbox();
-		iconP2.updateHitbox();
-		if (iconGF != null) iconGF.updateHitbox();
-	}
+		HealthIconHud.scale(elapsed, playbackRate, iconP1, iconP2, iconGF);
 
 	public dynamic function updateIconsPosition()
 	{
-		var iconOffset:Int = 26;
 		var isGFSinging:Bool = (SONG.notes[curSection] != null && SONG.notes[curSection].gfSection);
-
-		if (iconP1 != null)
-			iconP1.x = healthBar.barCenter + (150 * iconP1.scale.x - 150) / 2 - iconOffset;
-		if (iconP2 != null)
-			iconP2.x = healthBar.barCenter - (150 * iconP2.scale.x) / 2 - iconOffset * 2;
-
-		if (iconGF == null || !iconGF.visible)
-			return;
-
-		var swapped:Bool = gfIconSwapOnSing && isGFSinging;
-
-		if (gfIconSide == 'bf')
-		{
-			iconGF.x = healthBar.barCenter + (150 * iconGF.scale.x - 150) / 2 - iconOffset + (swapped ? 0 : 75);
-			if (swapped) iconP1.x += 75;
-		}
-		else if (gfIconSide == 'dad')
-		{
-			iconGF.x = healthBar.barCenter - (150 * iconGF.scale.x) / 2 - iconOffset * 2 - (swapped ? 0 : 75);
-			if (swapped) iconP2.x -= 75;
-		}
+		HealthIconHud.position(healthBar, isGFSinging, gfIconSide, gfIconSwapOnSing, iconP1, iconP2, iconGF);
 	}
 
-	inline function getStaticIconFrame(health:Float, icon:HealthIcon):Int
-	{
-		var count:Int = (icon != null && icon.frames != null && icon.frames.frames != null) ? icon.frames.frames.length : 0;
-		if (health < 0.2) return count > 1 ? 1 : 0;
-		if (health > 0.8 && count > 2) return 2;
-		return 0;
-	}
-
-    var iconsAnimations:Bool = true;
 	function updateIconAnimations():Void
-	{
-		if (!iconsAnimations || healthBar == null || !healthBar.enabled) return;
-
-		var pct:Float = FlxMath.bound(healthBar.percent / 100, 0, 1);
-		var bfHealth:Float = playOpponent ? 1 - pct : pct;
-		var dadHealth:Float = playOpponent ? pct : 1 - pct;
-
-		var pairs:Array<Dynamic> = [
-			[iconP1, bfHealth],
-			[iconP2, dadHealth],
-			[iconGF, gfIconSide == 'bf' ? bfHealth : dadHealth]
-		];
-
-		for (pair in pairs)
-		{
-			var icon:HealthIcon = pair[0];
-			if (icon == null || (icon == iconGF && !icon.visible)) continue;
-
-			if (icon.isAnimated)
-				icon.updateIconState(pair[1]);
-			else if (icon.animation.curAnim != null)
-				icon.animation.curAnim.curFrame = getStaticIconFrame(pair[1], icon);
-		}
-	}
+		HealthIconHud.frames(healthBar, playOpponent, gfIconSide, iconP1, iconP2, iconGF);
 
 	function set_health(value:Float):Float // You can alter how icon animations work here
 	{
 		value = FlxMath.roundDecimal(value, 5); //Fix Float imprecision
-		if(!iconsAnimations || healthBar == null || !healthBar.enabled || healthBar.valueFunction == null)
+		if(healthBar == null || !healthBar.enabled || healthBar.valueFunction == null)
 		{
 			health = value;
 			return health;
@@ -3709,42 +3574,6 @@ class PlayState extends MusicBeatState
 	inline function uiAsset(name:String):String
 		return Paths.getUIPath(name);
 
-	inline function getGameplaySafeX():Float
-	{
-		#if mobile
-		return MobileScaleMode.getHorizontalOffset();
-		#else
-		return 0;
-		#end
-	}
-
-	inline function getGameplaySafeY():Float
-	{
-		#if mobile
-		return MobileScaleMode.getVerticalOffset();
-		#else
-		return 0;
-		#end
-	}
-
-	inline function getGameplaySafeWidth():Float
-	{
-		#if mobile
-		return MobileScaleMode.getSafeWidth();
-		#else
-		return FlxG.width;
-		#end
-	}
-
-	inline function getGameplaySafeHeight():Float
-	{
-		#if mobile
-		return MobileScaleMode.getSafeHeight();
-		#else
-		return FlxG.height;
-		#end
-	}
-
 	function initBreakTimerHud():Void
 	{
 		if (!ClientPrefs.data.breakTimer || breakTimerHud != null)
@@ -3962,12 +3791,14 @@ class PlayState extends MusicBeatState
 			songScore += score;
 			if(!note.ratingDisabled)
 			{
+				if (!perfectBonusHit(daRating.name))
+					lockAccuracyBonus();
 				songHits++;
 				totalPlayed++;
 				hitTimes.push(Conductor.songPosition);
 				RecalculateRating(false);
 
-				if (perfectMode && !practiceMode && daRating.name != 'sick')
+				if (perfectMode && !practiceMode && !perfectBonusHit(daRating.name))
 					doDeathCheck(true);
 			}
 			if (ClientPrefs.data.badShitBreakCombo && (daRating.name == 'bad' || daRating.name == 'shit'))
@@ -4421,6 +4252,7 @@ class PlayState extends MusicBeatState
 
 		health -= subtract * healthLoss;
 		songScore -= 10;
+		lockAccuracyBonus();
 		if(!endingSong) songMisses++;
 		totalPlayed++;
 		RecalculateRating(true);
@@ -4486,8 +4318,8 @@ class PlayState extends MusicBeatState
 		if(opponentVocals.length <= 0) vocals.volume = 1;
 		strumPlayAnim(true, Std.int(Math.abs(note.noteData)), Conductor.stepCrochet * 1.25 / 1000 / playbackRate);
 		note.hitByOpponent = true;
-		if (opponentDrain && !note.isSustainNote && !practiceMode && health > OPPONENT_DRAIN_FLOOR)
-			health = Math.max(OPPONENT_DRAIN_FLOOR, health - note.hitHealth * healthLoss);
+		if (opponentDrain && !note.isSustainNote && !practiceMode && health > PlayModes.DRAIN_FLOOR)
+			health = Math.max(PlayModes.DRAIN_FLOOR, health - note.hitHealth * healthLoss);
 
 		stagesFunc(function(stage:BaseStage) stage.opponentNoteHit(note));
 		var result:Dynamic = callOnLuas('opponentNoteHit', [notes.members.indexOf(note), Math.abs(note.noteData), note.noteType, note.isSustainNote]);
@@ -4519,7 +4351,7 @@ class PlayState extends MusicBeatState
 
 		#if windows
 		if (ClientPrefs.data.changeWindowBorderColorWithNoteHit && !cpuControlled)
-			flashWindowBorder(note);
+			WindowBorderPulse.hit(note);
 		#end
 
 		if(!note.hitCausesMiss) //Common notes
@@ -4618,49 +4450,6 @@ class PlayState extends MusicBeatState
 		if(!note.isSustainNote) invalidateNote(note);
 	}
 
-	#if windows
-	function flashWindowBorder(note:Note):Void
-	{
-		var noteColor:FlxColor = FlxColor.WHITE;
-		var palette:Array<FlxColor> = Note.getNoteColorPalette(note.noteData % 4, isPixelStage);
-		if (palette != null && palette.length > 0)
-			noteColor = palette[0];
-
-		var targetRGB:Array<Int> = [noteColor.red, noteColor.green, noteColor.blue];
-
-		if (windowBorderColorTween != null)
-		{
-			windowBorderColorTween.cancel();
-			windowBorderColorTween = null;
-		}
-
-		windowBorderColorTween = FlxTween.num(0, 1, 0.1, {ease: FlxEase.cubeOut});
-		windowBorderColorTween.onUpdate = function(_)
-		{
-			var t:Float = windowBorderColorTween.value;
-			WindowsAPI.setWindowBorderColor(
-				Std.int(defaultBorderColor[0] + (targetRGB[0] - defaultBorderColor[0]) * t),
-				Std.int(defaultBorderColor[1] + (targetRGB[1] - defaultBorderColor[1]) * t),
-				Std.int(defaultBorderColor[2] + (targetRGB[2] - defaultBorderColor[2]) * t)
-			);
-		};
-		windowBorderColorTween.onComplete = function(_)
-		{
-			windowBorderColorTween = FlxTween.num(0, 1, 0.2, {ease: FlxEase.cubeInOut});
-			windowBorderColorTween.onUpdate = function(_)
-			{
-				var t:Float = windowBorderColorTween.value;
-				WindowsAPI.setWindowBorderColor(
-					Std.int(targetRGB[0] + (defaultBorderColor[0] - targetRGB[0]) * t),
-					Std.int(targetRGB[1] + (defaultBorderColor[1] - targetRGB[1]) * t),
-					Std.int(targetRGB[2] + (defaultBorderColor[2] - targetRGB[2]) * t)
-				);
-			};
-			windowBorderColorTween.onComplete = function(_) windowBorderColorTween = null;
-		};
-	}
-	#end
-
 	public function invalidateNote(note:Note):Void {
 		//if(!ClientPrefs.data.lowQuality || !cpuControlled) note.kill();
 		notes.remove(note, true);
@@ -4668,18 +4457,11 @@ class PlayState extends MusicBeatState
 	}
 
 	public function spawnNoteSplashOnNote(note:Note) {
-		if(note != null) {
-			var strum:StrumNote = playerStrums.members[note.noteData];
-			if(strum != null)
-				spawnNoteSplash(strum.x, strum.y, note.noteData, note, strum);
-		}
+		NoteSplashHelper.spawnOnNote(this, note);
 	}
 
 	public function spawnNoteSplash(x:Float = 0, y:Float = 0, ?data:Int = 0, ?note:Note, ?strum:StrumNote) {
-		var splash:NoteSplash = grpNoteSplashes.recycle(NoteSplash);
-		splash.babyArrow = strum;
-		splash.spawnSplashNote(x, y, data, note);
-		grpNoteSplashes.add(splash);
+		NoteSplashHelper.spawn(this, x, y, data, note, strum);
 	}
 
 	override function destroy() {
@@ -5122,6 +4904,19 @@ class PlayState extends MusicBeatState
 	public var ratingPercent:Float;
 	public var ratingFC:String;
 	var lastScoreRefreshTime:Float = -9999;
+
+	inline function perfectBonusHit(name:String):Bool
+		return ClientPrefs.data.useFlawlessRating ? name == 'flawless' : name == 'sick';
+
+	function lockAccuracyBonus():Void
+	{
+		if (bonusLocked)
+			return;
+
+		bonusLocked = true;
+		bonusLimit = AccuracyTools.progress(totalPlayed, totalNotes);
+	}
+
 	public function RecalculateRating(badHit:Bool = false, scoreBop:Bool = true) {
 		#if android
 		var refreshScore:Bool = badHit || (Conductor.songPosition - lastScoreRefreshTime) >= 50;
@@ -5144,19 +4939,18 @@ class PlayState extends MusicBeatState
 			if(totalPlayed != 0) //Prevent divide by 0
 			{
 				// Rating Percent
-				ratingPercent = Math.min(1, Math.max(0, totalNotesHit / totalPlayed));
+				ratingPercent = AccuracyTools.withBonus(totalNotesHit / totalPlayed, totalPlayed, totalNotes, bonusLimit);
 				//trace((totalNotesHit / totalPlayed) + ', Total: ' + totalPlayed + ', notes hit: ' + totalNotesHit);
 
 				// Rating Name
 				var stuff = getRatingStuff();
 				ratingName = stuff[stuff.length - 1][0];
-				if (ratingPercent < 1)
-					for (i in 0...stuff.length - 1)
-						if (ratingPercent < stuff[i][1]) 
-						{
-							ratingName = stuff[i][0]; 
-							break; 
-						}
+				for (i in 0...stuff.length - 1)
+					if (ratingPercent < stuff[i][1])
+					{
+						ratingName = stuff[i][0];
+						break;
+					}
 			}
 			fullComboFunction();
 		}

@@ -355,6 +355,8 @@ class EnUS
 		"description_rating_offset" => "Changes how late/early you have to hit for a \"Sick!\"\nHigher values mean you have to hit later.",
 		"setting_use_flawless_rating" => "Use Flawless Rating",
 		"description_use_flawless_rating" => "If checked, adds a tighter \"Flawless!!\" judgement above Sick.",
+		"setting_over_accuracy" => "Over Accuracy",
+		"description_over_accuracy" => "If checked, perfect play can push accuracy past 100%, up to 200% by the end of the song.",
 		"setting_flawless_hit_window" => "flawless! Hit Window",
 		"description_flawless_hit_window" => "Changes how much time you have to hit a flawless! in milliseconds.",
 		"setting_sick_hit_window" => "Sick! Hit Window",

@@ -5,6 +5,7 @@ import backend.AssetLoader;
 import backend.WeekData;
 import backend.Highscore;
 import backend.Song;
+import backend.AccuracyTools;
 import objects.HealthIcon;
 import objects.MusicPlayer;
 import options.GameplayChangersSubstate;
@@ -142,10 +143,6 @@ class FreeplayState extends MusicBeatState
 	public var lastThemeSignature:String = "";
 
 	// Opponent Mode toggle
-	public static var viewingOpponentScores:Bool = false;
-
-	public var opponentModeText:FlxText;
-
 	// Variables para el zoom del bg
 	public var bgZoom:Float = 1;
 	public var defaultBgZoom:Float = 1;
@@ -644,12 +641,6 @@ class FreeplayState extends MusicBeatState
 		createSongInfoCard();
 
 		// Opponent Mode indicator
-		opponentModeText = new FlxText(FlxG.width * 0.68, 5, 0, "", 20);
-		opponentModeText.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.YELLOW, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		opponentModeText.borderSize = 1.5;
-		opponentModeText.visible = false;
-		add(opponentModeText);
-
 		missingTextCardY = Math.max(90, (FlxG.height * 0.5) - 120);
 		missingTextBG = new FlxSprite(missingTextHiddenX, missingTextCardY);
 		MD3ShapeTools.fillAndStrokeRoundRect(missingTextBG, 430, 220, 24, 3, OptionsMenuTheme.cardFill(false), OptionsMenuTheme.cardStroke(true));
@@ -790,7 +781,7 @@ class FreeplayState extends MusicBeatState
 
 	function updateMissingCardLayout(message:String):Void
 	{
-		final displayText = 'No chart is available for this difficulty.';
+		final displayText = (message != null && message.length > 0) ? message : 'No chart is available for this difficulty.';
 		missingText.text = displayText;
 		missingText.wordWrap = false;
 		if (missingText.textField != null)
@@ -843,6 +834,28 @@ class FreeplayState extends MusicBeatState
 	{
 		songs.push(new SongMetadata(songName, weekNum, songCharacter, color));
 	}
+
+	function getChartPlayError(song:SwagSong):String
+	{
+		if (song == null)
+			return 'No chart is available for this difficulty!';
+		if (song.notes == null || song.notes.length == 0)
+			return 'No chart is available for this difficulty!';
+		if (!isValidBpm(song.bpm))
+			return 'This chart has an invalid BPM, so it cannot be played.';
+
+		for (section in song.notes)
+		{
+			if (section == null)
+				continue;
+			if (section.changeBPM == true && !isValidBpm(section.bpm))
+				return 'This chart has an invalid BPM, so it cannot be played.';
+		}
+		return null;
+	}
+
+	inline function isValidBpm(value:Null<Float>):Bool
+		return value != null && !Math.isNaN(value) && value > 0;
 
 	function songMatchesFilter(song:SongMetadata, queryLower:String):Bool
 	{
@@ -1199,18 +1212,6 @@ class FreeplayState extends MusicBeatState
 		if (Math.abs(lerpRating - intendedRating) <= 0.01)
 			lerpRating = intendedRating;
 
-		var ratingPercent:Float = CoolUtil.floorDecimal(lerpRating * 100, 2);
-		var ratingSplit:Array<String> = Std.string(Math.abs(ratingPercent)).split('.');
-		if (ratingSplit.length < 2) // No decimals, add an empty space
-			ratingSplit.push('');
-
-		while (ratingSplit[1].length < 2) // Less than 2 decimals in it, add decimals then
-			ratingSplit[1] += '0';
-
-		var ratingDisplay:String = ratingSplit.join('.');
-		if (ratingPercent < 0)
-			ratingDisplay = '-' + ratingDisplay;
-
 		var shiftMult:Int = 1;
 		if ((FlxG.keys.pressed.SHIFT || touchZ) && !player.playingMusic)
 			shiftMult = 3;
@@ -1278,33 +1279,6 @@ class FreeplayState extends MusicBeatState
 					changeDifficultySelection(1);
 				}
 			}
-		}
-
-		// Toggle between normal and opponent mode scores
-		if (!searchFocused && FlxG.keys.justPressed.TAB && !player.playingMusic)
-		{
-			viewingOpponentScores = !viewingOpponentScores;
-			FlxG.sound.play(Paths.sound('scrollMenu'));
-
-			// Update scores with new mode
-			#if !switch
-			intendedScore = Highscore.getScore(songs[curSelected].songName, curDifficulty, viewingOpponentScores);
-			intendedRating = Highscore.getRating(songs[curSelected].songName, curDifficulty, viewingOpponentScores);
-			#end
-
-			// Update UI
-			if (viewingOpponentScores)
-			{
-				opponentModeText.text = "[OPPONENT MODE]";
-				opponentModeText.visible = true;
-			}
-			else
-			{
-				opponentModeText.visible = false;
-			}
-
-			if (songInfoCardData != null)
-				applySongInfoCardData(songInfoCardData);
 		}
 
 		if (!searchFocused && FlxG.keys.justPressed.B && !player.playingMusic && searchField != null)
@@ -1378,9 +1352,11 @@ class FreeplayState extends MusicBeatState
 
 				var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
 				Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase());
-				if (PlayState.SONG == null)
+				var chartError:String = getChartPlayError(PlayState.SONG);
+				if (chartError != null)
 				{
-					showMissingCard('No chart is available for this difficulty!');
+					showMissingCard(chartError);
+					FlxG.sound.play(Paths.sound('cancelMenu'));
 					return;
 				}
 				if (PlayState.SONG.needsVoices)
@@ -1468,20 +1444,20 @@ class FreeplayState extends MusicBeatState
 				try
 				{
 					Song.loadFromJson(poop, songLowercase);
-					if (PlayState.SONG == null)
-						throw 'Chart failed to load: $poop';
+					var chartError:String = getChartPlayError(PlayState.SONG);
+					if (chartError != null)
+						throw chartError;
 				}
-				catch (e:haxe.Exception)
+				catch (e:Dynamic)
 				{
-					trace('ERROR! ${e.message}');
+					trace('ERROR! $e');
 
-					var errorStr:String = e.message;
+					var errorStr:String = Std.string(e);
 					if (errorStr.contains('There is no TEXT asset with an ID of')
 						|| errorStr.contains('Invalid difficulty index')
-						|| errorStr.contains('chart file not found'))
+						|| errorStr.contains('chart file not found')
+						|| errorStr.contains('Chart failed to load'))
 						errorStr = 'No chart is available for this difficulty!';
-					else
-						errorStr += '\n\n' + e.stack;
 
 					showMissingCard(errorStr);
 					FlxG.sound.play(Paths.sound('cancelMenu'));
@@ -1562,8 +1538,8 @@ class FreeplayState extends MusicBeatState
 
 		curDifficulty = FlxMath.wrap(curDifficulty + change, 0, Difficulty.list.length - 1);
 		#if !switch
-		intendedScore = Highscore.getScore(songs[curSelected].songName, curDifficulty, viewingOpponentScores);
-		intendedRating = Highscore.getRating(songs[curSelected].songName, curDifficulty, viewingOpponentScores);
+		intendedScore = Highscore.getScore(songs[curSelected].songName, curDifficulty);
+		intendedRating = Highscore.getRating(songs[curSelected].songName, curDifficulty);
 		#end
 
 		lastDifficultyName = Difficulty.getString(curDifficulty, false);
@@ -1614,8 +1590,8 @@ class FreeplayState extends MusicBeatState
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
 
 		#if !switch
-		intendedScore = Highscore.getScore(songs[curSelected].songName, difficultySelector.curSelected, viewingOpponentScores);
-		intendedRating = Highscore.getRating(songs[curSelected].songName, difficultySelector.curSelected, viewingOpponentScores);
+		intendedScore = Highscore.getScore(songs[curSelected].songName, difficultySelector.curSelected);
+		intendedRating = Highscore.getRating(songs[curSelected].songName, difficultySelector.curSelected);
 		#end
 
 		// Actualizar textos de score cuando cambia la selección
@@ -2108,8 +2084,9 @@ class FreeplayState extends MusicBeatState
 			for (i in 0...diffList.length)
 			{
 				var diffName:String = diffList[i];
-				var score:Int = Highscore.getScore(data.songName, i, viewingOpponentScores);
-				scoreLines.push('${diffName}: ${score}');
+				var score:Int = Highscore.getScore(data.songName, i);
+				var accuracy:Float = Highscore.getRating(data.songName, i);
+				scoreLines.push('${diffName}: ${score} (${AccuracyTools.format(accuracy)})');
 			}
 			songInfoCardScores.text = 'Diff and Scores:\n' + scoreLines.join('\n');
 		}
@@ -3565,27 +3542,12 @@ class DifficultySelector
 			#if !switch
 			var score:Int = 0;
 			var accuracy:Float = 0;
-			score = Highscore.getScore(songName, diffIndex, FreeplayState.viewingOpponentScores);
-			accuracy = Highscore.getRating(songName, diffIndex, FreeplayState.viewingOpponentScores);
-
-			var accPercent:String = '';
-			if (accuracy > 0)
-			{
-				var ratingSplit:Array<String> = Std.string(CoolUtil.floorDecimal(accuracy * 100, 2)).split('.');
-				if (ratingSplit.length < 2)
-					ratingSplit.push('');
-				while (ratingSplit[1].length < 2)
-					ratingSplit[1] += '0';
-				accPercent = ratingSplit.join('.');
-			}
-			else
-			{
-				accPercent = '0.00';
-			}
+			score = Highscore.getScore(songName, diffIndex);
+			accuracy = Highscore.getRating(songName, diffIndex);
 
 			if (score > 0)
 			{
-				scoreText.text = Language.getPhrase('new_personal_best', 'Score: {1}\nAccuracy: {2}%', [score, accPercent]);
+				scoreText.text = 'Score: ${score}\nAccuracy: ${AccuracyTools.format(accuracy)}';
 			}
 			else
 			{
