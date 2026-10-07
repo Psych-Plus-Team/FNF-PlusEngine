@@ -256,11 +256,11 @@ class FPSCounter extends Sprite
 		{
 			setBox(index++,
 				Std.string(currentFPS)
-				+ ' FPS\nDelay: '
+				+ ' FPS - Delay: '
 				+ formatFloat(frameTimeMs, 1)
 				+ ' / '
 				+ formatFloat(avgFrameTimeMs, 1)
-				+ ' ms\nGC: '
+				+ ' ms - GC: '
 				+ currentMemoryStr
 				+ ' / '
 				+ peakMemoryStr,
