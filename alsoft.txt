@@ -5,7 +5,7 @@ stereo-encoding=basic
 cf_level=0
 resampler=fast_bsinc24
 front-stablizer=false
-output-limiter=false
+output-limiter=true
 volume-adjust=0
 [decoder]
 hq-mode=false

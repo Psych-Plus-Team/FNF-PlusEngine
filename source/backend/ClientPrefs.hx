@@ -80,6 +80,7 @@ import mobile.backend.PsychJNI;
 		// oh yeah when you calculate the bps divide it by the songSpeed or rate because it wont scroll correctly when speeds exist.
 		// -kade
 		'songspeed' => 1.0,
+		'preservepitch' => false,
 		'healthgain' => 1.0,
 		'healthloss' => 1.0,
 		'instakill' => false,

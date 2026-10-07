@@ -33,14 +33,17 @@ using StringTools;
 	}
 
 	@:pure
-	inline public static function resolveCameras(playfield:modchart.engine.PlayField, item:FlxSprite):Array<FlxCamera> {
+	inline public static function resolveCameras(playfield:modchart.engine.PlayField, item:FlxSprite, ?filtered:Array<FlxCamera>):Array<FlxCamera> {
 		@:privateAccess
 		var playfieldCameras = playfield._cameras;
 
 		@:privateAccess
 		var cameras = item._cameras;
 
-		var filtered:Array<FlxCamera> = [];
+		if (filtered == null)
+			filtered = [];
+		else
+			filtered.resize(0);
 		if (cameras != null)
 		{
 			for (camera in cameras)

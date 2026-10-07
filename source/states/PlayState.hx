@@ -7,6 +7,7 @@ import backend.WeekData;
 import backend.Song;
 import backend.Rating;
 import backend.AccuracyTools;
+import backend.AudioTempo;
 
 import flixel.FlxBasic;
 import flixel.FlxObject;
@@ -215,6 +216,7 @@ class PlayState extends MusicBeatState
 	var mcDbgSamples:Int = 0;
 	var mcDbgFps:Float = 0;
 	var mcDbgTick:Float = 0;
+	var mcDbgRenderer:String = 'OpenFL - OpenGL Unknown';
 	var mcInitCb:Void->Void = null;
 	var mcInitDone:Bool = false;
 	#end
@@ -910,6 +912,7 @@ class PlayState extends MusicBeatState
 			mcDbgTxt.alpha = 0.7;
 			mcDbgTxt.wordWrap = false;
 			mcDbgTxt.cameras = [camOther];
+			mcDbgRenderer = 'OpenFL - ${backend.Native.getOpenGLLabel()} [${backend.GLCapabilities.tierLabel()}]';
 			add(mcDbgTxt);
 		}
 
@@ -946,7 +949,7 @@ class PlayState extends MusicBeatState
 			+ '\nVerts ${stats.dbgVertices} | Draws ${drawsPerFrame} (${drawsPerSecond}/s)'
 			+ '\nHolds ${stats.dbgHoldCmds}/${stats.dbgActiveHolds} | Paths ${stats.dbgPathCmds}'
 			+ '\nEmit ${fmt(stats.dbgEmitMs, 2)} ms | Subdiv ${stats.dbgHoldSubdivisions} | Q ${fmt(stats.dbgPathQuality, 2)}'
-			+ '\nGC ${memoryText} | OpenFL';
+			+ '\nGC ${memoryText} | ${mcDbgRenderer}';
 		mcDbgTxt.x = FlxG.width - mcDbgTxt.width - 10;
 		mcDbgTxt.y = 10;
 	}
@@ -1000,9 +1003,10 @@ class PlayState extends MusicBeatState
 		#if FLX_PITCH
 		if(generatedMusic)
 		{
-			vocals.pitch = value;
-			opponentVocals.pitch = value;
-			FlxG.sound.music.pitch = value;
+			var preservePitch:Bool = ClientPrefs.getGameplaySetting('preservepitch', false);
+			AudioTempo.apply(vocals, value, preservePitch);
+			AudioTempo.apply(opponentVocals, value, preservePitch);
+			AudioTempo.apply(FlxG.sound.music, value, preservePitch);
 
 			var ratio:Float = playbackRate / value; //funny word huh
 			if(ratio != 1)
@@ -1023,6 +1027,11 @@ class PlayState extends MusicBeatState
 		playbackRate = 1.0; // ensuring -Crow
 		#end
 		return playbackRate;
+	}
+
+	inline function applyAudioRate(sound:FlxSound):Void
+	{
+		AudioTempo.apply(sound, playbackRate, ClientPrefs.getGameplaySetting('preservepitch', false));
 	}
 
 	#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
@@ -1689,22 +1698,22 @@ class PlayState extends MusicBeatState
 		opponentVocals.pause();
 
 		FlxG.sound.music.time = time - Conductor.offset;
-		#if FLX_PITCH FlxG.sound.music.pitch = playbackRate; #end
 		FlxG.sound.music.play();
+		#if FLX_PITCH applyAudioRate(FlxG.sound.music); #end
 
 		if (Conductor.songPosition < vocals.length)
 		{
 			vocals.time = time - Conductor.offset;
-			#if FLX_PITCH vocals.pitch = playbackRate; #end
 			vocals.play();
+			#if FLX_PITCH applyAudioRate(vocals); #end
 		}
 		else vocals.pause();
 
 		if (Conductor.songPosition < opponentVocals.length)
 		{
 			opponentVocals.time = time - Conductor.offset;
-			#if FLX_PITCH opponentVocals.pitch = playbackRate; #end
 			opponentVocals.play();
+			#if FLX_PITCH applyAudioRate(opponentVocals); #end
 		}
 		else opponentVocals.pause();
 		Conductor.songPosition = time;
@@ -1725,7 +1734,7 @@ class PlayState extends MusicBeatState
 
 		@:privateAccess
 		FlxG.sound.playMusic(inst._sound, 1, false);
-		#if FLX_PITCH FlxG.sound.music.pitch = playbackRate; #end
+		#if FLX_PITCH applyAudioRate(FlxG.sound.music); #end
 		FlxG.sound.music.onComplete = finishSong.bind();
 		vocals.play();
 		opponentVocals.play();
@@ -1819,8 +1828,8 @@ class PlayState extends MusicBeatState
 		catch (e:Dynamic) {}
 
 		#if FLX_PITCH
-		vocals.pitch = playbackRate;
-		opponentVocals.pitch = playbackRate;
+		applyAudioRate(vocals);
+		applyAudioRate(opponentVocals);
 		#end
 		FlxG.sound.list.add(vocals);
 		FlxG.sound.list.add(opponentVocals);
@@ -2178,7 +2187,7 @@ class PlayState extends MusicBeatState
 		trace('resynced vocals at ' + Math.floor(Conductor.songPosition));
 
 		FlxG.sound.music.play();
-		#if FLX_PITCH FlxG.sound.music.pitch = playbackRate; #end
+		#if FLX_PITCH applyAudioRate(FlxG.sound.music); #end
 		Conductor.songPosition = FlxG.sound.music.time + Conductor.offset;
 
 		var checkVocals = [vocals, opponentVocals];
@@ -2187,7 +2196,7 @@ class PlayState extends MusicBeatState
 			if (FlxG.sound.music.time < vocals.length)
 			{
 				voc.time = FlxG.sound.music.time;
-				#if FLX_PITCH voc.pitch = playbackRate; #end
+				#if FLX_PITCH applyAudioRate(voc); #end
 				voc.play();
 			}
 			else voc.pause();
@@ -2223,6 +2232,7 @@ class PlayState extends MusicBeatState
 	public var paused:Bool = false;
 	public var resumingWithCountdown:Bool = false;
 	public var canReset:Bool = true;
+	var audioRecoveryPending:Bool = false;
 	var startedCountdown:Bool = false;
 	var canPause:Bool = true;
 	var freezeCamera:Bool = false;
@@ -2247,6 +2257,11 @@ class PlayState extends MusicBeatState
 		callOnScripts('onUpdate', [elapsed]);
 
 		super.update(elapsed);
+		if (audioRecoveryPending && startedCountdown && !startingSong && !endingSong && !paused && FlxG.sound.music != null)
+		{
+			audioRecoveryPending = false;
+			setSongTime(Math.max(0, Conductor.songPosition));
+		}
 
 		#if android
 		updateAndroidComboSprites(elapsed);
@@ -2465,6 +2480,11 @@ class PlayState extends MusicBeatState
 
 		setOnScripts('botPlay', cpuControlled);
 		callOnScripts('onUpdatePost', [elapsed]);
+	}
+
+	override function onAudioDeviceReopened():Void
+	{
+		audioRecoveryPending = true;
 	}
 
 	// Health icon updaters

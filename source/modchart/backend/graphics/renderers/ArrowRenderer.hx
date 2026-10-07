@@ -17,6 +17,31 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 	// Pre-allocated members to avoid per-call heap allocations
 	final _planeVerts:NativeVector<Float> = new NativeVector<Float>(8);
 	final _projZ:NativeVector<Float> = new NativeVector<Float>(4);
+	final _arrowData:ArrowData = {
+		hitTime: 0,
+		distance: 0,
+		sourceTime: 0,
+		lane: 0,
+		player: 0,
+		isTapArrow: true,
+		isHoldBody: false
+	};
+	final _orientInput:Vector3 = new Vector3();
+	var _slots:Array<ArrowRenderSlot> = [];
+	var _slotIndex:Int = 0;
+
+	/** Reuses command and geometry storage after the previous frame was submitted. */
+	public inline function beginFrame():Void
+	{
+		_slotIndex = 0;
+	}
+
+	inline function nextSlot():ArrowRenderSlot
+	{
+		if (_slotIndex >= _slots.length)
+			_slots.push(new ArrowRenderSlot());
+		return _slots[_slotIndex++];
+	}
 
 	// Arrow quad indices are always [0,1,2, 1,3,2] — share one instance across all DrawCommands
 	static final _sharedArrowIdx:openfl.Vector<Int> = {
@@ -77,15 +102,14 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 			arrowTime = songPos + (FlxG.height * 0.25 * centered2);
 			arrowDiff = arrowTime - songPos;
 		}
-		var arrowData:ArrowData = {
-			hitTime: arrowTime,
-			distance: arrowDiff,
-			sourceTime: sourceTime,
-			lane: Adapter.instance.getLaneFromArrow(arrow),
-			player: player,
-			isTapArrow: Adapter.instance.isTapNote(arrow),
-			isHoldBody: false
-		};
+		final arrowData = _arrowData;
+		arrowData.hitTime = arrowTime;
+		arrowData.distance = arrowDiff;
+		arrowData.sourceTime = sourceTime;
+		arrowData.lane = Adapter.instance.getLaneFromArrow(arrow);
+		arrowData.player = player;
+		arrowData.isTapArrow = Adapter.instance.isTapNote(arrow);
+		arrowData.isHoldBody = false;
 
 		arrowPosition.setTo(Adapter.instance.getDefaultReceptorX(arrowData.lane, arrowData.player) + Manager.ARROW_SIZEDIV2,
 			Adapter.instance.getDefaultReceptorY(arrowData.lane, arrowData.player) + Manager.ARROW_SIZEDIV2, 0);
@@ -96,10 +120,9 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 
 		// internal mods
 		if (orient != 0) {
-			final nextOutput = parent.getNotePath(new Vector3(Adapter.instance.getDefaultReceptorX(arrowData.lane, arrowData.player)
-				+ Manager.ARROW_SIZEDIV2,
-				Adapter.instance.getDefaultReceptorY(arrowData.lane, arrowData.player)
-				+ Manager.ARROW_SIZEDIV2),
+			_orientInput.setTo(Adapter.instance.getDefaultReceptorX(arrowData.lane, arrowData.player) + Manager.ARROW_SIZEDIV2,
+				Adapter.instance.getDefaultReceptorY(arrowData.lane, arrowData.player) + Manager.ARROW_SIZEDIV2, 0);
+			final nextOutput = parent.getNotePath(_orientInput,
 				arrowData, 1, false, true);
 			final thisPos = output.pos;
 			final nextPos = nextOutput.pos;
@@ -168,7 +191,8 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 
 		// @formatter:off
 		// build directly as openfl.Vector to avoid conversion at render time
-		var vertices = new openfl.Vector<Float>(8, true);
+		final slot = nextSlot();
+		final vertices = slot.vertices;
 		// top left
 		vertices[0] = planeVertices[0];
 		vertices[1] = planeVertices[1];
@@ -185,7 +209,7 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 
 		final uvRectangle = arrow.frame.uv;
 		// build UVs as openfl.Vector to avoid conversion at render time
-		var uvData = new openfl.Vector<Float>(12, true);
+		final uvData = slot.uvs;
 		var k = 0;
 
 		#if (flixel == "6.1.0")
@@ -248,25 +272,65 @@ final class ArrowRenderer extends BaseRenderer<FlxSprite> {
 		if ((arrow.alpha * output.visuals.alpha) <= 0)
 			return null;
 
-		var color = new ColorTransform(negGlow, negGlow, negGlow, arrow.alpha * output.visuals.alpha, Math.round(output.visuals.glowR * absGlow),
-			Math.round(output.visuals.glowG * absGlow), Math.round(output.visuals.glowB * absGlow));
+		final color = slot.color;
+		color.redMultiplier = negGlow;
+		color.greenMultiplier = negGlow;
+		color.blueMultiplier = negGlow;
+		color.alphaMultiplier = arrow.alpha * output.visuals.alpha;
+		color.redOffset = Math.round(output.visuals.glowR * absGlow);
+		color.greenOffset = Math.round(output.visuals.glowG * absGlow);
+		color.blueOffset = Math.round(output.visuals.glowB * absGlow);
+		color.alphaOffset = 0;
 
 		// make the instruction
-		var dc:DrawCommand = {
-			parent: arrow,
-			graphic: arrow.graphic,
-			antialiasing: arrow.antialiasing,
-			blend: arrow.blend,
-			cameras: ModchartUtil.resolveCameras(parent, arrow),
-			shader: arrow.shader,
-
-			vertices: vertices,
-			indices: _sharedArrowIdx,
-			uvs: uvData,
-			color: color,
-			isColored: color.hasRGBMultipliers() || color.alphaMultiplier != 1,
-			hasColorOffsets: color.hasRGBAOffsets()
-		};
+		final dc = slot.command;
+		dc.parent = arrow;
+		dc.graphic = arrow.graphic;
+		dc.antialiasing = arrow.antialiasing;
+		dc.blend = arrow.blend;
+		dc.cameras = ModchartUtil.resolveCameras(parent, arrow, slot.cameras);
+		dc.shader = arrow.shader;
+		dc.vertices = vertices;
+		dc.indices = _sharedArrowIdx;
+		dc.uvs = uvData;
+		dc.color = color;
+		dc.colors = null;
+		dc.isColored = color.hasRGBMultipliers() || color.alphaMultiplier != 1;
+		dc.hasColorOffsets = color.hasRGBAOffsets();
+		dc.zIndex = 0;
 		return dc;
+	}
+}
+
+private class ArrowRenderSlot
+{
+	public final vertices:openfl.Vector<Float>;
+	public final uvs:openfl.Vector<Float>;
+	public final color:ColorTransform;
+	public final cameras:Array<FlxCamera>;
+	public final command:DrawCommand;
+
+	public function new()
+	{
+		vertices = new openfl.Vector<Float>(8, true);
+		uvs = new openfl.Vector<Float>(12, true);
+		color = new ColorTransform();
+		cameras = [];
+		command = {
+			parent: null,
+			graphic: null,
+			antialiasing: false,
+			blend: null,
+			shader: null,
+			cameras: cameras,
+			vertices: vertices,
+			uvs: uvs,
+			indices: null,
+			isColored: false,
+			hasColorOffsets: false,
+			color: color,
+			colors: null,
+			zIndex: 0
+		};
 	}
 }

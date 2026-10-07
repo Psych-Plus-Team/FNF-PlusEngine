@@ -49,6 +49,8 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		option.displayFormat = '%vX';
 		option.decimals = 2;
 		optionsArray.push(option);
+		var preservePitch = new GameplayOption('Preserve Voice Pitch', 'preservepitch', BOOL, false);
+		optionsArray.push(preservePitch);
 		#end
 
 		var option:GameplayOption = new GameplayOption('Health Gain Multiplier', 'healthgain', FLOAT, 1);

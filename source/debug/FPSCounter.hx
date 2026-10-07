@@ -15,6 +15,7 @@ import haxe.Http;
 import haxe.Json;
 import states.MainMenuState;
 import backend.BuildInfo;
+import backend.Native;
 import backend.ThreadUtil;
 import backend.ui.md3.NetworkCheckToast;
 #if windows
@@ -113,6 +114,8 @@ class FPSCounter extends Sprite
 		Text update throttling to reduce overhead in debug mode.
 	**/
 	private var cachedStaticText:String = ""; // Cached static text (OS, commit, etc.).
+	private var graphicsLabel:String = "OpenGL Unknown";
+	private var audioLabel:String = "Unable to detect";
 
 	/**
 		Frame timing used to track delay and stutter.
@@ -159,6 +162,8 @@ class FPSCounter extends Sprite
 		positionFPS(x, y);
 
 		currentFPS = 0;
+		graphicsLabel = Native.getOpenGLLabel();
+		audioLabel = Native.getOpenALSoftVersion();
 
 		for (i in 0...8)
 		{
@@ -289,7 +294,10 @@ class FPSCounter extends Sprite
 		}
 
 		if (debugLevel >= 4)
-			setBox(index++, 'Plus Engine v' + MainMenuState.plusEngineVersion + '\nPsych v' + MainMenuState.psychEngineVersion, true);
+			setBox(index++, 'OpenFL - ' + graphicsLabel
+				+ '\n' + audioLabel
+				+ '\nPlus Engine v' + MainMenuState.plusEngineVersion
+				+ '\nPsych v' + MainMenuState.psychEngineVersion, true);
 
 		hideUnusedBoxes(index);
 		layoutBoxes();

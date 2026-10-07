@@ -468,7 +468,7 @@ class Paths
 		return returnSound('music/$key', modsAllowed);
 
 	inline static public function inst(song:String, ?modsAllowed:Bool = true):Sound
-		return returnSound('${formatToSongPath(song)}/Inst', 'songs', modsAllowed);
+		return returnSound('${formatToSongPath(song)}/Inst', 'songs', modsAllowed, true, true);
 
 	inline static public function voices(song:String, postfix:String = null, ?modsAllowed:Bool = true):Sound
 	{
@@ -476,7 +476,7 @@ class Paths
 		if (postfix != null)
 			songKey += '-' + postfix;
 		// trace('songKey test: $songKey');
-		return returnSound(songKey, 'songs', modsAllowed, false);
+		return returnSound(songKey, 'songs', modsAllowed, false, true);
 	}
 
 	inline static public function soundRandom(key:String, min:Int, max:Int, ?modsAllowed:Bool = true)
@@ -731,18 +731,19 @@ class Paths
 
 	public static var currentTrackedSounds:Map<String, Sound> = AssetCache.currentTrackedSounds;
 
-	public static function returnSound(key:String, ?path:String, ?modsAllowed:Bool = true, ?beepOnNull:Bool = true)
+	public static function returnSound(key:String, ?path:String, ?modsAllowed:Bool = true, ?beepOnNull:Bool = true, ?stream:Bool = false)
 	{
 		var file:String = getPath(Language.getFileTranslation(key) + '.$SOUND_EXT', SOUND, path, modsAllowed);
+		var cacheKey:String = stream ? file + '#stream' : file;
 
 		// trace('precaching sound: $file');
-		if (!currentTrackedSounds.exists(file))
+		if (!currentTrackedSounds.exists(cacheKey))
 		{
-			var sound:Sound = AssetLoader.loadSound(file);
+			var sound:Sound = stream ? AssetLoader.loadStreamedSound(file) : AssetLoader.loadSound(file);
 
 			if (sound != null)
 			{
-				AssetCache.cacheSound(file, sound);
+				AssetCache.cacheSound(cacheKey, sound);
 				currentTrackedSounds = AssetCache.currentTrackedSounds;
 			}
 			else if (beepOnNull)
@@ -752,9 +753,9 @@ class Paths
 				return FlxAssets.getSound('flixel/sounds/beep');
 			}
 		}
-		AssetCache.remember(file);
+		AssetCache.remember(cacheKey);
 		localTrackedAssets = AssetCache.localTrackedAssets;
-		return currentTrackedSounds.get(file);
+		return currentTrackedSounds.get(cacheKey);
 	}
 
 	#if MODS_ALLOWED

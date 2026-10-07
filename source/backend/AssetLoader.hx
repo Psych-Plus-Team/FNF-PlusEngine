@@ -5,6 +5,8 @@ import openfl.utils.AssetType;
 import openfl.utils.Assets as OpenFlAssets;
 import flash.media.Sound;
 import lime.utils.Assets;
+import lime.media.AudioBuffer;
+import lime.media.vorbis.VorbisFile;
 import shaders.ShaderCompatibility;
 #if MODS_ALLOWED
 import sys.FileSystem;
@@ -143,6 +145,27 @@ class AssetLoader
 		{
 		}
 		return null;
+	}
+
+	/** Keeps long OGG tracks compressed and streamable for native tempo processing. */
+	public static function loadStreamedSound(path:String):Sound
+	{
+		#if (lime_vorbis && sys)
+		if (path != null && path.length > 0)
+		{
+			try
+			{
+				if (sys.FileSystem.exists(path))
+				{
+					var vorbis = VorbisFile.fromFile(path);
+					if (vorbis != null)
+						return Sound.fromAudioBuffer(AudioBuffer.fromVorbisFile(vorbis));
+				}
+			}
+			catch (_:Dynamic) {}
+		}
+		#end
+		return loadSound(path);
 	}
 }
 

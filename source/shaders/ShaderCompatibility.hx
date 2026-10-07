@@ -164,10 +164,25 @@ class ShaderCompatibility
 		var output:Array<String> = [];
 		var waitingMainBrace:Bool = false;
 		var inserted:Bool = false;
+		var wrappingMain:Bool = false;
+		var mainBaseDepth:Int = 0;
+		var outputDepth:Int = 0;
 		var mainDecl:EReg = ~/^\s*void\s+(?:main|mainImage)\s*\(/;
 
 		for (line in lines)
 		{
+			var opens:Int = countChar(line, "{");
+			var closes:Int = countChar(line, "}");
+
+			// Keep the original function body in a nested scope. GLSL permits a
+			// local to shadow a global, so moving both into the same scope would
+			// otherwise break valid legacy shaders (for example, `uv`).
+			if (wrappingMain && outputDepth + opens - closes <= mainBaseDepth)
+			{
+				output.push("\t}");
+				wrappingMain = false;
+			}
+
 			output.push(line);
 
 			if (!inserted && mainDecl.match(line))
@@ -176,6 +191,9 @@ class ShaderCompatibility
 				{
 					for (declaration in declarations)
 						output.push(declaration);
+					output.push("\t{");
+					mainBaseDepth = outputDepth;
+					wrappingMain = true;
 					inserted = true;
 				}
 				else
@@ -187,9 +205,16 @@ class ShaderCompatibility
 			{
 				for (declaration in declarations)
 					output.push(declaration);
+				output.push("\t{");
+				mainBaseDepth = outputDepth;
+				wrappingMain = true;
 				inserted = true;
 				waitingMainBrace = false;
 			}
+
+			outputDepth += opens - closes;
+			if (outputDepth < 0)
+				outputDepth = 0;
 		}
 
 		if (!inserted)

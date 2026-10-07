@@ -197,6 +197,7 @@ class CtxRenderer {
 				continue;
 
 			ctx = playfield.context;
+			ctx.arrowRenderer.beginFrame();
 			for (player in 0...items.length) {
 				var curItems:Array<Array<FlxSprite>> = items[player];
 
