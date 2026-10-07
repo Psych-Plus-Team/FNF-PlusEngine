@@ -55,7 +55,7 @@ class StageWeek1 extends BaseStage
 	{
 		super.createPost();
 
-		if (PlayState.SONG.song == 'tutorial' && dad != null)
+		if (PlayState.SONG.song == 'Tutorial' && dad != null)
 			dad.setPosition(fixed_GF_X, fixed_GF_Y);
 	}
 	#end
