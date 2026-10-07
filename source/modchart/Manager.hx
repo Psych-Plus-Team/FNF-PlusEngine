@@ -294,7 +294,7 @@ final class Manager extends FlxBasic
 				continue;
 
 			final value = playfield.getPercent('spawnTime', player);
-			final spawnTime = value > 0 ? value : fallback;
+			final spawnTime = value > 0 ? Math.max(value, fallback) : fallback;
 			if (spawnTime > result)
 				result = spawnTime;
 		}

@@ -3,6 +3,11 @@ package states;
 import backend.WeekData;
 import backend.Highscore;
 import backend.Song;
+import backend.SongChecker;
+import backend.SongChecker.SongCheckReport;
+import backend.SongChecker.SongCheckSeverity;
+import backend.SongLoadMetrics;
+import haxe.Timer;
 import backend.AccuracyTools;
 import objects.HealthIcon;
 import objects.MusicPlayerPsych;
@@ -385,7 +390,12 @@ class FreeplayState_Psych extends MusicBeatState
 
 				Mods.currentModDirectory = songs[curSelected].folder;
 				var poop:String = Highscore.formatSong(songs[curSelected].songName.toLowerCase(), curDifficulty);
-				Song.loadFromJson(poop, songs[curSelected].songName.toLowerCase());
+				if (!loadChartWithChecker(poop, songs[curSelected].songName.toLowerCase()))
+				{
+					updateTexts(elapsed);
+					super.update(elapsed);
+					return;
+				}
 				if (PlayState.SONG.needsVoices)
 				{
 					vocals = new FlxSound();
@@ -458,34 +468,16 @@ class FreeplayState_Psych extends MusicBeatState
 			var songLowercase:String = Paths.formatToSongPath(songs[curSelected].songName);
 			var poop:String = Highscore.formatSong(songLowercase, curDifficulty);
 
-			try
+			if (!loadChartWithChecker(poop, songLowercase))
 			{
-				Song.loadFromJson(poop, songLowercase);
-				PlayState.isStoryMode = false;
-				PlayState.storyDifficulty = curDifficulty;
-
-				trace('CURRENT WEEK: ' + WeekData.getWeekFileName());
-			}
-			catch (e:haxe.Exception)
-			{
-				trace('ERROR! ${e.message}');
-
-				var errorStr:String = e.message;
-				if (errorStr.contains('There is no TEXT asset with an ID of'))
-					errorStr = 'Missing file: ' + errorStr.substring(errorStr.indexOf(songLowercase), errorStr.length - 1); // Missing chart
-				else
-					errorStr += '\n\n' + e.stack;
-
-				missingText.text = 'ERROR WHILE LOADING CHART:\n$errorStr';
-				missingText.screenCenter(Y);
-				missingText.visible = true;
-				missingTextBG.visible = true;
-				FlxG.sound.play(Paths.sound('cancelMenu'));
-
+				persistentUpdate = true;
 				updateTexts(elapsed);
 				super.update(elapsed);
 				return;
 			}
+			PlayState.isStoryMode = false;
+			PlayState.storyDifficulty = curDifficulty;
+			trace('CURRENT WEEK: ' + WeekData.getWeekFileName());
 			@:privateAccess
 			if (PlayState._lastLoadedModDirectory != Mods.currentModDirectory)
 			{
@@ -512,6 +504,41 @@ class FreeplayState_Psych extends MusicBeatState
 
 		updateTexts(elapsed);
 		super.update(elapsed);
+	}
+
+	function loadChartWithChecker(chartName:String, songFolder:String):Bool
+	{
+		var checkerStarted:Float = Timer.stamp();
+		var report:SongCheckReport = SongChecker.inspectRequest(chartName, songFolder);
+		if (!report.hasErrors)
+		{
+			try
+			{
+				var song = Song.loadFromJson(chartName, songFolder);
+				SongChecker.inspectSong(report, song);
+			}
+			catch (e:Dynamic)
+			{
+				report.add(SongCheckSeverity.ERROR, 'chart-load-exception', 'Unexpected error while loading the chart: ${Std.string(e)}', report.chartPath);
+			}
+		}
+		SongLoadMetrics.recordChecker((Timer.stamp() - checkerStarted) * 1000 - SongLoadMetrics.chartMs);
+
+		if (report.hasErrors)
+		{
+			PlayState.SONG = null; // Never leak the previously selected chart into PlayState.
+			missingText.text = report.displayText();
+			missingText.screenCenter(Y);
+			missingText.visible = true;
+			missingTextBG.visible = true;
+			FlxG.sound.play(Paths.sound('cancelMenu'));
+			trace(report.displayText(100));
+			return false;
+		}
+
+		if (report.issues.length > 0)
+			trace(report.displayText(100));
+		return true;
 	}
 
 	function getVocalFromCharacter(char:String)

@@ -94,58 +94,18 @@ class NoteSplash extends FlxSprite
 
 		texture = splash;
 		frames = null;
-		var atlasPath:String = 'images/$texture';
-		var loadedAtlas:Bool = false;
-		if (framesCache.exists(atlasPath))
-		{
-			frames = framesCache.get(atlasPath);
-			loadedAtlas = frames != null;
-		}
-		else
-		{
-			frames = getSplashAtlas(texture);
-			if (frames != null)
-			{
-				framesCache.set(atlasPath, frames);
-				loadedAtlas = true;
-			}
-		}
+		frames = getCachedSplashAtlas(texture);
+		var loadedAtlas:Bool = frames != null;
 		if (frames == null)
 		{
 			texture = resolveNoteSplashPath(null, PlayState.isPixelStage);
-			atlasPath = 'images/$texture';
-			if (framesCache.exists(atlasPath))
-			{
-				frames = framesCache.get(atlasPath);
-				loadedAtlas = frames != null;
-			}
-			else
-			{
-				frames = getSplashAtlas(texture);
-				if (frames != null)
-				{
-					framesCache.set(atlasPath, frames);
-					loadedAtlas = true;
-				}
-			}
+			frames = getCachedSplashAtlas(texture);
+			loadedAtlas = frames != null;
 			if (frames == null)
 			{
 				texture = resolveSplashCandidate(defaultNoteSplash, PlayState.isPixelStage);
-				atlasPath = 'images/$texture';
-				if (framesCache.exists(atlasPath))
-				{
-					frames = framesCache.get(atlasPath);
-					loadedAtlas = frames != null;
-				}
-				else
-				{
-					frames = getSplashAtlas(texture);
-					if (frames != null)
-					{
-						framesCache.set(atlasPath, frames);
-						loadedAtlas = true;
-					}
-				}
+				frames = getCachedSplashAtlas(texture);
+				loadedAtlas = frames != null;
 			}
 		}
 
@@ -558,9 +518,23 @@ class NoteSplash extends FlxSprite
 		return atlas;
 	}
 
+	static function getCachedSplashAtlas(splash:String):Dynamic
+	{
+		var path:String = 'images/$splash';
+		var atlas:Dynamic = framesCache.get(path);
+		if (!atlasLooksUsable(atlas))
+		{
+			framesCache.remove(path);
+			atlas = getSplashAtlas(splash);
+			if (atlas != null)
+				framesCache.set(path, atlas);
+		}
+		return atlas;
+	}
+
 	static function atlasLooksUsable(atlas:Dynamic):Bool
 	{
-		if (atlas == null || atlas.parent == null || atlas.frames == null || atlas.frames.length <= 0)
+		if (atlas == null || atlas.parent == null || atlas.parent.bitmap == null || atlas.frames == null || atlas.frames.length <= 0)
 			return false;
 
 		var width:Float = atlas.parent.width;

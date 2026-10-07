@@ -230,12 +230,14 @@ class VideoFunctions
 			videoSprite.updateHitbox();
 			videoSprite.x = x;
 			videoSprite.y = y;
+			applySongRate(videoSprite);
 			applyStoredLuaVideoVolume(tag, videoSprite);
 			trace('Video "$tag" loaded successfully');
 		});
 
 		videoSprite.bitmap.onPlaying.add(function()
 		{
+			applySongRate(videoSprite);
 			pulseLuaVideoVolume(tag, videoSprite);
 		});
 
@@ -268,6 +270,7 @@ class VideoFunctions
 			return;
 		}
 		applyStoredLuaVideoVolume(tag, videoSprite);
+		applySongRate(videoSprite);
 
 		new flixel.util.FlxTimer().start(2.0, function(tmr:flixel.util.FlxTimer)
 		{
@@ -298,9 +301,29 @@ class VideoFunctions
 			if (videoSprite != null && videoSprite.bitmap != null)
 			{
 				videoSprite.play();
+				applySongRate(videoSprite);
 				pulseLuaVideoVolume(tag, videoSprite);
 			}
 		});
+	}
+
+	public static function setPlaybackRate(rate:Float):Void
+	{
+		#if VIDEOS_ALLOWED
+		if (Math.isNaN(rate) || rate <= 0)
+			rate = 1;
+		for (video in activeVideos)
+			if (video != null && video.bitmap != null)
+				video.bitmap.rate = rate;
+		#end
+	}
+
+	private static function applySongRate(video:FlxVideoSprite):Void
+	{
+		if (video == null || video.bitmap == null)
+			return;
+		var rate:Float = PlayState.instance != null ? PlayState.instance.playbackRate : 1;
+		video.bitmap.rate = rate > 0 && !Math.isNaN(rate) ? rate : 1;
 	}
 
 	private static function addLuaVideoToState(videoSprite:FlxVideoSprite, front:Bool):Void

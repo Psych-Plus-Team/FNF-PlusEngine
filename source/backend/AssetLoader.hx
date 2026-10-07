@@ -157,6 +157,12 @@ class AssetLoader
 			{
 				if (sys.FileSystem.exists(path))
 				{
+					// Some older mods store a Theora video and Vorbis audio in the same
+					// .ogg container. Lime's streaming reader can open it, but may stall
+					// once playback starts. The regular decoder handles these legacy files.
+					if (hasTheoraStream(path))
+						return loadSound(path);
+
 					var vorbis = VorbisFile.fromFile(path);
 					if (vorbis != null)
 						return Sound.fromAudioBuffer(AudioBuffer.fromVorbisFile(vorbis));
@@ -167,5 +173,39 @@ class AssetLoader
 		#end
 		return loadSound(path);
 	}
+
+	#if sys
+	static function hasTheoraStream(path:String):Bool
+	{
+		var input:sys.io.FileInput = null;
+		try
+		{
+			var size:Int = Std.int(Math.min(sys.FileSystem.stat(path).size, 65536));
+			input = sys.io.File.read(path, true);
+			var header:haxe.io.Bytes = input.read(size);
+			input.close();
+			var signature:haxe.io.Bytes = haxe.io.Bytes.ofString('theora');
+			for (offset in 0...(header.length - signature.length + 1))
+			{
+				var matches:Bool = true;
+				for (index in 0...signature.length)
+					if (header.get(offset + index) != signature.get(index))
+					{
+						matches = false;
+						break;
+					}
+				if (matches)
+					return true;
+			}
+			return false;
+		}
+		catch (_:Dynamic)
+		{
+			if (input != null)
+				try input.close() catch (_:Dynamic) {}
+			return false;
+		}
+	}
+	#end
 }
 

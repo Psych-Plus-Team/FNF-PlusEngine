@@ -125,6 +125,7 @@ class Paths
 	}
 
 	static var tempFramesCache:Map<String, FlxAtlasFrames> = [];
+	static var retainTempFramesOnce:Bool = false;
 
 	static var animateAtlasExistenceCache:Map<String, Bool> = [];
 	static var animateAtlasAnimationCache:Map<String, String> = [];
@@ -135,26 +136,24 @@ class Paths
 	{
 		FlxG.signals.preStateSwitch.add(function()
 		{
-			clearTempFramesCache();
+			if (retainTempFramesOnce)
+				retainTempFramesOnce = false;
+			else
+				clearTempFramesCache();
 		});
 	}
+
+	/** Keeps loading-screen atlas parsing alive until the target state consumes it. */
+	public static inline function retainTempFramesForNextState():Void
+		retainTempFramesOnce = true;
 
 	public static function clearTempFramesCache():Void
 	{
 		if (tempFramesCache == null)
 			return;
 
-		var count = 0;
-		for (key => frames in tempFramesCache)
-		{
-			if (frames != null && frames.parent != null)
-			{
-				frames.parent.persist = false;
-				frames.parent.destroyOnNoUse = true;
-				count++;
-			}
-		}
-
+		// The atlas does not own its parent graphic. AssetCache does, so changing
+		// these flags here can destroy a bitmap that is still present in its map.
 		tempFramesCache.clear();
 	}
 
@@ -303,6 +302,7 @@ class Paths
 		for (key in keysToRemove)
 			currentTrackedAssets.remove(key);
 
+		clearTempFramesCache();
 		System.gc();
 	}
 
@@ -537,9 +537,14 @@ class Paths
 		// from different mods don't leak into each other.
 		if (currentTrackedAssets.exists(resolvedFile))
 		{
-			AssetCache.remember(resolvedFile);
-			localTrackedAssets = AssetCache.localTrackedAssets;
-			return currentTrackedAssets.get(resolvedFile);
+			var cached:FlxGraphic = currentTrackedAssets.get(resolvedFile);
+			if (cached != null && cached.bitmap != null)
+			{
+				AssetCache.remember(resolvedFile);
+				localTrackedAssets = AssetCache.localTrackedAssets;
+				return cached;
+			}
+			currentTrackedAssets.remove(resolvedFile);
 		}
 		return cacheBitmap(key, parentFolder, bitmap, allowGPU);
 	}
@@ -673,18 +678,28 @@ class Paths
 		if (key.contains('psychic'))
 			trace(key, parentFolder, allowGPU);
 		var imageLoaded:FlxGraphic = image(key, parentFolder, allowGPU);
+		var translatedXml:String = Language.getFileTranslation('images/$key') + '.xml';
+		var xmlPath:String = getPath(translatedXml, TEXT, parentFolder, true);
 		#if MODS_ALLOWED
-		var xmlExists:Bool = false;
-
 		var xml:String = modsXml(key);
 		if (safeModPathExists(xml))
-			xmlExists = true;
-
-		return FlxAtlasFrames.fromSparrow(imageLoaded,
-			(xmlExists ? stripBOM(safeFileContent(xml)) : stripBOM(getTextFromFile(Language.getFileTranslation('images/$key') + '.xml', true))));
-		#else
-		return FlxAtlasFrames.fromSparrow(imageLoaded, stripBOM(getTextFromFile(Language.getFileTranslation('images/$key') + '.xml', true)));
+			xmlPath = xml;
 		#end
+
+		var imagePath:String = getPath(Language.getFileTranslation('images/$key') + '.png', IMAGE, parentFolder, true);
+		var cacheKey:String = '$imagePath|$xmlPath|$allowGPU';
+		var cached:FlxAtlasFrames = tempFramesCache.get(cacheKey);
+		if (cached != null)
+			return cached;
+
+		#if MODS_ALLOWED
+		var xmlData:String = xmlPath == xml ? stripBOM(safeFileContent(xml)) : stripBOM(getTextFromFile(translatedXml, true));
+		#else
+		var xmlData:String = stripBOM(getTextFromFile(translatedXml, true));
+		#end
+		var frames:FlxAtlasFrames = FlxAtlasFrames.fromSparrow(imageLoaded, xmlData);
+		tempFramesCache.set(cacheKey, frames);
+		return frames;
 	}
 
 	inline static public function getPackerAtlas(key:String, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxAtlasFrames
