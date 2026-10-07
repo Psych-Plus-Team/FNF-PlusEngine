@@ -298,6 +298,11 @@ jobs:
         run: |
           haxelib setup C:\haxelib
           cmd /c setup\windows-lib.bat
+          $limeNative = "C:\haxelib\lime\git\ndll\Windows64"
+          if (-not (Test-Path "$limeNative\OpenAL32.dll")) {
+            throw "Lime OpenAL runtime was not found at $limeNative\OpenAL32.dll"
+          }
+          $limeNative | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Prepare build
         run: |
@@ -740,6 +745,11 @@ jobs:
         run: |
           haxelib setup C:\haxelib
           cmd /c setup\windows-lib.bat
+          $limeNative = "C:\haxelib\lime\git\ndll\Windows64"
+          if (-not (Test-Path "$limeNative\OpenAL32.dll")) {
+            throw "Lime OpenAL runtime was not found at $limeNative\OpenAL32.dll"
+          }
+          $limeNative | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Prepare build
         run: |
