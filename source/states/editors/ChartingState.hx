@@ -321,7 +321,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		if (chartEditorSave.data.customNextGridColors == null || chartEditorSave.data.customNextGridColors.length < 2)
 			chartEditorSave.data.customNextGridColors = ['5F5F5F', '4A4A4A'];
 		if (chartEditorSave.data.extendEventValues == null)
-	    chartEditorSave.data.extendEventValues = false;
+	        chartEditorSave.data.extendEventValues = false;
 
 		changeTheme(chartEditorSave.data.theme != null ? chartEditorSave.data.theme : DEFAULT, false);
 
