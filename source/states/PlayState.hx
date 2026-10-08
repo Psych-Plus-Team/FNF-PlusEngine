@@ -144,6 +144,7 @@ class PlayState extends MusicBeatState
 	public static var stageUI(default, set):String = "normal";
 	public static var uiPrefix:String = "";
 	public static var uiPostfix:String = "";
+	public static var temporaryStageUI:String = null;
 	public static var isPixelStage(get, never):Bool;
 
 	@:noCompletion
@@ -1080,6 +1081,19 @@ class PlayState extends MusicBeatState
 				timeBar.setGradientColors(bfColor, dadColor);
 			else
 				timeBar.setColors(FlxColor.WHITE, FlxColor.BLACK);
+		}
+	}
+
+	public function reloadGradientColors():Void
+	{
+		if (timeBar == null)
+			return;
+
+		if (ClientPrefs.data.shadedTimeBar && dad != null && boyfriend != null)
+		{
+			var dadColor:FlxColor = FlxColor.fromRGB(dad.healthColorArray[0], dad.healthColorArray[1], dad.healthColorArray[2]);
+			var bfColor:FlxColor = FlxColor.fromRGB(boyfriend.healthColorArray[0], boyfriend.healthColorArray[1], boyfriend.healthColorArray[2]);
+			timeBar.setGradientColors(bfColor, dadColor);
 		}
 	}
 
@@ -3037,6 +3051,50 @@ class PlayState extends MusicBeatState
 					iconGF.visible = !ClientPrefs.data.hideHud && valid;
 					iconGF.flipX = (gfIconSide == 'bf');
 				}
+
+		    case 'Change UI':
+				var skinChanged:Bool = false;
+
+				if (value1 != null && value1.trim().length > 0)
+				{
+					SONG.arrowSkin = value1.trim();
+					skinChanged = true;
+				}
+				if (value2 != null && value2.trim().length > 0)
+				{
+					SONG.splashSkin = value2.trim();
+					skinChanged = true;
+				}
+
+				if (value3 != null && value3.trim().length > 0)
+				{
+					var newUI:String = value3.trim();
+					if (stageUI != newUI)
+					{
+						if (temporaryStageUI == null)
+							temporaryStageUI = stageUI;
+
+						stageUI = newUI;
+
+						reloadHealthBarColors();
+						reloadGradientColors();
+						refreshBreakTimerVisualStyle();
+
+						if (iconP1 != null) iconP1.alpha = ClientPrefs.data.healthBarAlpha;
+						if (iconP2 != null) iconP2.alpha = ClientPrefs.data.healthBarAlpha;
+						if (iconGF != null) iconGF.alpha = ClientPrefs.data.healthBarAlpha;
+
+						cacheCountdown();
+						cachePopUpScore();
+
+						skinChanged = true;
+					}
+				}
+
+				if (skinChanged)
+					reloadAllNotesSkin();
+
+				callOnScripts('onUIChanged', [value3 != null ? value3 : '']);
 		}
 
 		stagesFunc(function(stage:BaseStage) stage.eventCalled(eventName, value1, value2, value3, value4, flValue1, flValue2, flValue3, flValue4, strumTime));
@@ -3627,6 +3685,12 @@ class PlayState extends MusicBeatState
 		breakTimerHud.cacheNotes(unspawnNotes);
 	}
 
+	function refreshBreakTimerVisualStyle():Void
+	{
+		if (breakTimerHud != null)
+			breakTimerHud.refreshVisualStyle();
+	}
+
 	inline function strumCenterX(strum:StrumNote):Float
 		return strum.x + strum.width * 0.5;
 
@@ -3786,6 +3850,38 @@ class PlayState extends MusicBeatState
 		});
 	}
 
+	function clearComboPopups():Void
+	{
+		if (comboGroup == null || comboGroup.members.length == 0)
+			return;
+
+		while (comboGroup.members.length > 0)
+		{
+			var spr:FlxSprite = comboGroup.members[0];
+			if (spr == null)
+			{
+				comboGroup.members.shift();
+				continue;
+			}
+
+			if (spr == msTxt)
+			{
+				if (msTween != null)
+				{
+					msTween.cancel();
+					msTween = null;
+				}
+				comboGroup.remove(spr, true);
+				spr.visible = false;
+				spr.alpha = 0;
+				continue;
+			}
+
+			comboGroup.remove(spr, true);
+			spr.destroy();
+		}
+	}
+
 	private function popUpScore(note:Note = null):Void
 	{
 		var hitDiff:Float = (note.strumTime - Conductor.songPosition + ClientPrefs.data.ratingOffset) / playbackRate;
@@ -3797,22 +3893,8 @@ class PlayState extends MusicBeatState
 		var lightHitVisuals:Bool = false;
 		#end
 
-		if (!lightHitVisuals && (!ClientPrefs.data.comboStacking || ClientPrefs.data.nfRatingStyle) && comboGroup.members.length > 0)
-		{
-			for (spr in comboGroup)
-			{
-				if(spr == null) continue;
-
-				comboGroup.remove(spr);
-				if (spr == msTxt)
-				{
-					spr.visible = false;
-					spr.alpha = 0;
-				}
-				else
-					spr.destroy();
-			}
-		}
+		if (!lightHitVisuals && (!ClientPrefs.data.comboStacking || ClientPrefs.data.nfRatingStyle))
+            clearComboPopups();
 
 		var placement:Float = FlxG.width * 0.35;
 		var rating:FlxSprite = new FlxSprite();
@@ -4507,6 +4589,26 @@ class PlayState extends MusicBeatState
 		NoteSplashHelper.spawn(this, x, y, data, note, strum);
 	}
 
+	public function reloadAllNotesSkin():Void
+	{
+		var newSkin:String = (SONG != null && SONG.arrowSkin != null && SONG.arrowSkin.length > 0)
+			? SONG.arrowSkin
+			: Note.getDefaultNoteSkinPath(isPixelStage);
+
+		for (note in notes)
+			if (note != null) note.reloadNote();
+		for (note in unspawnNotes)
+			if (note != null) note.reloadNote();
+
+		for (strum in strumLineNotes)
+			if (strum != null) strum.texture = newSkin;
+
+		NoteSplash.configs.clear();
+		NoteSplash.clearCache();
+		for (splash in grpNoteSplashes)
+			if (splash != null) splash.loadSplash();
+	}
+
 	override function destroy() {
 		#if MODCHART_ALLOWED
 		if (mcInitCb != null)
@@ -4580,6 +4682,11 @@ class PlayState extends MusicBeatState
 
 		NoteSplash.clearCache();
 		instance = null;
+		if (temporaryStageUI != null)
+		{
+			stageUI = temporaryStageUI;
+			temporaryStageUI = null;
+		}
 		shutdownThread = true;
 		FlxG.signals.preUpdate.remove(checkForResync);
 		super.destroy();
