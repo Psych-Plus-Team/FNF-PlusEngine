@@ -5,6 +5,19 @@ This engine uses the normal/global `haxelib` repo. The main setup scripts are:
 - `setup/windows-lib.bat` for Windows.
 - `setup/unish-lib.sh` for Linux/macOS-like shells.
 
+On Windows, the setup also runs `setup/windows-openal.bat`. It copies the
+versioned OpenAL runtime from Lime's `dependencies/openal-soft/Win64` directory
+next to the active `neko.exe`. This is required because `lime.ndll` links
+OpenAL dynamically, while the Windows loader does not search Lime's haxelib
+directory for transitive DLL dependencies. Re-running the setup refreshes the
+copy whenever the Lime fork updates OpenAL.
+
+On Linux and macOS, `setup/unish-lib.sh` runs `setup/unish-openal.sh` after
+installing Lime. Linux builds embed OpenAL Soft in `lime.ndll`, while macOS
+uses the system OpenAL framework. The script selects the native library for
+the host architecture and checks that all required system libraries resolve
+before the rest of the setup continues.
+
 ## Core Build Stack
 
 Required for the engine in general.
