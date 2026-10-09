@@ -222,6 +222,9 @@ class Main extends Sprite
 		#end
 
 		addChild(new FlxGame(game.width, game.height, game.initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
+		// Install cache cleanup and deferred-GC hooks after FlxG has initialized
+		// its global signals. Paths.init() is idempotent for reload-friendly builds.
+		Paths.init();
 		initializeMaterialVolumeTray();
 		backend.RenderInterpolation.install();
 

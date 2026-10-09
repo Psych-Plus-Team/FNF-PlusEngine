@@ -4,6 +4,7 @@ import flixel.sound.FlxSound;
 
 #if funkin.vis
 import funkin.vis.dsp.SpectralAnalyzer;
+import lime.media.AudioSource;
 #end
 
 /**
@@ -23,6 +24,8 @@ class ABotSpectrum
 
 	#if funkin.vis
 	var _analyzer:SpectralAnalyzer;
+	var _analysisSource:AudioSource;
+	var _sourceAttempted:Bool = false;
 	var _bars:Array<Bar>;
 	#end
 
@@ -42,6 +45,8 @@ class ABotSpectrum
 		_snd = snd;
 		#if funkin.vis
 		_analyzer = null;
+		_analysisSource = null;
+		_sourceAttempted = false;
 		refreshAnalyzer();
 		#end
 	}
@@ -51,6 +56,8 @@ class ABotSpectrum
 		_snd = null;
 		#if funkin.vis
 		_analyzer = null;
+		_analysisSource = null;
+		_sourceAttempted = false;
 		_bars = null;
 		#end
 
@@ -61,13 +68,25 @@ class ABotSpectrum
 	public function levels():Array<Float>
 	{
 		#if funkin.vis
-		if (_analyzer == null && _snd != null)
+		if (_analyzer == null && _snd != null && !_sourceAttempted)
 			refreshAnalyzer();
 
 		if (_analyzer == null)
 			return _out;
 
-		_bars = _analyzer.getLevels(_bars);
+		try
+		{
+			_bars = _analyzer.getLevels(_bars);
+		}
+		catch (_:Dynamic)
+		{
+			// Unsupported/corrupt audio must not take down the whole stage.
+			_analyzer = null;
+			_analysisSource = null;
+			for (i in 0..._out.length)
+				_out[i] = 0;
+			return _out;
+		}
 		var count:Int = (_bars.length < _out.length) ? _bars.length : _out.length;
 		for (i in 0...count)
 		{
@@ -108,11 +127,16 @@ class ABotSpectrum
 			return;
 
 		@:privateAccess
-		var source:Dynamic = (_snd._channel != null) ? _snd._channel.__audioSource : null;
+		var source:AudioSource = (_snd._channel != null) ? _snd._channel.__audioSource : null;
 		if (source == null)
 			return;
 
-		_analyzer = new SpectralAnalyzer(source, bands, _smoothing, _peakHold);
+		_sourceAttempted = true;
+		_analysisSource = backend.AssetLoader.analyzerSource(source);
+		if (_analysisSource == null)
+			return;
+
+		_analyzer = new SpectralAnalyzer(_analysisSource, bands, _smoothing, _peakHold);
 		#if desktop
 		_analyzer.fftN = 256;
 		#end

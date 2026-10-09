@@ -4,8 +4,10 @@ import openfl.display.BitmapData;
 import openfl.utils.AssetType;
 import openfl.utils.Assets as OpenFlAssets;
 import flash.media.Sound;
+import haxe.ds.WeakMap;
 import lime.utils.Assets;
 import lime.media.AudioBuffer;
+import lime.media.AudioSource;
 import lime.media.vorbis.VorbisFile;
 import shaders.ShaderCompatibility;
 #if MODS_ALLOWED
@@ -19,6 +21,11 @@ import sys.io.File;
  */
 class AssetLoader
 {
+	#if (lime_vorbis && sys)
+	// Weak keys ensure clearing the normal sound cache can still release streamed buffers.
+	static final streamedAudioPaths:WeakMap<AudioBuffer, String> = new WeakMap<AudioBuffer, String>();
+	#end
+
 	public static function exists(path:String, type:AssetType):Bool
 	{
 		if (path == null || path.length == 0)
@@ -165,13 +172,56 @@ class AssetLoader
 
 					var vorbis = VorbisFile.fromFile(path);
 					if (vorbis != null)
-						return Sound.fromAudioBuffer(AudioBuffer.fromVorbisFile(vorbis));
+					{
+						var buffer:AudioBuffer = AudioBuffer.fromVorbisFile(vorbis);
+						if (buffer != null)
+						{
+							streamedAudioPaths.set(buffer, path);
+							return Sound.fromAudioBuffer(buffer);
+						}
+					}
 				}
 			}
 			catch (_:Dynamic) {}
 		}
 		#end
 		return loadSound(path);
+	}
+
+	/**
+	 * Returns an audio source that funkin.vis can inspect safely.
+	 *
+	 * Lime keeps streamed Vorbis tracks in a decoder, so their `AudioBuffer.data` is null.
+	 * funkin.vis expects decoded PCM there. Keep playback streamed, but decode a separate,
+	 * non-playing buffer for the analyzer when necessary.
+	 */
+	public static function analyzerSource(source:AudioSource):AudioSource
+	{
+		if (source == null || source.buffer == null)
+			return null;
+
+		#if web
+		return source;
+		#else
+		if (source.buffer.data != null)
+			return source;
+
+		#if (lime_vorbis && sys)
+		var path:String = streamedAudioPaths.get(source.buffer);
+		if (path != null)
+		{
+			try
+			{
+				var decoded:AudioBuffer = AudioBuffer.fromFile(path);
+				if (decoded != null && decoded.data != null)
+					return new AudioSource(decoded);
+			}
+			catch (_:Dynamic) {}
+		}
+		#end
+
+		return null;
+		#end
 	}
 
 	#if sys

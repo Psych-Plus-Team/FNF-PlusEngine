@@ -153,6 +153,7 @@ class FreeplayState extends MusicBeatState
 	#if funkin.vis
 	public var _analyzer:SpectralAnalyzer = null;
 	public var _analyzerLevels:Array<funkin.vis.dsp.SpectralAnalyzer.Bar> = null;
+	public var _vizAnalyzerSource:lime.media.AudioSource = null;
 	public var _needsAnalyzerInit:Bool = false;
 	public var _vizMusicRef:FlxSound = null;
 	public var _vizBeatPulse:Float = 0;
@@ -1042,7 +1043,7 @@ class FreeplayState extends MusicBeatState
 				{
 					if (!Paths.currentTrackedSounds.exists(cacheKey))
 						Paths.currentTrackedSounds.set(cacheKey, pendingSound);
-					Paths.localTrackedAssets.push(cacheKey);
+					Paths.rememberAsset(cacheKey);
 				}
 
 				freeplayMenuMusicActive = false;
@@ -1097,6 +1098,7 @@ class FreeplayState extends MusicBeatState
 			_vizMusicRef = FlxG.sound.music;
 			_analyzer = null;
 			_analyzerLevels = null;
+			_vizAnalyzerSource = null;
 			_needsAnalyzerInit = _vizMusicRef != null;
 		}
 
@@ -1107,17 +1109,25 @@ class FreeplayState extends MusicBeatState
 			@:privateAccess
 			if (FlxG.sound.music._channel != null && FlxG.sound.music._channel.__audioSource != null)
 			{
-				_analyzer = new SpectralAnalyzer(FlxG.sound.music._channel.__audioSource, VIZ_BAR_COUNT, 0.08, 25);
-				_analyzer.minFreq = 40;
-				_analyzer.maxFreq = 18000;
-				_analyzer.minDb = -80;
-				_analyzer.maxDb = -15;
-				#if mobile
-				_analyzer.fftN = 256;
-				#elseif !web
-				_analyzer.fftN = 512;
-				#end
-				_needsAnalyzerInit = false;
+				_vizAnalyzerSource = backend.AssetLoader.analyzerSource(FlxG.sound.music._channel.__audioSource);
+				if (_vizAnalyzerSource == null)
+				{
+					_needsAnalyzerInit = false;
+				}
+				else
+				{
+					_analyzer = new SpectralAnalyzer(_vizAnalyzerSource, VIZ_BAR_COUNT, 0.08, 25);
+					_analyzer.minFreq = 40;
+					_analyzer.maxFreq = 18000;
+					_analyzer.minDb = -80;
+					_analyzer.maxDb = -15;
+					#if mobile
+					_analyzer.fftN = 256;
+					#elseif !web
+					_analyzer.fftN = 512;
+					#end
+					_needsAnalyzerInit = false;
+				}
 			}
 		}
 		_vizUpdateAccum += elapsed;
@@ -1131,7 +1141,16 @@ class FreeplayState extends MusicBeatState
 				_vizUpdateAccum = 0;
 				if (_analyzer != null)
 				{
-					_analyzerLevels = _analyzer.getLevels(_analyzerLevels);
+					try
+					{
+						_analyzerLevels = _analyzer.getLevels(_analyzerLevels);
+					}
+					catch (_:Dynamic)
+					{
+						_analyzer = null;
+						_vizAnalyzerSource = null;
+						_analyzerLevels = [];
+					}
 					for (i in 0...vizBarsGroup.members.length)
 					{
 						var level:Float = (i < _analyzerLevels.length) ? _analyzerLevels[i].value : 0.0;
@@ -3125,9 +3144,7 @@ class FreeplayState extends MusicBeatState
 		{
 			openfl.Assets.cache.clear(key);
 			Paths.currentTrackedSounds.remove(key);
-			while (Paths.localTrackedAssets.remove(key))
-			{
-			}
+			Paths.forgetAsset(key);
 		}
 	}
 

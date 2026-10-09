@@ -439,6 +439,8 @@ class LoadingState extends MusicBeatState
 		SongLoadMetrics.finish();
 		Paths.retainTempFramesForNextState();
 		_loaded();
+		// Workers are stopped now, making this a safe place to honor a deferred GC.
+		backend.MemoryManager.runPendingCollection();
 		GlobalLoadingOverlay.showPersistent();
 
 		if (stopMusic && FlxG.sound.music != null)
@@ -1112,8 +1114,7 @@ class LoadingState extends MusicBeatState
 			}
 		}
 		mutex.acquire();
-		if (!Paths.localTrackedAssets.contains(cacheKey))
-			Paths.localTrackedAssets.push(cacheKey);
+		Paths.rememberAsset(cacheKey);
 		mutex.release();
 
 		return Paths.currentTrackedSounds.get(cacheKey);
@@ -1151,7 +1152,7 @@ class LoadingState extends MusicBeatState
 			}
 
 			mutex.acquire();
-			Paths.localTrackedAssets.push(file);
+			Paths.rememberAsset(file);
 			mutex.release();
 			var tracked:flixel.graphics.FlxGraphic = Paths.currentTrackedAssets.get(file);
 			return (tracked != null) ? tracked.bitmap : null;

@@ -2457,7 +2457,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			{
 				Assets.cache.clear(key);
 				Paths.currentTrackedSounds.remove(key);
-				Paths.localTrackedAssets.remove(key);
+				Paths.forgetAsset(key);
 			}
 		}
 
