@@ -124,6 +124,8 @@ class Paths
 	}
 
 	static var tempFramesCache:Map<String, FlxAtlasFrames> = [];
+	// Avoid resolving the same mod PNG/XML paths for every generated note.
+	static var tempSparrowLookup:Map<String, FlxAtlasFrames> = [];
 	static var retainTempFramesOnce:Bool = false;
 
 	static var animateAtlasExistenceCache:Map<String, Bool> = [];
@@ -175,6 +177,7 @@ class Paths
 		// The atlas does not own its parent graphic. AssetCache does, so changing
 		// these flags here can destroy a bitmap that is still present in its map.
 		tempFramesCache.clear();
+		tempSparrowLookup.clear();
 		return released;
 	}
 
@@ -724,8 +727,22 @@ class Paths
 		return parentFrames;
 	}
 
-	inline static public function getSparrowAtlas(key:String, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxAtlasFrames
+	static function sparrowLookupKey(key:String, parentFolder:String, allowGPU:Bool):String
 	{
+		var mod:String = '';
+		#if MODS_ALLOWED
+		mod = Mods.currentModDirectory == null ? '' : Mods.currentModDirectory;
+		#end
+		return '$mod|$currentLevel|$parentFolder|$allowGPU|$key';
+	}
+
+	static public function getSparrowAtlas(key:String, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxAtlasFrames
+	{
+		var logicalKey:String = sparrowLookupKey(key, parentFolder, allowGPU);
+		var logicalCached:FlxAtlasFrames = tempSparrowLookup.get(logicalKey);
+		if (logicalCached != null)
+			return logicalCached;
+
 		if (key.contains('psychic'))
 			trace(key, parentFolder, allowGPU);
 		var imageLoaded:FlxGraphic = image(key, parentFolder, allowGPU);
@@ -741,7 +758,10 @@ class Paths
 		var cacheKey:String = '$imagePath|$xmlPath|$allowGPU';
 		var cached:FlxAtlasFrames = tempFramesCache.get(cacheKey);
 		if (cached != null)
+		{
+			tempSparrowLookup.set(logicalKey, cached);
 			return cached;
+		}
 
 		#if MODS_ALLOWED
 		var xmlData:String = xmlPath == xml ? stripBOM(safeFileContent(xml)) : stripBOM(getTextFromFile(translatedXml, true));
@@ -750,6 +770,7 @@ class Paths
 		#end
 		var frames:FlxAtlasFrames = FlxAtlasFrames.fromSparrow(imageLoaded, xmlData);
 		tempFramesCache.set(cacheKey, frames);
+		tempSparrowLookup.set(logicalKey, frames);
 		return frames;
 	}
 
@@ -859,6 +880,9 @@ class Paths
 			list.push(normalizedPath);
 	}
 
+	static var cachedModsRoots:Array<String> = null;
+	static var cachedModsRootsSignature:String = null;
+
 	public static function safeModPathExists(path:String):Bool
 	{
 		if (path == null || path.length == 0)
@@ -923,6 +947,10 @@ class Paths
 
 	public static function getModsRootDirectories():Array<String>
 	{
+		var signature:String = #if android ClientPrefs.data.storageType #else Sys.getCwd() #end;
+		if (cachedModsRoots != null && cachedModsRootsSignature == signature)
+			return cachedModsRoots.copy();
+
 		var roots:Array<String> = [];
 		#if android
 		if (StorageUtil.useExternalModsStorage())
@@ -935,7 +963,9 @@ class Paths
 		#else
 		addUniqueModsRoot(roots, Sys.getCwd() + 'mods/');
 		#end
-		return roots;
+		cachedModsRoots = roots;
+		cachedModsRootsSignature = signature;
+		return roots.copy();
 	}
 
 	public static function getModsSearchRoots(?key:String):Array<String>

@@ -639,6 +639,11 @@ class LoadingState extends MusicBeatState
 		var threadCount:Int = Std.int(Math.max(1, CoolUtil.getCPUThreadsCount() - #if DISCORD_ALLOWED 2 #else 1 #end));
 		if (threadCount > MAX_LOAD_THREADS)
 			threadCount = MAX_LOAD_THREADS;
+		// External flash storage gets slower when too many workers compete for it.
+		#if android
+		if (threadCount > 3)
+			threadCount = 3;
+		#end
 		#else
 		var threadCount:Int = 1;
 		#end
@@ -1094,7 +1099,10 @@ class LoadingState extends MusicBeatState
 		var cacheKey:String = stream ? file + '#stream' : file;
 
 		// trace('precaching sound: $file');
-		if (!Paths.currentTrackedSounds.exists(cacheKey))
+		mutex.acquire();
+		var needsLoad:Bool = !Paths.currentTrackedSounds.exists(cacheKey);
+		mutex.release();
+		if (needsLoad)
 		{
 			if (#if sys FileSystem.exists(file) || #end OpenFlAssets.exists(file, SOUND))
 			{

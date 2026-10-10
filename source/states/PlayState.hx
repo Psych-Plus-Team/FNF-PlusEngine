@@ -1827,6 +1827,7 @@ class PlayState extends MusicBeatState
 
 	private function generateSong():Void
 	{
+		var generateStarted:Float = haxe.Timer.stamp();
 		// FlxG.log.add(ChartParser.parse());
 		songSpeed = PlayState.SONG.speed;
 		songSpeedType = ClientPrefs.getGameplaySetting('scrolltype');
@@ -1874,6 +1875,7 @@ class PlayState extends MusicBeatState
 		}
 		catch (e:Dynamic) {}
 		FlxG.sound.list.add(inst);
+		var audioFinished:Float = haxe.Timer.stamp();
 
 		notes = new FlxTypedGroup<Note>();
 		noteGroup.add(notes);
@@ -2010,6 +2012,9 @@ class PlayState extends MusicBeatState
 			if(note != null && !note.isSustainNote && note.mustPress)
 				totalNotes++;
 		generatedMusic = true;
+		var generateFinished:Float = haxe.Timer.stamp();
+		SongLoadMetrics.recordGeneration((generateFinished - generateStarted) * 1000, (audioFinished - generateStarted) * 1000,
+			(generateFinished - audioFinished) * 1000, unspawnNotes.length);
 	}
 
 	// called only once per different event (Used for precaching)

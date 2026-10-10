@@ -475,6 +475,8 @@ class Note extends FlxSprite
 	var _lastNoteOffX:Float = 0;
 
 	static var _lastValidChecked:String; // optimization
+	static var _defaultSkinCacheKey:String;
+	static var _defaultSkinCacheValue:String;
 
 	public var originalHeight:Float = 6;
 	public var correctionOffset:Float = 0; // dont mess with this
@@ -582,11 +584,24 @@ class Note extends FlxSprite
 
 	public static function getDefaultNoteSkinPath(?pixel:Null<Bool>):String
 	{
-		if (usesClassicColors() && noteSkinPathExists(classicNoteSkin, pixel))
-			return classicNoteSkin;
-		if (noteSkinPathExists(defaultNoteSkin, pixel))
-			return defaultNoteSkin;
-		return defaultNoteSkin;
+		var usePixel:Bool = pixel == null ? PlayState.isPixelStage : pixel;
+		var mod:String = '';
+		#if MODS_ALLOWED
+		mod = Mods.currentModDirectory == null ? '' : Mods.currentModDirectory;
+		#end
+		var cacheKey:String = '$mod|$usePixel|${usesClassicColors()}';
+		if (_defaultSkinCacheKey == cacheKey && _defaultSkinCacheValue != null)
+			return _defaultSkinCacheValue;
+
+		var resolved:String = defaultNoteSkin;
+		if (usesClassicColors() && noteSkinPathExists(classicNoteSkin, usePixel))
+			resolved = classicNoteSkin;
+		else if (noteSkinPathExists(defaultNoteSkin, usePixel))
+			resolved = defaultNoteSkin;
+
+		_defaultSkinCacheKey = cacheKey;
+		_defaultSkinCacheValue = resolved;
+		return resolved;
 	}
 
 	public static function resolveNoteSkinPath(?skin:String, ?pixel:Null<Bool>):String

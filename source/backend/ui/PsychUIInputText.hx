@@ -44,6 +44,8 @@ class PsychUIInputText extends FlxSpriteGroup {
 	public var textObj:FlxText;
 	public var caret:FlxSprite;
 	public var onChange:String->String->Void;
+	/** Dropdowns and other picker-style controls should not summon Android's keyboard. */
+	public var showSoftKeyboardOnFocus:Bool = true;
 
 	public var fieldWidth(default, set):Int = 0;
 	public var maxLength(default, set):Int = 0;
@@ -422,7 +424,7 @@ class PsychUIInputText extends FlxSpriteGroup {
 			#if android focusOn.setSoftKeyboard(false); #end
 		}
 		focusOn = v;
-		#if android if (v != null) v.setSoftKeyboard(true); #end
+		#if android if (v != null && v.showSoftKeyboardOnFocus) v.setSoftKeyboard(true); #end
 		return v;
 	}
 

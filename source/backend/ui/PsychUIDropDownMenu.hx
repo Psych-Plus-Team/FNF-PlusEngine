@@ -1,6 +1,9 @@
 package backend.ui;
 
 import backend.ui.PsychUIBox.UIStyleData;
+#if FLX_TOUCH
+import flixel.input.touch.FlxTouch;
+#end
 
 class PsychUIDropDownMenu extends PsychUIInputText {
 	public static final CLICK_EVENT = "dropdown_click";
@@ -19,9 +22,17 @@ class PsychUIDropDownMenu extends PsychUIInputText {
 	var _maxVisibleItems:Int = 0;
 	var _scrollDragging:Bool = false;
 	var _pointerPosition:FlxPoint = new FlxPoint();
+	#if FLX_TOUCH
+	var _touchDragID:Int = -1;
+	var _touchDragStartY:Float = 0;
+	var _touchDragStartScroll:Int = 0;
+	var _touchDragMoved:Bool = false;
+	static inline var TOUCH_DRAG_DEADZONE:Float = 8;
+	#end
 
 	public function new(x:Float, y:Float, list:Array<String>, callback:Int->String->Void, ?width:Float = 100, ?maxVisibleItems:Int = 0) {
 		super(x, y);
+		showSoftKeyboardOnFocus = false;
 		if (list == null)
 			list = [];
 
@@ -123,6 +134,15 @@ class PsychUIDropDownMenu extends PsychUIInputText {
 		} else if (FlxG.mouse.released && button.animation.curAnim != null && button.animation.curAnim.name != 'normal')
 			button.animation.play('normal', true);
 
+		#if FLX_TOUCH
+		var buttonTouch:FlxTouch = findTouchOver(button, true, false);
+		if (buttonTouch != null) {
+			button.animation.play('pressed', true);
+			PsychUIInputText.focusOn = lastFocus == this ? null : this;
+		} else if (findReleasedTouch() != null && button.animation.curAnim != null && button.animation.curAnim.name != 'normal')
+			button.animation.play('normal', true);
+		#end
+
 		if (lastFocus != PsychUIInputText.focusOn) {
 			showDropDown(PsychUIInputText.focusOn == this);
 		} else if (PsychUIInputText.focusOn == this) {
@@ -133,21 +153,111 @@ class PsychUIDropDownMenu extends PsychUIInputText {
 				wheel--;
 			if (wheel != 0)
 				showDropDown(true, curScroll - wheel, _curFilter);
+			#if FLX_TOUCH
+			handleTouchScrolling();
+			#end
 		}
 	}
 
 	function updateScrollFromPointer():Void {
+		updateScrollFromY(FlxG.mouse.getWorldPosition(camera, _pointerPosition).y);
+	}
+
+	function updateScrollFromY(pointerY:Float):Void {
 		var source:Array<String> = _curFilter != null ? _curFilter : list;
 		var visibleCount:Int = getVisibleCount(source.length);
 		var maxScroll:Int = Std.int(Math.max(0, source.length - visibleCount));
 		if (maxScroll <= 0)
 			return;
 
-		var pointerY:Float = FlxG.mouse.getWorldPosition(camera, _pointerPosition).y;
 		var travel:Float = scrollTrack.height - scrollThumb.height;
 		var ratio:Float = FlxMath.bound((pointerY - scrollTrack.y - scrollThumb.height / 2) / Math.max(1, travel), 0, 1);
 		showDropDown(true, Math.round(ratio * maxScroll), _curFilter);
 	}
+
+	#if FLX_TOUCH
+	function findTouchOver(object:FlxSprite, justPressedOnly:Bool, justReleasedOnly:Bool):FlxTouch {
+		for (touch in FlxG.touches.list) {
+			if (touch == null || (justPressedOnly && !touch.justPressed) || (justReleasedOnly && !touch.justReleased))
+				continue;
+			if (touch.overlaps(object, camera))
+				return touch;
+		}
+		return null;
+	}
+
+	function findReleasedTouch():FlxTouch {
+		for (touch in FlxG.touches.list)
+			if (touch != null && touch.justReleased)
+				return touch;
+		return null;
+	}
+
+	function findTouchByID(id:Int):FlxTouch {
+		for (touch in FlxG.touches.list)
+			if (touch != null && touch.touchPointID == id)
+				return touch;
+		return null;
+	}
+
+	function touchOverVisibleItem(touch:FlxTouch):Bool {
+		for (item in _items)
+			if (item != null && item.visible && item.active && touch.overlaps(item.bg, camera))
+				return true;
+		return false;
+	}
+
+	function handleTouchScrolling():Void {
+		if (_touchDragID < 0) {
+			for (touch in FlxG.touches.list) {
+				if (touch == null || !touch.justPressed)
+					continue;
+
+				if (scrollTrack.visible && touch.overlaps(scrollTrack, camera)) {
+					updateScrollFromY(touch.getWorldPosition(camera, _pointerPosition).y);
+					_touchDragMoved = true;
+					return;
+				}
+
+				if (touchOverVisibleItem(touch)) {
+					_touchDragID = touch.touchPointID;
+					_touchDragStartY = touch.getWorldPosition(camera, _pointerPosition).y;
+					_touchDragStartScroll = curScroll;
+					_touchDragMoved = false;
+					return;
+				}
+			}
+			_touchDragMoved = false;
+			return;
+		}
+
+		var activeTouch:FlxTouch = findTouchByID(_touchDragID);
+		if (activeTouch == null) {
+			_touchDragID = -1;
+			_touchDragMoved = false;
+			return;
+		}
+
+		var currentY:Float = activeTouch.getWorldPosition(camera, _pointerPosition).y;
+		var deltaY:Float = currentY - _touchDragStartY;
+		if (activeTouch.pressed && Math.abs(deltaY) >= TOUCH_DRAG_DEADZONE) {
+			_touchDragMoved = true;
+			showDropDown(true, _touchDragStartScroll - Math.round(deltaY / 20), _curFilter);
+		}
+
+		if (activeTouch.justReleased) {
+			_touchDragID = -1;
+			// Items update before their parent group, so keep this value for the
+			// release frame and clear it on the following update.
+		} else if (!activeTouch.pressed) {
+			_touchDragID = -1;
+			_touchDragMoved = false;
+		}
+	}
+
+	public inline function suppressTouchSelection():Bool
+		return _touchDragMoved;
+	#end
 
 	inline function getVisibleCount(total:Int):Int {
 		return _maxVisibleItems > 0 ? Std.int(Math.min(_maxVisibleItems, total)) : total;
@@ -165,6 +275,10 @@ class PsychUIDropDownMenu extends PsychUIInputText {
 		if (!vis) {
 			text = selectedLabel;
 			_curFilter = null;
+			#if FLX_TOUCH
+			_touchDragID = -1;
+			_touchDragMoved = false;
+			#end
 		}
 
 		var totalItems:Int = onlyAllowed != null ? onlyAllowed.length : list.length;
@@ -231,6 +345,8 @@ class PsychUIDropDownMenu extends PsychUIInputText {
 	function clickedOn(num:Int, label:String) {
 		selectedIndex = num;
 		showDropDown(false);
+		if (PsychUIInputText.focusOn == this)
+			PsychUIInputText.focusOn = null;
 		if (onSelect != null)
 			onSelect(num, label);
 		if (broadcastDropDownEvent)
@@ -243,6 +359,7 @@ class PsychUIDropDownMenu extends PsychUIInputText {
 		var item:PsychUIDropDownItem = cast recycle(PsychUIDropDownItem, () -> new PsychUIDropDownItem(1, 1, this._itemWidth), true);
 		item.cameras = cameras;
 		item.label = option;
+		item.parentDropDown = this;
 		item.visible = item.active = false;
 		item.onClick = function() clickedOn(curID, option);
 		item.forceNextUpdate = true;
@@ -269,6 +386,7 @@ class PsychUIDropDownMenu extends PsychUIInputText {
 }
 
 class PsychUIDropDownItem extends FlxSpriteGroup {
+	public var parentDropDown:PsychUIDropDownMenu;
 	public var hoverStyle:UIStyleData = {
 		bgColor: 0xFF0066FF,
 		textColor: FlxColor.WHITE,
@@ -301,8 +419,20 @@ class PsychUIDropDownItem extends FlxSpriteGroup {
 
 	override function update(elapsed:Float) {
 		super.update(elapsed);
-		if (FlxG.mouse.justMoved || FlxG.mouse.justPressed || forceNextUpdate) {
-			var overlapped:Bool = (FlxG.mouse.overlaps(bg, camera));
+		var touchOver:Bool = false;
+		var touchReleased:Bool = false;
+		#if FLX_TOUCH
+		for (touch in FlxG.touches.list) {
+			if (touch != null && touch.overlaps(bg, camera)) {
+				touchOver = true;
+				if (touch.justReleased)
+					touchReleased = true;
+			}
+		}
+		#end
+
+		if (FlxG.mouse.justMoved || FlxG.mouse.justPressed || touchOver || touchReleased || forceNextUpdate) {
+			var overlapped:Bool = FlxG.mouse.overlaps(bg, camera) || touchOver;
 
 			var style = overlapped ? hoverStyle : normalStyle;
 			bg.color = style.bgColor;
@@ -312,6 +442,10 @@ class PsychUIDropDownItem extends FlxSpriteGroup {
 
 			if (overlapped && FlxG.mouse.justPressed)
 				onClick();
+			#if FLX_TOUCH
+			else if (touchReleased && (parentDropDown == null || !parentDropDown.suppressTouchSelection()))
+				onClick();
+			#end
 		}
 
 		text.x = bg.x;
